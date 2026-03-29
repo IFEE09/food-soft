@@ -6,6 +6,7 @@ import OwnerDashboard from './pages/OwnerDashboard';
 import KitchenDashboard from './pages/KitchenDashboard';
 import CookDashboard from './pages/CookDashboard';
 import Supplies from './pages/Supplies';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="owner" element={<OwnerDashboard />} />
           <Route path="kitchen" element={<KitchenDashboard />} />
           <Route path="supplies" element={<Supplies />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="cook" element={<CookDashboard />} />
         </Route>
         

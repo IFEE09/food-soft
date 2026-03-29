@@ -5,7 +5,8 @@ import {
   Package, 
   ClipboardList, 
   BarChart3, 
-  LogOut 
+  LogOut,
+  Settings as SettingsIcon 
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -45,6 +46,7 @@ export default function DashboardLayout() {
           <NavItem path="/dashboard/owner" icon={LayoutDashboard} label="Dashboard General" />
           <NavItem path="/dashboard/kitchen" icon={ChefHat} label="Panel Cocinas" />
           <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
+          <NavItem path="/dashboard/settings" icon={SettingsIcon} label="Configuración" />
           
           <div style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.95rem', opacity: 0.6 }}>
             <ClipboardList size={18} />
@@ -98,11 +100,13 @@ export default function DashboardLayout() {
               <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                 {isActive('/dashboard/supplies') ? 'Inventario de Insumos' : 
                  isActive('/dashboard/kitchen') ? 'Dashboard de Cocinas' : 
+                 isActive('/dashboard/settings') ? 'Configuración de Sistema' :
                  'Dashboard General'}
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
                 {isActive('/dashboard/supplies') ? 'Control detallado de stock y reposición' : 
                  isActive('/dashboard/kitchen') ? 'Monitor de flujo de pedidos para Dark Kitchens' : 
+                 isActive('/dashboard/settings') ? 'Gestiona tu perfil corporativo y seguridad de cuenta' :
                  'Métricas clave de operación hoy'}
               </p>
             </div>

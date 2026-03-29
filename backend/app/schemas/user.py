@@ -30,3 +30,7 @@ class User(UserInDBBase):
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str
