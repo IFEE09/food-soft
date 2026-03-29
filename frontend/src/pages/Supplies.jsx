@@ -132,7 +132,13 @@ export default function Supplies() {
           </div>
           <div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Valor Total Inventario</p>
-            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>
+              {isLoading ? (
+                <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', opacity: 0.7 }}>Calculando...</span>
+              ) : (
+                `$${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+              )}
+            </h3>
           </div>
         </div>
 
@@ -142,7 +148,13 @@ export default function Supplies() {
           </div>
           <div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Alertas de Reabastecimiento</p>
-            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>{lowStockCount} Insumos</h3>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>
+              {isLoading ? (
+                <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', opacity: 0.7 }}>Verificando...</span>
+              ) : (
+                `${lowStockCount} Insumos`
+              )}
+            </h3>
           </div>
         </div>
       </div>
