@@ -10,7 +10,7 @@ from app.db import models
 from app.db.session import get_db
 from app.core import security
 from app.core.config import settings
-from app.schemas.user import User as UserSchema
+from app.schemas.user import User as UserSchema, UserCreate
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login"
@@ -65,3 +65,31 @@ def login_access_token(
         "role": user.role,
         "full_name": user.full_name
     }
+
+@router.post("/register", response_model=UserSchema)
+def register_user(
+    *,
+    db: Session = Depends(get_db),
+    user_in: UserCreate,
+) -> Any:
+    """
+    Register a new user. Default role is owner for this MVP.
+    """
+    user = db.query(models.User).filter(models.User.email == user_in.email).first()
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un usuario con este correo electrónico.",
+        )
+    
+    new_user = models.User(
+        email=user_in.email,
+        full_name=user_in.full_name,
+        hashed_password=security.get_password_hash(user_in.password),
+        role=user_in.role or "owner",
+        is_active=True
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user

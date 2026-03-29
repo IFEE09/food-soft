@@ -7,6 +7,7 @@ import KitchenDashboard from './pages/KitchenDashboard';
 import CookDashboard from './pages/CookDashboard';
 import Supplies from './pages/Supplies';
 import Settings from './pages/Settings';
+import Register from './pages/Register';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         {/* Public Auth Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         </Route>
 
         {/* Protected Dashboard Routes */}

@@ -9,7 +9,8 @@ import {
   LogIn, 
   AlertCircle, 
   ChefHat,
-  ArrowRight
+  ArrowRight,
+  UserPlus
 } from 'lucide-react';
 
 export default function Login() {
@@ -178,6 +179,31 @@ export default function Login() {
                 Ingresar <ArrowRight size={18} />
               </>
             )}
+          </button>
+
+          <button 
+            type="button" 
+            onClick={() => navigate('/register')}
+            style={{ 
+              background: 'none', 
+              border: '1px solid var(--surface-border)', 
+              color: 'var(--text-primary)',
+              height: '52px',
+              borderRadius: '6px',
+              fontWeight: 500,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              transition: 'all 0.2s ease',
+              marginTop: '-0.5rem'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f1f5f9'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <UserPlus size={18} /> Registrarse
           </button>
         </form>
 
