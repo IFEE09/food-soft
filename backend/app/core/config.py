@@ -25,18 +25,22 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
 
     def get_database_url(self) -> str:
-        # Prioritize the DATABASE_URL provided by Railway
-        url = self.DATABASE_URL
+        # 1. Try individual variables (High priority for Railway)
+        if self.DATABASE_URL and "railway.internal" in self.DATABASE_URL:
+             # Use the provided URL but ensure it's the right protocol
+             url = self.DATABASE_URL
+             if url.startswith("postgres://"):
+                 url = url.replace("postgres://", "postgresql://", 1)
+             print(f"DEBUG: Using Injected DATABASE_URL")
+             return url
+
+        # 2. Check if we have individual components (More robust)
+        if self.POSTGRES_PASSWORD != "178601": # If it's not the default local one
+            print(f"DEBUG: Using individual POSTGRES variables.")
+            return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         
-        if url:
-            print(f"DEBUG: Using DATABASE_URL from environment.")
-            # Fix for some older clients/drivers
-            if url.startswith("postgres://"):
-                url = url.replace("postgres://", "postgresql://", 1)
-            return url
-        
-        # Fallback for local development
-        print(f"DEBUG: No DATABASE_URL found. Falling back to local/manual config.")
+        # 3. Fallback for Local Dev
+        print(f"DEBUG: Falling back to local/manual config.")
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()
