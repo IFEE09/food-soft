@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
 from app.api.auth import get_current_user
+from app.core.notifier import manager
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ def read_orders(
     return orders
 
 @router.post("/", response_model=order_schema.Order)
-def create_order(
+async def create_order(
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),

@@ -1,3 +1,4 @@
+import secrets
 from datetime import timedelta
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -82,8 +83,11 @@ def register_user(
             detail="Ya existe un usuario con este correo electrónico.",
         )
     
-    # Create organization for New Owner
-    new_org = models.Organization(name=f"Kitchen of {user_in.full_name}")
+    # Create organization for New Owner with Secure API Key
+    new_org = models.Organization(
+        name=f"Kitchen of {user_in.full_name}",
+        api_key=secrets.token_urlsafe(32)
+    )
     db.add(new_org)
     db.flush()
 

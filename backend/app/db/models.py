@@ -7,6 +7,7 @@ class Organization(Base):
     __tablename__ = "organizations"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
+    api_key = Column(String, unique=True, index=True, nullable=True) # For Robot/External integration
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class User(Base):
