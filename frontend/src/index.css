@@ -11,6 +11,7 @@
   --danger-color: #EF4444;
   --danger-bg: #FEF2F2;
   --danger-border: #FCA5A5;
+  --success-color: #10B981;
 }
 
 * {
@@ -181,4 +182,88 @@ input:focus {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   RESPONSIVE UTILITIES 
+   ========================================= */
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  flex-direction: column; /* Mobile first: wrap sidebar on top */
+}
+
+@media (min-width: 768px) {
+  .dashboard-container {
+    flex-direction: row; /* Desktop: side by side */
+  }
+}
+
+.sidebar {
+  width: 100%;
+  padding: 1.5rem;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--surface-border);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    width: 260px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    border-bottom: none;
+    border-right: 1px solid var(--surface-border);
+  }
+}
+
+.main-content {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    padding: 2rem 3rem;
+  }
+}
+
+/* OwnerDashboard Layouts */
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}
+
+/* Header Response */
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }

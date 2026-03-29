@@ -10,16 +10,9 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
-      {/* Sidebar - Clean, thin borders, no glass effect */}
-      <aside style={{ 
-        width: '260px', 
-        padding: '2rem 1.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'var(--surface-color)',
-        borderRight: '1px solid var(--surface-border)'
-      }}>
+    <div className="dashboard-container">
+      {/* Sidebar - Clean, responsive */}
+      <aside className="sidebar">
         <div style={{ marginBottom: '2.5rem', paddingLeft: '0.5rem' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--primary-color)' }}>Food-Soft</h2>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Corporativo</span>
@@ -28,9 +21,6 @@ export default function DashboardLayout() {
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <div className="sidebar-link active">
             Dashboard
-          </div>
-          <div className="sidebar-link">
-            Reservaciones
           </div>
           <div className="sidebar-link">
             Órdenes
@@ -52,7 +42,7 @@ export default function DashboardLayout() {
             fontWeight: 500,
             fontSize: '0.9rem',
             transition: 'all 0.2s',
-            marginTop: 'auto'
+            marginTop: '2rem' /* Adjusted for mobile view to not stick to bottom rigidly */
           }}
           onMouseOver={(e) => {
             e.target.style.background = 'var(--danger-bg)';
@@ -70,13 +60,8 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, padding: '2rem 3rem', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '2.5rem'
-         }}>
+      <main className="main-content">
+        <header className="dashboard-header">
             <div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Dashboard General</h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Métricas al día de hoy</p>
@@ -97,7 +82,7 @@ export default function DashboardLayout() {
             </div>
         </header>
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, overflowX: 'auto' }}>
           <Outlet />
         </div>
       </main>
