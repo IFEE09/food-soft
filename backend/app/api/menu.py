@@ -4,20 +4,27 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db import models
 from app.schemas import menu as menu_schemas
+from app.api.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("/", response_model=List[menu_schemas.MenuItem])
-def read_menu_items(db: Session = Depends(get_db)) -> Any:
+def read_menu_items(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+) -> Any:
     """
-    Retrieve all dishes.
+    Retrieve all dishes for current organization.
     """
-    return db.query(models.MenuItem).all()
+    return db.query(models.MenuItem)\
+             .filter(models.MenuItem.organization_id == current_user.organization_id)\
+             .all()
 
 @router.post("/", response_model=menu_schemas.MenuItem)
 def create_menu_item(
     *,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     item_in: menu_schemas.MenuItemCreate,
 ) -> Any:
     """
@@ -27,7 +34,8 @@ def create_menu_item(
         name=item_in.name,
         price=item_in.price,
         category=item_in.category,
-        description=item_in.description
+        description=item_in.description,
+        organization_id=current_user.organization_id
     )
     db.add(new_item)
     db.flush() # To get ID
@@ -49,19 +57,22 @@ def create_menu_item(
 def update_menu_item(
     *,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     item_id: int,
     item_in: menu_schemas.MenuItemUpdate,
 ) -> Any:
     """
-    Update a dish. (For simplicity, this example just updates basic info, can be extended for recipes)
+    Update a dish.
     """
-    db_item = db.query(models.MenuItem).filter(models.MenuItem.id == item_id).first()
+    db_item = db.query(models.MenuItem)\
+                .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == current_user.organization_id)\
+                .first()
     if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
     
     update_data = item_in.model_dump(exclude_unset=True)
     if "recipe_items" in update_data:
-        # Complex logic: Remove old ones and add new ones (standard way)
+        # Complex logic: Remove old ones and add new ones
         db.query(models.MenuItemRecipe).filter(models.MenuItemRecipe.menu_item_id == item_id).delete()
         for recipe_in in item_in.recipe_items:
             recipe_entry = models.MenuItemRecipe(
@@ -83,12 +94,15 @@ def update_menu_item(
 def delete_menu_item(
     *,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     item_id: int,
 ) -> Any:
     """
     Delete a dish.
     """
-    db_item = db.query(models.MenuItem).filter(models.MenuItem.id == item_id).first()
+    db_item = db.query(models.MenuItem)\
+                .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == current_user.organization_id)\
+                .first()
     if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
     db.delete(db_item)

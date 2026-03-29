@@ -6,18 +6,20 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
+from app.api.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("/", response_model=List[order_schema.Order])
 def read_orders(
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     skip: int = 0,
     limit: int = 100,
     status: str = None
 ) -> Any:
-    """ Retrieve orders. Can filter by status. """
-    query = db.query(models.Order)
+    """ Retrieve orders for organization. """
+    query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
     if status:
         query = query.filter(models.Order.status == status)
     
@@ -29,13 +31,15 @@ def read_orders(
 def create_order(
     *,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     order_in: order_schema.OrderCreate,
 ) -> Any:
-    """ Create new order. """
+    """ Create new order for organization. """
     order = models.Order(
         client_name=order_in.client_name,
         total=order_in.total,
-        status=order_in.status
+        status=order_in.status,
+        organization_id=current_user.organization_id
     )
     db.add(order)
     db.commit()
@@ -58,11 +62,14 @@ def create_order(
 def update_order(
     *,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     id: int,
     order_in: order_schema.OrderUpdate,
 ) -> Any:
     """ Update an order (e.g., mark as ready). """
-    order = db.query(models.Order).filter(models.Order.id == id).first()
+    order = db.query(models.Order)\
+              .filter(models.Order.id == id, models.Order.organization_id == current_user.organization_id)\
+              .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
@@ -85,10 +92,13 @@ def update_order(
 def delete_order(
     *,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
     id: int,
 ) -> Any:
     """ Delete an order. """
-    order = db.query(models.Order).filter(models.Order.id == id).first()
+    order = db.query(models.Order)\
+              .filter(models.Order.id == id, models.Order.organization_id == current_user.organization_id)\
+              .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     

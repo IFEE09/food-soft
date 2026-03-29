@@ -82,12 +82,18 @@ def register_user(
             detail="Ya existe un usuario con este correo electrónico.",
         )
     
+    # Create organization for New Owner
+    new_org = models.Organization(name=f"Kitchen of {user_in.full_name}")
+    db.add(new_org)
+    db.flush()
+
     new_user = models.User(
         email=user_in.email,
         full_name=user_in.full_name,
         hashed_password=security.get_password_hash(user_in.password),
         role=user_in.role or "owner",
-        is_active=True
+        is_active=True,
+        organization_id=new_org.id
     )
     db.add(new_user)
     db.commit()

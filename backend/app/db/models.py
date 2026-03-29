@@ -3,6 +3,12 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
 
+class Organization(Base):
+    __tablename__ = "organizations"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class User(Base):
     __tablename__ = "users"
 
@@ -13,6 +19,9 @@ class User(Base):
     # Role can be 'owner' or 'cook'
     role = Column(String, default="cook", nullable=False)
     is_active = Column(Boolean(), default=True)
+    
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization = relationship("Organization")
 
 class Supply(Base):
     __tablename__ = "supplies"
@@ -24,6 +33,8 @@ class Supply(Base):
     cost = Column(Float, default=0.0) # Cost per unit
     min_quantity = Column(Float, default=5.0) # threshold for alerts
     category = Column(String, index=True, nullable=True) # Proteins, Veggies, etc.
+    
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
 
 class Kitchen(Base):
     __tablename__ = "kitchens"
@@ -31,6 +42,7 @@ class Kitchen(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     is_active = Column(Boolean(), default=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     
     orders = relationship("Order", back_populates="kitchen")
 
@@ -43,6 +55,7 @@ class Order(Base):
     status = Column(String, default="pending") # pending, ready, delivered
     
     kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     ready_at = Column(DateTime(timezone=True), nullable=True)
@@ -69,6 +82,7 @@ class MenuItem(Base):
     price = Column(Float, default=0.0)
     category = Column(String, index=True, nullable=True)
     description = Column(String, nullable=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     
     recipe_items = relationship("MenuItemRecipe", back_populates="menu_item", cascade="all, delete-orphan")
 
