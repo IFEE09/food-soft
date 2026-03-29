@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+root = "frontend"
+
+[deploy]
+startCommand = "npm run dev -- --host 0.0.0.0 --port $PORT"
+# O para producción real: "npm run build && npx serve -s dist"
+# Por ahora usaremos dev para que sea más rápido ver los cambios.
