@@ -1,27 +1,53 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
+import { 
+  Plus, 
+  Search, 
+  MoreVertical, 
+  AlertTriangle, 
+  TrendingDown, 
+  Package, 
+  Filter,
+  Trash2,
+  Edit2,
+  DollarSign
+} from 'lucide-react';
 
 export default function Supplies() {
   const [supplies, setSupplies] = useState([]);
+  const [filteredSupplies, setFilteredSupplies] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSupply, setEditingSupply] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  
+  // Form State
   const [formData, setFormData] = useState({
     name: '',
     quantity: 0,
-    unit: 'kg',
+    unit: 'pz',
+    cost: 0,
     min_quantity: 5,
-    category: ''
+    category: 'General'
   });
 
   useEffect(() => {
     fetchSupplies();
   }, []);
 
+  useEffect(() => {
+    const filtered = supplies.filter(s => 
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredSupplies(filtered);
+  }, [searchTerm, supplies]);
+
   const fetchSupplies = async () => {
     try {
       const res = await apiClient.get('/supplies/');
       setSupplies(res.data);
+      setFilteredSupplies(res.data);
     } catch (err) {
       console.error("Error fetching supplies:", err);
     } finally {
@@ -32,34 +58,21 @@ export default function Supplies() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingSupply) {
-        await apiClient.put(`/supplies/${editingSupply.id}`, formData);
+      if (editingItem) {
+        await apiClient.put(`/supplies/${editingItem.id}`, formData);
       } else {
         await apiClient.post('/supplies/', formData);
       }
-      setIsModalOpen(false);
-      setEditingSupply(null);
-      setFormData({ name: '', quantity: 0, unit: 'kg', min_quantity: 5, category: '' });
       fetchSupplies();
+      setIsModalOpen(false);
+      resetForm();
     } catch (err) {
       console.error("Error saving supply:", err);
     }
   };
 
-  const handleEdit = (supply) => {
-    setEditingSupply(supply);
-    setFormData({
-      name: supply.name,
-      quantity: supply.quantity,
-      unit: supply.unit,
-      min_quantity: supply.min_quantity,
-      category: supply.category || ''
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar este insumo?")) {
+  const deleteItem = async (id) => {
+    if (window.confirm('¿Eliminar este insumo definitivamente?')) {
       try {
         await apiClient.delete(`/supplies/${id}`);
         fetchSupplies();
@@ -69,75 +82,141 @@ export default function Supplies() {
     }
   };
 
+  const openEdit = (item) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      cost: item.cost || 0,
+      min_quantity: item.min_quantity,
+      category: item.category || 'General'
+    });
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingItem(null);
+    setFormData({
+      name: '',
+      quantity: 0,
+      unit: 'pz',
+      cost: 0,
+      min_quantity: 5,
+      category: 'General'
+    });
+  };
+
+  // Metrics
+  const totalValue = filteredSupplies.reduce((acc, s) => acc + (s.quantity * (s.cost || 0)), 0);
+  const lowStockCount = supplies.filter(s => s.quantity <= s.min_quantity).length;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Gestión de Insumos</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Control de inventario y stock de cocina</p>
+      
+      {/* Top Value Summary Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10B981' }}>
+          <div style={{ padding: '0.75rem', borderRadius: '12px', background: '#ECFDF5', color: '#10B981' }}>
+            <DollarSign size={24} />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Valor Total Inventario</p>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</h3>
+          </div>
         </div>
-        <button 
-          className="btn-primary" 
-          onClick={() => {
-            setEditingSupply(null);
-            setFormData({ name: '', quantity: 0, unit: 'kg', min_quantity: 5, category: '' });
-            setIsModalOpen(true);
-          }}
-        >
-          + Agregar Insumo
-        </button>
+
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid var(--danger-color)' }}>
+          <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'var(--danger-bg)', color: 'var(--danger-color)' }}>
+            <TrendingDown size={24} />
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Alertas de Reabastecimiento</p>
+            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>{lowStockCount} Insumos</h3>
+          </div>
+        </div>
       </div>
 
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+      <div className="glass-panel" style={{ padding: '0' }}>
+        {/* Table Header / Toolbar */}
+        <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--surface-border)' }}>
+          <div style={{ position: 'relative', width: '300px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre o categoría..." 
+              style={{ width: '100%', paddingLeft: '40px' }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button className="btn-primary" onClick={() => { resetForm(); setIsModalOpen(true); }} style={{ gap: '0.5rem' }}>
+            <Plus size={18} /> Agregar Insumo
+          </button>
+        </div>
+
+        {/* Responsive Table */}
         <div style={{ width: '100%', overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
-                <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Producto</th>
-                <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Categoría</th>
-                <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Stock Actual</th>
-                <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Mínimo</th>
-                <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Estado</th>
-                <th style={{ padding: '0.75rem 0', fontWeight: 500, textAlign: 'right' }}>Acciones</th>
+              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--surface-border)' }}>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>INSUMO</th>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>CATEGORÍA</th>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>STOCK ACTUAL</th>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>COSTO UNIT.</th>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>VALOR TOTAL</th>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>ESTADO</th>
+                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center' }}>Cargando datos...</td></tr>
-              ) : supplies.length === 0 ? (
-                <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center' }}>No hay insumos registrados.</td></tr>
-              ) : supplies.map((s) => {
-                const isLow = s.quantity <= s.min_quantity;
-                const isCritical = s.quantity <= (s.min_quantity / 2);
-                
+                <tr><td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Cargando inventario...</td></tr>
+              ) : filteredSupplies.length === 0 ? (
+                <tr><td colSpan="7" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No se encontraron insumos.</td></tr>
+              ) : filteredSupplies.map((item) => {
+                const isLow = item.quantity <= item.min_quantity;
+                const isCritical = item.quantity <= (item.min_quantity / 2);
+                const itemTotalValue = item.quantity * (item.cost || 0);
+
                 return (
-                  <tr key={s.id} style={{ borderBottom: '1px solid var(--surface-border)' }}>
-                    <td style={{ padding: '1rem 0', fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</td>
-                    <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>{s.category || 'N/A'}</td>
-                    <td style={{ padding: '1rem 0', fontWeight: 500 }}>{s.quantity} {s.unit}</td>
-                    <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>{s.min_quantity} {s.unit}</td>
-                    <td style={{ padding: '1rem 0' }}>
-                      <span style={{ 
-                        fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '4px', fontWeight: 600,
-                        backgroundColor: isCritical ? 'var(--danger-bg)' : isLow ? '#FFFBEB' : '#ECFDF5',
-                        color: isCritical ? 'var(--danger-color)' : isLow ? '#B45309' : '#059669'
-                      }}>
-                        {isCritical ? 'Crítico' : isLow ? 'Bajo' : 'Normal'}
+                  <tr key={item.id} style={{ borderBottom: '1px solid var(--surface-border)', transition: 'background 0.2s' }} className="table-row-hover">
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</div>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', background: '#F1F5F9', padding: '0.2rem 0.6rem', borderRadius: '50px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        {item.category || 'Sin Cat.'}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem 0', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => handleEdit(s)}
-                        style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', marginRight: '1rem' }}
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(s.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}
-                      >
-                        Eliminar
-                      </button>
+                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 500 }}>
+                      {item.quantity} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{item.unit}</span>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)' }}>
+                      ${(item.cost || 0).toFixed(2)}
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600, color: 'var(--primary-color)' }}>
+                      ${itemTotalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                      <div style={{ 
+                        display: 'flex', alignItems: 'center', gap: '0.4rem', 
+                        color: isCritical ? 'var(--danger-color)' : isLow ? '#CA8A04' : '#059669',
+                        fontSize: '0.85rem', fontWeight: 600
+                      }}>
+                        {isLow && <AlertTriangle size={14} />}
+                        {isCritical ? 'Crítico' : isLow ? 'Bajo' : 'Suficiente'}
+                      </div>
+                    </td>
+                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button onClick={() => openEdit(item)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Editar">
+                          <Edit2 size={16} />
+                        </button>
+                        <button onClick={() => deleteItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }} title="Eliminar">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -147,69 +226,68 @@ export default function Supplies() {
         </div>
       </div>
 
+      {/* Modern Modal for Create/Edit */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h2>{editingSupply ? 'Editar Insumo' : 'Nuevo Insumo'}</h2>
+              <h2>{editingItem ? 'Editar Insumo' : 'Nuevo Insumo'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="modal-close">×</button>
             </div>
-            
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Nombre del Insumo</label>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nombre del producto</label>
                 <input 
-                  type="text" 
-                  placeholder="Ej. Carne de Res, Tomate..." 
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  required
+                  type="text" placeholder="Ej. Pechuga de Pollo" 
+                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required 
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Cantidad Actual</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Cantidad Inicial</label>
                   <input 
-                    type="number" step="0.1"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({...formData, quantity: parseFloat(e.target.value)})}
-                    required
+                    type="number" step="0.01" 
+                    value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: parseFloat(e.target.value)})} required 
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Unidad</label>
-                  <select 
-                    style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--surface-border)' }}
-                    value={formData.unit}
-                    onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                  >
-                    <option value="kg">kilogramos (kg)</option>
-                    <option value="liters">litros (L)</option>
-                    <option value="pz">piezas (pz)</option>
-                    <option value="gr">gramos (gr)</option>
-                  </select>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Unidad</label>
+                    <select 
+                      style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--surface-border)', background: 'white' }}
+                      value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                    >
+                      <option value="kg">Kilogramos (kg)</option>
+                      <option value="l">Litros (l)</option>
+                      <option value="pz">Piezas (pz)</option>
+                      <option value="gr">Gramos (gr)</option>
+                    </select>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Mínimo (Alerta)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Costo por Unidad ($)</label>
                   <input 
-                    type="number" step="0.1"
-                    value={formData.min_quantity}
-                    onChange={(e) => setFormData({...formData, min_quantity: parseFloat(e.target.value)})}
-                    required
+                    type="number" step="0.01" placeholder="Ej. 120.00"
+                    value={formData.cost} onChange={(e) => setFormData({...formData, cost: parseFloat(e.target.value)})} required 
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Categoría</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Mínimo (Alerta)</label>
                   <input 
-                    type="text" placeholder="Ej. Proteínas"
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    type="number" 
+                    value={formData.min_quantity} onChange={(e) => setFormData({...formData, min_quantity: parseFloat(e.target.value)})} required 
                   />
                 </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Categoría</label>
+                <input 
+                  type="text" placeholder="Ej. Proteínas" 
+                  value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} 
+                />
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -217,13 +295,19 @@ export default function Supplies() {
                   Cancelar
                 </button>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }}>
-                  {editingSupply ? 'Actualizar' : 'Guardar Insumo'}
+                  {editingItem ? 'Guardar Cambios' : 'Registrar Insumo'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Hover Effects CSS */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .table-row-hover:hover { background-color: #F8FAFC; }
+      `}} />
+
     </div>
   );
 }

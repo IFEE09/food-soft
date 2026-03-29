@@ -6,6 +6,7 @@ class SupplyBase(BaseModel):
     name: Optional[str] = None
     quantity: Optional[float] = 0.0
     unit: Optional[str] = "pz"
+    cost: Optional[float] = 0.0
     min_quantity: Optional[float] = 5.0
     category: Optional[str] = None
 
