@@ -8,6 +8,7 @@ import CookDashboard from './pages/CookDashboard';
 import Supplies from './pages/Supplies';
 import Settings from './pages/Settings';
 import Register from './pages/Register';
+import Menu from './pages/Menu';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="kitchen" element={<KitchenDashboard />} />
           <Route path="supplies" element={<Supplies />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="menu" element={<Menu />} />
           <Route path="cook" element={<CookDashboard />} />
         </Route>
         

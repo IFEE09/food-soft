@@ -60,3 +60,25 @@ class OrderItem(Base):
     quantity = Column(Integer, default=1)
     
     order = relationship("Order", back_populates="items")
+
+class MenuItem(Base):
+    __tablename__ = "menu_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    price = Column(Float, default=0.0)
+    category = Column(String, index=True, nullable=True)
+    description = Column(String, nullable=True)
+    
+    recipe_items = relationship("MenuItemRecipe", back_populates="menu_item", cascade="all, delete-orphan")
+
+class MenuItemRecipe(Base):
+    __tablename__ = "menu_item_recipes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    menu_item_id = Column(Integer, ForeignKey("menu_items.id"))
+    supply_id = Column(Integer, ForeignKey("supplies.id"))
+    quantity = Column(Float, default=1.0) # Quantity of supply needed
+    
+    menu_item = relationship("MenuItem", back_populates="recipe_items")
+    supply = relationship("Supply")
