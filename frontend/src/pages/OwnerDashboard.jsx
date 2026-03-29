@@ -50,20 +50,21 @@ export default function OwnerDashboard() {
             <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>ID Orden</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Resumen</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Total</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Tiempo</th>
+                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Orden</th>
+                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Cliente</th>
+                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Entrada</th>
+                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Salida</th>
                   <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {/* Mock Data */}
                 {[
-                  { id: '#ORD-001', items: '2x Hamburguesa, 1x Refresco', total: '$24.50', time: 'Hace 5 min', status: 'Pendiente' },
-                  { id: '#ORD-002', items: '1x Ensalada César, 2x Limonada', total: '$18.00', time: 'Hace 12 min', status: 'Listo' },
-                  { id: '#ORD-003', items: '3x Tacos al Pastor', total: '$15.00', time: 'Hace 15 min', status: 'Entregado' },
-                  { id: '#ORD-004', items: '1x Pizza Peperoni, 1x Cerveza', total: '$22.00', time: 'Hace 22 min', status: 'Entregado' }
+                  { order: '#ORD-001', client: 'Carlos M.', timeIn: '18:00', timeOut: '-', status: 'Pendiente' },
+                  { order: '#ORD-002', client: 'Ana R.', timeIn: '18:15', timeOut: '18:35', status: 'Listo' },
+                  { order: '#ORD-003', client: 'Luis F.', timeIn: '17:50', timeOut: '18:20', status: 'Entregado' },
+                  { order: '#ORD-004', client: 'Jorge L.', timeIn: '18:30', timeOut: '-', status: 'Pendiente' },
+                  { order: '#ORD-005', client: 'Valeria S.', timeIn: '18:45', timeOut: '-', status: 'Pendiente' }
                 ].map((row, i) => {
                   let badgeBg = '#F1F5F9';
                   let badgeColor = 'var(--text-primary)';
@@ -81,10 +82,10 @@ export default function OwnerDashboard() {
 
                   return (
                     <tr key={i} style={{ borderBottom: '1px solid var(--surface-border)' }}>
-                      <td style={{ padding: '1rem 0', fontWeight: 500, color: 'var(--primary-color)' }}>{row.id}</td>
-                      <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>{row.items}</td>
-                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>{row.total}</td>
-                      <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>{row.time}</td>
+                      <td style={{ padding: '1rem 0', fontWeight: 500, color: 'var(--primary-color)' }}>{row.order}</td>
+                      <td style={{ padding: '1rem 0', fontWeight: 500, color: 'var(--text-secondary)' }}>{row.client}</td>
+                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>{row.timeIn}</td>
+                      <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>{row.timeOut}</td>
                       <td style={{ padding: '1rem 0' }}>
                         <span style={{ 
                           fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '4px', fontWeight: 600,
