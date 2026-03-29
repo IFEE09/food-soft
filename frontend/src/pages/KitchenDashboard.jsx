@@ -116,20 +116,31 @@ export default function KitchenDashboard() {
             </button>
           ))}
           
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            style={{
-              padding: '0.6rem',
-              borderRadius: '50%',
-              border: '1px dashed var(--primary-color)',
-              background: 'none',
-              color: 'var(--primary-color)',
-              cursor: 'pointer'
-            }}
-            title="Agregar Estación"
-          >
-            <Plus size={18} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                padding: '0.6rem',
+                borderRadius: '50%',
+                border: '1px dashed var(--primary-color)',
+                background: 'none',
+                color: 'var(--primary-color)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-bg)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+              title="Agregar Estación"
+            >
+              <Plus size={18} />
+            </button>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary-color)', opacity: 0.8 }}>
+              Agrega tus cocinas
+            </span>
+          </div>
         </div>
 
         <div style={{ 

@@ -19,13 +19,13 @@ export default function Menu() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Form State
+  // Form State - Using empty strings to show placeholders
   const [formData, setFormData] = useState({
     name: '',
-    price: 0,
-    category: 'Principal',
+    price: '',
+    category: 'Principales',
     description: '',
-    recipe_items: [] // { supply_id, quantity }
+    recipe_items: [] 
   });
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function Menu() {
   const addRecipeRow = () => {
     setFormData({
       ...formData,
-      recipe_items: [...formData.recipe_items, { supply_id: '', quantity: 1 }]
+      recipe_items: [...formData.recipe_items, { supply_id: '', quantity: '' }]
     });
   };
 
@@ -68,12 +68,14 @@ export default function Menu() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate recipe_items (no empty supply_ids)
-    const validReceta = formData.recipe_items.filter(r => r.supply_id !== '');
+    const validReceta = formData.recipe_items
+        .filter(r => r.supply_id !== '')
+        .map(r => ({ ...r, quantity: parseFloat(r.quantity) || 0 }));
     
     try {
       await apiClient.post('/menu/', {
         ...formData,
+        price: parseFloat(formData.price) || 0,
         recipe_items: validReceta
       });
       fetchData();
@@ -87,8 +89,8 @@ export default function Menu() {
   const resetForm = () => {
     setFormData({
       name: '',
-      price: 0,
-      category: 'Principal',
+      price: '',
+      category: 'Principales',
       description: '',
       recipe_items: []
     });
@@ -113,7 +115,6 @@ export default function Menu() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Search & Actions */}
       <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', width: '350px' }}>
           <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
@@ -128,7 +129,6 @@ export default function Menu() {
         </button>
       </div>
 
-      {/* Menu Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
         {isLoading ? (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Cargando carta...</div>
@@ -173,7 +173,6 @@ export default function Menu() {
         ))}
       </div>
 
-      {/* Modal - Modern Menu Creator */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '600px', width: '95%' }}>
@@ -195,7 +194,14 @@ export default function Menu() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Precio de Venta</label>
-                        <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})} required />
+                        <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600, opacity: 0.5 }}>$</span>
+                            <input 
+                                type="number" step="0.01" placeholder="0.00"
+                                style={{ paddingLeft: '28px' }}
+                                value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} required 
+                            />
+                        </div>
                     </div>
                </div>
 
@@ -211,11 +217,10 @@ export default function Menu() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Breve Descripción</label>
-                        <input type="text" placeholder="Ej. 200g de res angus..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+                        <input type="text" placeholder="Ej. Sabrosa hamburguesa..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
                     </div>
                </div>
 
-               {/* Recipe Management */}
                <div style={{ background: '#F8FAFC', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--surface-border)' }}>
                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -233,6 +238,7 @@ export default function Menu() {
                                 value={row.supply_id} 
                                 onChange={(e) => updateRecipeRow(idx, 'supply_id', parseInt(e.target.value))}
                                 style={{ background: 'white' }}
+                                required
                             >
                                 <option value="">Selecciona insumo...</option>
                                 {supplies.map(s => <option key={s.id} value={s.id}>{s.name} ({s.unit})</option>)}
@@ -240,10 +246,11 @@ export default function Menu() {
                             <input 
                                 type="number" 
                                 step="0.001" 
-                                placeholder="Cant." 
+                                placeholder="0.000" 
                                 value={row.quantity} 
-                                onChange={(e) => updateRecipeRow(idx, 'quantity', parseFloat(e.target.value))}
+                                onChange={(e) => updateRecipeRow(idx, 'quantity', e.target.value)}
                                 style={{ background: 'white' }}
+                                required
                             />
                             <button type="button" onClick={() => removeRecipeRow(idx)} style={{ color: 'var(--danger-color)', border: 'none', background: 'none', cursor: 'pointer' }}>
                                 <Trash2 size={16} />

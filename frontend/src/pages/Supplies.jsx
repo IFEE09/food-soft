@@ -21,14 +21,14 @@ export default function Supplies() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
-  // Form State
+  // Form State - Using empty strings for defaults to show placeholders
   const [formData, setFormData] = useState({
     name: '',
-    quantity: 0,
-    unit: 'pz',
-    cost: 0,
-    min_quantity: 5,
-    category: 'General'
+    quantity: '',
+    unit: 'kg',
+    cost: '',
+    min_quantity: '',
+    category: ''
   });
 
   useEffect(() => {
@@ -57,11 +57,18 @@ export default function Supplies() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const dataToSend = {
+        ...formData,
+        quantity: parseFloat(formData.quantity) || 0,
+        cost: parseFloat(formData.cost) || 0,
+        min_quantity: parseFloat(formData.min_quantity) || 0
+    };
+
     try {
       if (editingItem) {
-        await apiClient.put(`/supplies/${editingItem.id}`, formData);
+        await apiClient.put(`/supplies/${editingItem.id}`, dataToSend);
       } else {
-        await apiClient.post('/supplies/', formData);
+        await apiClient.post('/supplies/', dataToSend);
       }
       fetchSupplies();
       setIsModalOpen(false);
@@ -86,11 +93,11 @@ export default function Supplies() {
     setEditingItem(item);
     setFormData({
       name: item.name,
-      quantity: item.quantity,
+      quantity: item.quantity.toString(),
       unit: item.unit,
-      cost: item.cost || 0,
-      min_quantity: item.min_quantity,
-      category: item.category || 'General'
+      cost: item.cost ? item.cost.toString() : '',
+      min_quantity: item.min_quantity.toString(),
+      category: item.category || ''
     });
     setIsModalOpen(true);
   };
@@ -99,11 +106,11 @@ export default function Supplies() {
     setEditingItem(null);
     setFormData({
       name: '',
-      quantity: 0,
-      unit: 'pz',
-      cost: 0,
-      min_quantity: 5,
-      category: 'General'
+      quantity: '',
+      unit: 'kg',
+      cost: '',
+      min_quantity: '',
+      category: ''
     });
   };
 
@@ -114,7 +121,6 @@ export default function Supplies() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Top Value Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
         <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10B981' }}>
           <div style={{ padding: '0.75rem', borderRadius: '12px', background: '#ECFDF5', color: '#10B981' }}>
@@ -138,7 +144,6 @@ export default function Supplies() {
       </div>
 
       <div className="glass-panel" style={{ padding: '0' }}>
-        {/* Table Header / Toolbar */}
         <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--surface-border)' }}>
           <div style={{ position: 'relative', width: '300px' }}>
             <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
@@ -155,7 +160,6 @@ export default function Supplies() {
           </button>
         </div>
 
-        {/* Responsive Table */}
         <div style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
             <thead>
@@ -226,7 +230,6 @@ export default function Supplies() {
         </div>
       </div>
 
-      {/* Modern Modal for Create/Edit */}
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px' }}>
@@ -247,8 +250,8 @@ export default function Supplies() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Cantidad Inicial</label>
                   <input 
-                    type="number" step="0.001" 
-                    value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: parseFloat(e.target.value)})} required 
+                    type="number" step="0.001" placeholder="0.000"
+                    value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} required 
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -266,17 +269,21 @@ export default function Supplies() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Costo por Unidad ($)</label>
-                  <input 
-                    type="number" step="0.001" placeholder="Ej. 120.000"
-                    value={formData.cost} onChange={(e) => setFormData({...formData, cost: parseFloat(e.target.value)})} required 
-                  />
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Costo por Unidad</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600, opacity: 0.5 }}>$</span>
+                    <input 
+                        type="number" step="0.001" placeholder="0.000"
+                        style={{ paddingLeft: '28px' }}
+                        value={formData.cost} onChange={(e) => setFormData({...formData, cost: e.target.value})} required 
+                    />
+                  </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Mínimo (Alerta)</label>
                   <input 
-                    type="number" step="0.001"
-                    value={formData.min_quantity} onChange={(e) => setFormData({...formData, min_quantity: parseFloat(e.target.value)})} required 
+                    type="number" step="0.001" placeholder="0.000"
+                    value={formData.min_quantity} onChange={(e) => setFormData({...formData, min_quantity: e.target.value})} required 
                   />
                 </div>
               </div>
@@ -302,7 +309,6 @@ export default function Supplies() {
         </div>
       )}
 
-      {/* Hover Effects CSS */}
       <style dangerouslySetInnerHTML={{ __html: `
         .table-row-hover:hover { background-color: #F8FAFC; }
       `}} />
