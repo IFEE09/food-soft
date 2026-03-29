@@ -40,7 +40,7 @@ export default function DashboardLayout() {
       <aside className="sidebar">
         <div style={{ marginBottom: '2.5rem', paddingLeft: '0.5rem' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--primary-color)' }}>Food-Soft</h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Corporativo</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Management</span>
         </div>
         
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>

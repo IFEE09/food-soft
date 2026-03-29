@@ -97,7 +97,7 @@ export default function Login() {
             Food-Soft
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>
-            Plataforma Corporativa
+            Dark Kitchen Management
           </p>
         </div>
 

@@ -64,7 +64,7 @@ export default function Register() {
             <ChefHat size={28} />
           </div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>Crea tu Cuenta</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Comienza a gestionar tu Dark Kitchen</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Management para Dark Kitchens</p>
         </div>
 
         <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
