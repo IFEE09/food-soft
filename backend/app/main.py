@@ -12,36 +12,30 @@ from app.core import security
 
 # For simple MVP/Dev, we check for missing columns on startup
 def run_migrations():
-    with engine.connect() as conn:
-        print("Sincronizando esquema de base de datos...")
-        # Create Organizations table FIRST
-        models.Base.metadata.create_all(bind=engine)
-        
-        # Add organization_id to existing operational tables if they were created before multi-tenancy
-        tables = ["users", "supplies", "kitchens", "orders", "menu_items"]
-        for table in tables:
-            try:
-                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN organization_id INTEGER REFERENCES organizations(id)"))
-                print(f"Migración: Columna organization_id añadida a {table}")
-            except Exception:
-                # Column probably exists
-                pass
-        
-        # Add 'cost' to supplies if missing
+    print("Sincronizando esquema de base de datos...")
+    # Create Organizations table FIRST
+    models.Base.metadata.create_all(bind=engine)
+    
+    migrations = [
+        "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE supplies ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE kitchens ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE orders ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE menu_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0",
+        "ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE",
+    ]
+    
+    for query in migrations:
         try:
-            conn.execute(text("ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0"))
-            print("Migración: Columna 'cost' añadida a supplies")
+            with engine.connect() as conn:
+                conn.execute(text(query))
+                conn.commit()
+                column_name = query.split('ADD COLUMN ')[1].split(' ')[0]
+                print(f"Migración: Columna '{column_name}' añadida con éxito.")
         except Exception:
+            # El error es silencioso porque la columna probablemente ya existe (psycopg2.errors.DuplicateColumn)
             pass
-        
-        # Add api_key to organizations if it was missing 
-        try:
-            conn.execute(text("ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE"))
-            print("Migración: Columna api_key añadida a organizations")
-        except Exception:
-            pass
-            
-        conn.commit()
 
 # Create/Fix users and organizations
 def init_db_data():
