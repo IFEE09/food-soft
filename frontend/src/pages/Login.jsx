@@ -14,7 +14,6 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // Create OAuth2 compatible body
       const formData = new FormData();
       formData.append('username', email);
       formData.append('password', password);
@@ -25,12 +24,10 @@ export default function Login() {
 
       const { access_token, role, full_name } = response.data;
       
-      // Save session
       localStorage.setItem('token', access_token);
       localStorage.setItem('role', role);
       localStorage.setItem('userName', full_name);
 
-      // Redirect based on role
       if (role === 'owner') {
         navigate('/dashboard/owner');
       } else {
@@ -46,30 +43,32 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <div className="glass-card" style={{ maxWidth: '400px', width: '100%', padding: '2.5rem' }}>
-        <h1 className="title-premium" style={{ marginBottom: '0.5rem' }}>Food-Soft</h1>
-        <p style={{ textAlign: 'center', marginBottom: '2.5rem', opacity: 0.7, fontSize: '0.9rem' }}>
-          Sistema de Gestión Restaurantera
+      <div className="glass-card">
+        <h1 className="title-premium">Food-Soft</h1>
+        <p className="subtitle" style={{ textAlign: 'center', marginBottom: '2rem', opacity: 0.7 }}>
+          Sistema de Gestión Inteligente
         </p>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Correo Electrónico</label>
-            <input 
-              type="email" 
-              placeholder="ejemplo@foodsoft.com" 
+        <form onSubmit={handleLogin} className="login-form">
+          <div className="input-group">
+            <label htmlFor="email">Correo Electrónico</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="ejemplo@foodsoft.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Contraseña</label>
-            <div style={{ position: 'relative' }}>
-              <input 
+          <div className="input-group" style={{ position: 'relative' }}>
+            <label htmlFor="password">Contraseña</label>
+            <div className="password-wrapper" style={{ position: 'relative' }}>
+              <input
+                id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••" 
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -77,20 +76,18 @@ export default function Login() {
               />
               <button
                 type="button"
+                className="eye-toggle"
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
                   position: 'absolute',
-                  right: '12px',
+                  right: '10px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  cursor: 'pointer',
+                  color: 'white',
                   opacity: 0.6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '4px',
-                  color: 'white'
+                  cursor: 'pointer'
                 }}
               >
                 {showPassword ? (
@@ -111,7 +108,7 @@ export default function Login() {
           <button 
             type="submit" 
             className="btn-primary" 
-            style={{ marginTop: '0.8rem' }}
+            style={{ marginTop: '1rem' }}
             disabled={isLoading}
           >
             {isLoading ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
