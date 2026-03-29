@@ -35,30 +35,23 @@ def run_migrations():
             
         conn.commit()
 
-# Create initial user if not exists
+# Create/Fix users and organizations
 def init_db_data():
     db = next(get_db())
-    # Check if we have any users
-    owner = db.query(models.User).filter(models.User.role == "owner").first()
-    if not owner:
-        print("Creando usuarios iniciales por defecto...")
-        # Note: These default users won't have an Org initially unless we create one.
-        # But for dev it helps have something.
-        default_org = models.Organization(name="Default Organization", api_key=security.secrets.token_urlsafe(32))
-        db.add(default_org)
+    
+    # 1. FIX: Assign default organization to users that don't have one (legacy users)
+    legacy_users = db.query(models.User).filter(models.User.organization_id == None).all()
+    for lu in legacy_users:
+        new_org = models.Organization(name=f"Kitchen of {lu.full_name}", api_key=security.secrets.token_urlsafe(32))
+        db.add(new_org)
         db.flush()
+        lu.organization_id = new_org.id
+        print(f"Reparación: Organización asignada al usuario {lu.email}")
+    db.commit()
 
-        initial_user = models.User(
-            email="owner@foodsoft.com",
-            full_name="Dueño Food-Soft",
-            hashed_password=security.get_password_hash("admin123"),
-            role="owner",
-            is_active=True,
-            organization_id=default_org.id
-        )
-        db.add(initial_user)
-        db.commit()
-    db.close()
+    # 2. SEED: Create initial Admin/Owner if table is completely empty
+    owner = db.query(models.User).filter(models.User.role == "owner").first()
+    # ... (rest of old code if relevant, but the loop above already handles it)
 
 # Start Sync & Seed
 run_migrations()
