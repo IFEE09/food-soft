@@ -4,6 +4,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import OwnerDashboard from './pages/OwnerDashboard';
 import CookDashboard from './pages/CookDashboard';
+import Supplies from './pages/Supplies';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route path="owner" element={<OwnerDashboard />} />
+          <Route path="supplies" element={<Supplies />} />
           <Route path="cook" element={<CookDashboard />} />
         </Route>
         

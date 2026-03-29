@@ -1,6 +1,27 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/client';
 
 export default function OwnerDashboard() {
+  const navigate = useNavigate();
+  const [supplies, setSupplies] = useState([]);
+  const [isLoadingSupplies, setIsLoadingSupplies] = useState(true);
+
+  useEffect(() => {
+    fetchSupplies();
+  }, []);
+
+  const fetchSupplies = async () => {
+    try {
+      const res = await apiClient.get('/supplies/?limit=5');
+      setSupplies(res.data);
+    } catch (err) {
+      console.error("Error fetching supplies for dashboard:", err);
+    } finally {
+      setIsLoadingSupplies(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
@@ -114,33 +135,43 @@ export default function OwnerDashboard() {
             <div className="glass-panel" style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Stock de Cocina</h3>
-                <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}>Ver Todo</span>
+                <span 
+                  style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => navigate('/dashboard/supplies')}
+                >
+                  Gestionar
+                </span>
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {[
-                  { item: 'Carne de Res', qty: '12 kg', status: 'Normal', color: 'var(--text-secondary)' },
-                  { item: 'Tomate Saladet', qty: '3 kg', status: 'Bajo', color: '#CA8A04' },
-                  { item: 'Pan Brioche', qty: '8 pz', status: 'Crítico', color: 'var(--danger-color)' },
-                  { item: 'Aceite Vegetal', qty: '15 L', status: 'Normal', color: 'var(--text-secondary)' },
-                  { item: 'Queso Cheddar', qty: '2 kg', status: 'Bajo', color: '#CA8A04' }
-                ].map((stock, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>{stock.item}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>En existencia: {stock.qty}</div>
+                {isLoadingSupplies ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Cargando stock...</p>
+                ) : supplies.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No hay insumos. <span style={{ color: 'var(--primary-color)', cursor: 'pointer' }} onClick={() => navigate('/dashboard/supplies')}>Agregar</span></p>
+                ) : supplies.map((stock, i) => {
+                  const isLow = stock.quantity <= stock.min_quantity;
+                  const isCritical = stock.quantity <= (stock.min_quantity / 2);
+                  const statusColor = isCritical ? 'var(--danger-color)' : isLow ? '#CA8A04' : 'var(--text-secondary)';
+                  const statusLabel = isCritical ? 'Crítico' : isLow ? 'Bajo' : 'Normal';
+
+                  return (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>{stock.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>En existencia: {stock.quantity} {stock.unit}</div>
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.7rem', 
+                        fontWeight: 700, 
+                        color: statusColor,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em'
+                      }}>
+                        {statusLabel}
+                      </div>
                     </div>
-                    <div style={{ 
-                      fontSize: '0.7rem', 
-                      fontWeight: 700, 
-                      color: stock.color,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.02em'
-                    }}>
-                      {stock.status}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
         </div>

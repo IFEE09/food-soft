@@ -1,13 +1,16 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     navigate('/login');
   };
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <div className="dashboard-container">
@@ -19,8 +22,17 @@ export default function DashboardLayout() {
         </div>
         
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <div className="sidebar-link active">
+          <div 
+            className={`sidebar-link ${isActive('/dashboard/owner') ? 'active' : ''}`} 
+            onClick={() => navigate('/dashboard/owner')}
+          >
             Dashboard
+          </div>
+          <div 
+            className={`sidebar-link ${isActive('/dashboard/supplies') ? 'active' : ''}`} 
+            onClick={() => navigate('/dashboard/supplies')}
+          >
+            Stock de Cocina
           </div>
           <div className="sidebar-link">
             Órdenes
@@ -42,7 +54,7 @@ export default function DashboardLayout() {
             fontWeight: 500,
             fontSize: '0.9rem',
             transition: 'all 0.2s',
-            marginTop: '2rem' /* Adjusted for mobile view to not stick to bottom rigidly */
+            marginTop: '2rem'
           }}
           onMouseOver={(e) => {
             e.target.style.background = 'var(--danger-bg)';
@@ -63,8 +75,12 @@ export default function DashboardLayout() {
       <main className="main-content">
         <header className="dashboard-header">
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Dashboard General</h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Métricas al día de hoy</p>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                {isActive('/dashboard/supplies') ? 'Stock de Cocina' : 'Dashboard General'}
+              </h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                {isActive('/dashboard/supplies') ? 'Gestión de inventario e insumos' : 'Métricas al día de hoy'}
+              </p>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--surface-color)', padding: '0.5rem 1rem', borderRadius: '50px', border: '1px solid var(--surface-border)' }}>

@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.db.session import engine, get_db
 from app.db import models
-from app.api import auth
+from app.api import auth, supplies
 from app.core import security
 
 # For simple MVP, create tables automatically on startup.
@@ -59,6 +59,7 @@ app.add_middleware(
 
 # Register Routers
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(supplies.router, prefix=f"{settings.API_V1_STR}/supplies", tags=["supplies"])
 
 
 @app.get("/")
