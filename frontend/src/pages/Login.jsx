@@ -2,23 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 
-const FLOATING_FOODS = [
-  { icon: '🍕', size: '3rem', top: '15%', left: '10%', delay: '0s', duration: '6s' },
-  { icon: '🍔', size: '4rem', top: '70%', left: '15%', delay: '1s', duration: '8s' },
-  { icon: '🥗', size: '2.5rem', top: '25%', right: '15%', delay: '2s', duration: '7s' },
-  { icon: '☕️', size: '3.5rem', top: '65%', right: '10%', delay: '3s', duration: '9s' },
-  { icon: '🍣', size: '3rem', top: '10%', left: '45%', delay: '4s', duration: '7.5s' },
-  { icon: '🌮', size: '2.5rem', bottom: '15%', left: '45%', delay: '2.5s', duration: '6.5s' },
-  { icon: '🍩', size: '3.5rem', top: '45%', right: '5%', delay: '1.5s', duration: '8.5s' },
-  { icon: '🥑', size: '2rem', top: '50%', left: '5%', delay: '0.5s', duration: '7s' }
-];
-
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null); // Nuevo estado para errores
+  const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -48,12 +37,11 @@ export default function Login() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      // En lugar de alert(), usamos nuestro estado
       const detail = error.response?.data?.detail;
       if (error.response?.status === 404) {
-        setErrorMsg("Error de conexión: Revisa que tu VITE_API_URL en Railway termine en /api/v1");
+        setErrorMsg("Error de conexión: Revisa que tu servidor esté respondiendo y en línea.");
       } else {
-        setErrorMsg(detail || 'Credenciales incorrectas o error de servidor');
+        setErrorMsg(detail || 'Credenciales incorrectas o error de servidor.');
       }
     } finally {
       setIsLoading(false);
@@ -61,55 +49,18 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container" style={{ position: 'relative', overflow: 'hidden' }}>
-      
-      {/* Estilos Inline para Animaciones de Comida Flotante */}
-      <style>{`
-        @keyframes floatFood {
-          0% { transform: translateY(0px) rotate(0deg); opacity: 0.05; }
-          50% { transform: translateY(-20px) rotate(10deg); opacity: 0.15; }
-          100% { transform: translateY(0px) rotate(0deg); opacity: 0.05; }
-        }
-        .floating-food {
-          position: absolute;
-          user-select: none;
-          pointer-events: none;
-          animation-name: floatFood;
-          animation-iteration-count: infinite;
-          animation-timing-function: ease-in-out;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-        }
-      `}</style>
-
-      {/* Figuras de Comida de Fondo */}
-      {FLOATING_FOODS.map((food, idx) => (
-        <div 
-          key={idx} 
-          className="floating-food"
-          style={{
-            fontSize: food.size,
-            top: food.top,
-            bottom: food.bottom,
-            left: food.left,
-            right: food.right,
-            animationDuration: food.duration,
-            animationDelay: food.delay,
-            zIndex: 1
-          }}
-        >
-          {food.icon}
+    <div className="login-container">
+      <div className="glass-card" style={{ padding: '2.5rem 2rem', width: '100%', maxWidth: '380px', margin: 'auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>Food-Soft</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            Accede a tu cuenta corporativa
+          </p>
         </div>
-      ))}
 
-      <div className="glass-card" style={{ zIndex: 10 }}>
-        <h1 className="title-premium" style={{ marginBottom: '0.2rem' }}>Food-Soft</h1>
-        <p style={{ textAlign: 'center', marginBottom: '1rem', opacity: 0.7, fontSize: '0.9rem' }}>
-          Sistema de Gestión Restaurantera
-        </p>
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Correo Electrónico</label>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-primary)' }}>Correo Electrónico</label>
             <input 
               type="email" 
               placeholder="ejemplo@foodsoft.com" 
@@ -119,8 +70,8 @@ export default function Login() {
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Contraseña</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-primary)' }}>Contraseña</label>
             <div style={{ position: 'relative' }}>
               <input 
                 type={showPassword ? 'text' : 'password'}
@@ -141,20 +92,19 @@ export default function Login() {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  opacity: 0.6,
+                  color: 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '4px',
-                  color: 'white'
+                  padding: '4px'
                 }}
               >
                 {showPassword ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                     <line x1="1" y1="1" x2="23" y2="23"></line>
                   </svg>
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                     <circle cx="12" cy="12" r="3"></circle>
                   </svg>
@@ -166,29 +116,28 @@ export default function Login() {
           <button 
             type="submit" 
             className="btn-primary" 
-            style={{ marginTop: '0.8rem' }}
+            style={{ marginTop: '0.5rem' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
+            {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
           </button>
         </form>
       </div>
 
-      {/* Alert Modal Premium */}
       {errorMsg && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ textAlign: 'center' }}>
+          <div className="modal-content">
             <div className="modal-header">
               <h2>Aviso del Sistema</h2>
               <button onClick={() => setErrorMsg(null)} className="modal-close">×</button>
             </div>
-            <div style={{ marginBottom: '1.5rem', opacity: 0.9 }}>
+            <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
               {errorMsg}
             </div>
             <button 
               className="btn-primary" 
               onClick={() => setErrorMsg(null)}
-              style={{ padding: '0.6rem 2rem', fontSize: '0.9rem' }}
+              style={{ width: '100%' }}
             >
               Entendido
             </button>

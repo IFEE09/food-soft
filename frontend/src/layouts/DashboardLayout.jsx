@@ -10,24 +10,33 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <aside className="glass-panel" style={{ 
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
+      {/* Sidebar - Clean, thin borders, no glass effect */}
+      <aside style={{ 
         width: '260px', 
-        padding: '2rem',
-        margin: '1rem',
+        padding: '2rem 1.5rem',
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: '24px'
+        backgroundColor: 'var(--surface-color)',
+        borderRight: '1px solid var(--surface-border)'
       }}>
-        <h2 className="text-gradient" style={{ marginBottom: '2rem', fontSize: '1.5rem', fontWeight: 700 }}>Food-Soft</h2>
+        <div style={{ marginBottom: '2.5rem', paddingLeft: '0.5rem' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--primary-color)' }}>Food-Soft</h2>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Corporativo</span>
+        </div>
         
-        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          <div style={{ padding: '0.8rem 1rem', cursor: 'pointer', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', fontWeight: 500 }}>
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <div className="sidebar-link active">
             Dashboard
           </div>
-          <div style={{ padding: '0.8rem 1rem', cursor: 'pointer', borderRadius: '12px', opacity: 0.7 }}>
-            Ordenes
+          <div className="sidebar-link">
+            Reservaciones
+          </div>
+          <div className="sidebar-link">
+            Órdenes
+          </div>
+          <div className="sidebar-link">
+            Reportes
           </div>
         </nav>
 
@@ -35,44 +44,62 @@ export default function DashboardLayout() {
           onClick={handleLogout}
           style={{
             background: 'transparent',
-            border: '1px solid rgba(239, 68, 68, 0.4)',
-            color: 'var(--danger-color)',
-            padding: '0.8rem',
-            borderRadius: '12px',
+            border: '1px solid var(--surface-border)',
+            color: 'var(--text-primary)',
+            padding: '0.75rem',
+            borderRadius: '6px',
             cursor: 'pointer',
-            fontWeight: 600,
-            transition: 'all 0.2s'
+            fontWeight: 500,
+            fontSize: '0.9rem',
+            transition: 'all 0.2s',
+            marginTop: 'auto'
           }}
-          onMouseOver={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
-          onMouseOut={(e) => e.target.style.background = 'transparent'}
+          onMouseOver={(e) => {
+            e.target.style.background = 'var(--danger-bg)';
+            e.target.style.color = 'var(--danger-color)';
+            e.target.style.borderColor = 'var(--danger-border)';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.background = 'transparent';
+            e.target.style.color = 'var(--text-primary)';
+            e.target.style.borderColor = 'var(--surface-border)';
+          }}
         >
           Cerrar Sesión
         </button>
       </aside>
 
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '1rem 2rem 1rem 0' }}>
+      {/* Main Content Area */}
+      <main style={{ flex: 1, padding: '2rem 3rem', display: 'flex', flexDirection: 'column' }}>
         <header style={{ 
             display: 'flex', 
-            justifyContent: 'flex-end', 
+            justifyContent: 'space-between', 
             alignItems: 'center',
-            marginBottom: '2rem',
-            height: '60px'
+            marginBottom: '2.5rem'
          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Pos Dashboard</span>
+            <div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Dashboard General</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Métricas al día de hoy</p>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--surface-color)', padding: '0.5rem 1rem', borderRadius: '50px', border: '1px solid var(--surface-border)' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>Admin (James L.)</span>
                 <div style={{ 
-                    width: '40px', height: '40px', 
+                    width: '32px', height: '32px', 
                     borderRadius: '50%', 
-                    background: 'var(--primary-color)',
+                    background: '#F1F5F9',
+                    color: 'var(--text-primary)',
                     display: 'flex', justifyContent: 'center', alignItems: 'center',
-                    fontWeight: 700
-                 }}>UI</div>
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    border: '1px solid var(--surface-border)'
+                 }}>JL</div>
             </div>
         </header>
 
-        {/* This renders the actual dashboard page (Owner or Cook) */}
-        <Outlet />
+        <div style={{ flex: 1 }}>
+          <Outlet />
+        </div>
       </main>
     </div>
   );
