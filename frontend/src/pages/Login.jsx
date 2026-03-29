@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
+import { 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  LogIn, 
+  AlertCircle, 
+  ChefHat,
+  ArrowRight
+} from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -50,40 +59,76 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="glass-card" style={{ padding: '2.5rem 2rem', width: '100%', maxWidth: '380px', margin: 'auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>Food-Soft</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Accede a tu cuenta corporativa
+    <div className="login-container" style={{ 
+      background: 'radial-gradient(circle at top right, #f1f5f9, #f8fafc)',
+    }}>
+      <div className="glass-card" style={{ 
+        padding: '3rem 2.5rem', 
+        width: '100%', 
+        maxWidth: '420px', 
+        margin: 'auto',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Subtle decorative element */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '-20px', 
+          right: '-20px', 
+          opacity: 0.03, 
+          transform: 'rotate(15deg)' 
+        }}>
+          <ChefHat size={150} />
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem', position: 'relative' }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            padding: '12px', 
+            borderRadius: '16px', 
+            background: 'var(--primary-color)', 
+            color: 'white',
+            marginBottom: '1rem'
+          }}>
+            <ChefHat size={28} />
+          </div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>
+            Food-Soft
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>
+            Plataforma Corporativa
           </p>
         </div>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-primary)' }}>Correo Electrónico</label>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Correo Electrónico
+            </label>
             <div style={{ position: 'relative' }}>
               <Mail 
                 size={18} 
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} 
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', opacity: 0.7 }} 
               />
               <input 
                 type="email" 
-                placeholder="ejemplo@foodsoft.com" 
+                placeholder="usuario@foodsoft.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ width: '100%', paddingLeft: '40px' }}
+                style={{ width: '100%', paddingLeft: '44px', height: '48px', fontSize: '0.9rem' }}
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-primary)' }}>Contraseña</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Contraseña
+            </label>
             <div style={{ position: 'relative' }}>
               <Lock 
                 size={18} 
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} 
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', opacity: 0.7 }} 
               />
               <input 
                 type={showPassword ? 'text' : 'password'}
@@ -91,7 +136,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ width: '100%', paddingLeft: '40px', paddingRight: '45px' }}
+                style={{ width: '100%', paddingLeft: '44px', paddingRight: '48px', height: '48px', fontSize: '0.9rem' }}
               />
               <button
                 type="button"
@@ -107,7 +152,8 @@ export default function Login() {
                   color: 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '4px'
+                  padding: '6px',
+                  opacity: 0.6
                 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -118,35 +164,48 @@ export default function Login() {
           <button 
             type="submit" 
             className="btn-primary" 
-            style={{ marginTop: '0.5rem', gap: '0.5rem' }}
+            style={{ 
+              marginTop: '1rem', 
+              gap: '0.75rem', 
+              height: '52px', 
+              fontSize: '1rem', 
+              boxShadow: '0 4px 6px -1px rgba(15, 23, 42, 0.1)' 
+            }}
             disabled={isLoading}
           >
             {isLoading ? 'Iniciando sesión...' : (
               <>
-                <LogIn size={18} /> Ingresar
+                Ingresar <ArrowRight size={18} />
               </>
             )}
           </button>
         </form>
+
+        <div style={{ marginTop: '2.5rem', textAlign: 'center', paddingTop: '1.5rem', borderTop: '1px solid var(--surface-border)' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                &copy; 2026 Food-Soft Group. Todos los derechos reservados.
+            </p>
+        </div>
       </div>
 
       {errorMsg && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header" style={{ color: 'var(--danger-color)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <AlertCircle size={20} />
-                <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>Error de Sistema</h2>
+          <div className="modal-content" style={{ borderRadius: '12px', padding: '2.5rem' }}>
+            <div className="modal-header" style={{ color: 'var(--danger-color)', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'var(--danger-bg)', padding: '8px', borderRadius: '10px' }}>
+                    <AlertCircle size={24} />
+                </div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Error de Acceso</h2>
               </div>
-              <button onClick={() => setErrorMsg(null)} className="modal-close">×</button>
             </div>
-            <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+            <div style={{ marginBottom: '2rem', color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>
               {errorMsg}
             </div>
             <button 
               className="btn-primary" 
               onClick={() => setErrorMsg(null)}
-              style={{ width: '100%' }}
+              style={{ width: '100%', height: '48px' }}
             >
               Entendido
             </button>
