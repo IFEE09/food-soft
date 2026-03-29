@@ -5,6 +5,7 @@ import { apiClient } from '../api/client';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -44,44 +45,79 @@ export default function Login() {
   };
 
   return (
-    <>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Food-Soft</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Sistema Inteligente POS</p>
+    <div className="login-container">
+      <div className="glass-card" style={{ maxWidth: '400px', width: '100%', padding: '2.5rem' }}>
+        <h1 className="title-premium" style={{ marginBottom: '0.5rem' }}>Food-Soft</h1>
+        <p style={{ textAlign: 'center', marginBottom: '2.5rem', opacity: 0.7, fontSize: '0.9rem' }}>
+          Sistema de Gestión Restaurantera
+        </p>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Correo Electrónico</label>
+            <input 
+              type="email" 
+              placeholder="ejemplo@foodsoft.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Contraseña</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: '100%', paddingRight: '45px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: 0.6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px',
+                  color: 'white'
+                }}
+              >
+                {showPassword ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            style={{ marginTop: '0.8rem' }}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
+          </button>
+        </form>
       </div>
-
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Correo Electrónico</label>
-          <input 
-            type="email" 
-            placeholder="dueño@restaurante.com" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Contraseña</label>
-          <input 
-            type="password" 
-            placeholder="••••••••" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-
-        <button 
-          type="submit" 
-          className="btn-primary" 
-          style={{ marginTop: '1rem' }}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
-        </button>
-      </form>
-    </>
+    </div>
   );
 }
