@@ -193,7 +193,7 @@ export default function Supplies() {
                       {item.quantity} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{item.unit}</span>
                     </td>
                     <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)' }}>
-                      ${(item.cost || 0).toFixed(2)}
+                      ${(item.cost || 0).toFixed(3)}
                     </td>
                     <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600, color: 'var(--primary-color)' }}>
                       ${itemTotalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
@@ -247,14 +247,13 @@ export default function Supplies() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Cantidad Inicial</label>
                   <input 
-                    type="number" step="0.01" 
+                    type="number" step="0.001" 
                     value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: parseFloat(e.target.value)})} required 
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Unidad</label>
                     <select 
-                      style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--surface-border)', background: 'white' }}
                       value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})}
                     >
                       <option value="kg">Kilogramos (kg)</option>
@@ -269,14 +268,14 @@ export default function Supplies() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Costo por Unidad ($)</label>
                   <input 
-                    type="number" step="0.01" placeholder="Ej. 120.00"
+                    type="number" step="0.001" placeholder="Ej. 120.000"
                     value={formData.cost} onChange={(e) => setFormData({...formData, cost: parseFloat(e.target.value)})} required 
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Mínimo (Alerta)</label>
                   <input 
-                    type="number" 
+                    type="number" step="0.001"
                     value={formData.min_quantity} onChange={(e) => setFormData({...formData, min_quantity: parseFloat(e.target.value)})} required 
                   />
                 </div>
