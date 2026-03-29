@@ -18,11 +18,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null); // Nuevo estado para errores
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMsg(null);
 
     try {
       const formData = new FormData();
@@ -46,7 +48,13 @@ export default function Login() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert(error.response?.data?.detail || 'Error al iniciar sesión');
+      // En lugar de alert(), usamos nuestro estado
+      const detail = error.response?.data?.detail;
+      if (error.response?.status === 404) {
+        setErrorMsg("Error de conexión: Revisa que tu VITE_API_URL en Railway termine en /api/v1");
+      } else {
+        setErrorMsg(detail || 'Credenciales incorrectas o error de servidor');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -165,6 +173,28 @@ export default function Login() {
           </button>
         </form>
       </div>
+
+      {/* Alert Modal Premium */}
+      {errorMsg && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ textAlign: 'center' }}>
+            <div className="modal-header">
+              <h2>Aviso del Sistema</h2>
+              <button onClick={() => setErrorMsg(null)} className="modal-close">×</button>
+            </div>
+            <div style={{ marginBottom: '1.5rem', opacity: 0.9 }}>
+              {errorMsg}
+            </div>
+            <button 
+              className="btn-primary" 
+              onClick={() => setErrorMsg(null)}
+              style={{ padding: '0.6rem 2rem', fontSize: '0.9rem' }}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
