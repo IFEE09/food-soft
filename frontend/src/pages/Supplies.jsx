@@ -74,10 +74,11 @@ export default function Supplies() {
         setIsModalOpen(false);
         resetForm();
     } catch (err) {
-        console.error("Error saving supply:", err);
+        console.error("DEBUG - Error completo de Axios:", err);
         const errorDetail = err.response?.data?.detail;
-        const errorMessage = typeof errorDetail === 'string' ? errorDetail : (errorDetail?.[0]?.msg || "No se pudo guardar el insumo.");
-        alert(`Error al registrar insumo: ${errorMessage}. Intenta cerrar sesión y volver a entrar.`);
+        const status = err.response?.status;
+        const errorMessage = typeof errorDetail === 'string' ? errorDetail : (JSON.stringify(errorDetail) || "Desconocido");
+        alert(`FALLO CRÍTICO (Status: ${status}):\nError: ${errorMessage}\n\nPor favor, intenta CERRAR SESIÓN, refrescar con CMD+SHIFT+R y volver a entrar.`);
     }
   };
 
