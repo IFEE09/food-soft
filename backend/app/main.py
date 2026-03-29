@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+import secrets
 from app.core.config import settings
 from app.db.session import engine, get_db
 from app.db import models
@@ -42,7 +43,7 @@ def init_db_data():
     # 1. FIX: Assign default organization to users that don't have one (legacy users)
     legacy_users = db.query(models.User).filter(models.User.organization_id == None).all()
     for lu in legacy_users:
-        new_org = models.Organization(name=f"Kitchen of {lu.full_name}", api_key=security.secrets.token_urlsafe(32))
+        new_org = models.Organization(name=f"Kitchen of {lu.full_name}", api_key=secrets.token_urlsafe(32))
         db.add(new_org)
         db.flush()
         lu.organization_id = new_org.id
