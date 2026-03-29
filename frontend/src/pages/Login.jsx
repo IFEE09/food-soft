@@ -2,6 +2,17 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 
+const FLOATING_FOODS = [
+  { icon: '🍕', size: '3rem', top: '15%', left: '10%', delay: '0s', duration: '6s' },
+  { icon: '🍔', size: '4rem', top: '70%', left: '15%', delay: '1s', duration: '8s' },
+  { icon: '🥗', size: '2.5rem', top: '25%', right: '15%', delay: '2s', duration: '7s' },
+  { icon: '☕️', size: '3.5rem', top: '65%', right: '10%', delay: '3s', duration: '9s' },
+  { icon: '🍣', size: '3rem', top: '10%', left: '45%', delay: '4s', duration: '7.5s' },
+  { icon: '🌮', size: '2.5rem', bottom: '15%', left: '45%', delay: '2.5s', duration: '6.5s' },
+  { icon: '🍩', size: '3.5rem', top: '45%', right: '5%', delay: '1.5s', duration: '8.5s' },
+  { icon: '🥑', size: '2rem', top: '50%', left: '5%', delay: '0.5s', duration: '7s' }
+];
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,33 +53,70 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="glass-card">
-        <h1 className="title-premium">Food-Soft</h1>
-        <p className="subtitle" style={{ textAlign: 'center', marginBottom: '2rem', opacity: 0.7 }}>
-          Sistema de Gestión Inteligente
+    <div className="login-container" style={{ position: 'relative', overflow: 'hidden' }}>
+      
+      {/* Estilos Inline para Animaciones de Comida Flotante */}
+      <style>{`
+        @keyframes floatFood {
+          0% { transform: translateY(0px) rotate(0deg); opacity: 0.05; }
+          50% { transform: translateY(-20px) rotate(10deg); opacity: 0.15; }
+          100% { transform: translateY(0px) rotate(0deg); opacity: 0.05; }
+        }
+        .floating-food {
+          position: absolute;
+          user-select: none;
+          pointer-events: none;
+          animation-name: floatFood;
+          animation-iteration-count: infinite;
+          animation-timing-function: ease-in-out;
+          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+      `}</style>
+
+      {/* Figuras de Comida de Fondo */}
+      {FLOATING_FOODS.map((food, idx) => (
+        <div 
+          key={idx} 
+          className="floating-food"
+          style={{
+            fontSize: food.size,
+            top: food.top,
+            bottom: food.bottom,
+            left: food.left,
+            right: food.right,
+            animationDuration: food.duration,
+            animationDelay: food.delay,
+            zIndex: 1
+          }}
+        >
+          {food.icon}
+        </div>
+      ))}
+
+      <div className="glass-card" style={{ zIndex: 10 }}>
+        <h1 className="title-premium" style={{ marginBottom: '0.5rem' }}>Food-Soft</h1>
+        <p style={{ textAlign: 'center', marginBottom: '2.5rem', opacity: 0.7, fontSize: '0.9rem' }}>
+          Sistema de Gestión Restaurantera
         </p>
 
-        <form onSubmit={handleLogin} className="login-form">
-          <div className="input-group">
-            <label htmlFor="email">Correo Electrónico</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="ejemplo@foodsoft.com"
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Correo Electrónico</label>
+            <input 
+              type="email" 
+              placeholder="ejemplo@foodsoft.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
-          <div className="input-group" style={{ position: 'relative' }}>
-            <label htmlFor="password">Contraseña</label>
-            <div className="password-wrapper" style={{ position: 'relative' }}>
-              <input
-                id="password"
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Contraseña</label>
+            <div style={{ position: 'relative' }}>
+              <input 
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -76,18 +124,20 @@ export default function Login() {
               />
               <button
                 type="button"
-                className="eye-toggle"
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
                   position: 'absolute',
-                  right: '10px',
+                  right: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: 'white',
+                  cursor: 'pointer',
                   opacity: 0.6,
-                  cursor: 'pointer'
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px',
+                  color: 'white'
                 }}
               >
                 {showPassword ? (
@@ -108,7 +158,7 @@ export default function Login() {
           <button 
             type="submit" 
             className="btn-primary" 
-            style={{ marginTop: '1rem' }}
+            style={{ marginTop: '0.8rem' }}
             disabled={isLoading}
           >
             {isLoading ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
