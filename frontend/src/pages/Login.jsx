@@ -1,21 +1,45 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login for now - later replace with real API call
-    // apiClient.post('/auth/login', { email, password })
-    if (email.includes('owner')) {
-      localStorage.setItem('role', 'owner');
-      navigate('/dashboard/owner');
-    } else {
-      localStorage.setItem('role', 'cook');
-      navigate('/dashboard/cook');
+    setIsLoading(true);
+
+    try {
+      // Create OAuth2 compatible body
+      const formData = new FormData();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const response = await apiClient.post('/auth/login', formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      const { access_token, role, full_name } = response.data;
+      
+      // Save session
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('role', role);
+      localStorage.setItem('userName', full_name);
+
+      // Redirect based on role
+      if (role === 'owner') {
+        navigate('/dashboard/owner');
+      } else {
+        navigate('/dashboard/cook');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert(error.response?.data?.detail || 'Error al iniciar sesión');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,8 +73,13 @@ export default function Login() {
           />
         </div>
 
-        <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }}>
-          Ingresar al Sistema
+        <button 
+          type="submit" 
+          className="btn-primary" 
+          style={{ marginTop: '1rem' }}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
         </button>
       </form>
     </>
