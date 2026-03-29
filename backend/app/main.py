@@ -27,6 +27,13 @@ def run_migrations():
                 # Column probably exists
                 pass
         
+        # Add 'cost' to supplies if missing
+        try:
+            conn.execute(text("ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0"))
+            print("Migración: Columna 'cost' añadida a supplies")
+        except Exception:
+            pass
+        
         # Add api_key to organizations if it was missing 
         try:
             conn.execute(text("ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE"))
