@@ -112,6 +112,26 @@ input:focus {
   animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+  margin-top: 2rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.input-group label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-left: 0.4rem;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
