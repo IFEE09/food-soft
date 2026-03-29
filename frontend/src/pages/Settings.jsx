@@ -8,13 +8,18 @@ import {
   ShieldCheck, 
   Building2,
   Trash2,
-  Plus
+  Plus,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile'); // profile, security, stations
   const [profileData, setProfileData] = useState({ full_name: '', email: '' });
   const [passData, setPassData] = useState({ current_password: '', new_password: '', confirm: '' });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [kitchens, setKitchens] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
@@ -42,7 +47,7 @@ export default function Settings() {
     try {
       await apiClient.put('/users/me', { full_name: profileData.full_name, email: profileData.email });
       setMsg({ text: 'Perfil actualizado correctamente.', type: 'success' });
-      localStorage.setItem('userName', profileData.full_name); // Update sidebar sync
+      localStorage.setItem('userName', profileData.full_name); 
     } catch (err) {
       setMsg({ text: 'Error al actualizar perfil.', type: 'error' });
     } finally {
@@ -147,7 +152,7 @@ export default function Settings() {
         {activeTab === 'profile' && (
           <form onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '500px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 600 }}><Building2 size={16} inline /> Nombre del Negocio / Propietario</label>
+              <label style={{ fontSize: '0.9rem', fontWeight: 600 }}><Building2 size={16} /> Nombre del Negocio / Propietario</label>
               <input 
                 type="text" value={profileData.full_name}
                 onChange={(e) => setProfileData({...profileData, full_name: e.target.value})}
@@ -172,27 +177,57 @@ export default function Settings() {
           <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '500px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Contraseña Actual</label>
-              <input 
-                type="password" value={passData.current_password}
-                onChange={(e) => setPassData({...passData, current_password: e.target.value})}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input 
+                    type={showCurrent ? 'text' : 'password'} value={passData.current_password}
+                    onChange={(e) => setPassData({...passData, current_password: e.target.value})}
+                    required
+                    style={{ width: '100%', paddingRight: '45px' }}
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+                >
+                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Nueva Contraseña</label>
-              <input 
-                type="password" value={passData.new_password}
-                onChange={(e) => setPassData({...passData, new_password: e.target.value})}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input 
+                    type={showNew ? 'text' : 'password'} value={passData.new_password}
+                    onChange={(e) => setPassData({...passData, new_password: e.target.value})}
+                    required
+                    style={{ width: '100%', paddingRight: '45px' }}
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowNew(!showNew)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+                >
+                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 600 }}>Confirmar Nueva Contraseña</label>
-              <input 
-                type="password" value={passData.confirm}
-                onChange={(e) => setPassData({...passData, confirm: e.target.value})}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input 
+                    type={showConfirm ? 'text' : 'password'} value={passData.confirm}
+                    onChange={(e) => setPassData({...passData, confirm: e.target.value})}
+                    required
+                    style={{ width: '100%', paddingRight: '45px' }}
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+                >
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn-primary" disabled={isUpdating} style={{ width: 'fit-content' }}>
               <Lock size={18} /> {isUpdating ? 'Actualizando...' : 'Cambiar Contraseña'}
@@ -236,16 +271,6 @@ export default function Settings() {
                    </div>
                 </div>
               ))}
-              <div 
-                style={{ 
-                    padding: '1.25rem', border: '1px dashed var(--surface-border)', borderRadius: '10px',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)',
-                    cursor: 'pointer'
-                }}
-                onClick={() => setActiveTab('stations')} // Just for UI now
-              >
-                <Plus size={18} /> Agregar Estación
-              </div>
             </div>
           </div>
         )}

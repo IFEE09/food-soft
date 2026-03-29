@@ -1,18 +1,37 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import { User, Mail, Lock, ChefHat, ArrowLeft, ArrowRight } from 'lucide-react';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  ChefHat, 
+  ArrowLeft, 
+  ArrowRight, 
+  ShieldCheck,
+  Eye,
+  EyeOff 
+} from 'lucide-react';
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setErrorMsg("Las contraseñas no coinciden. Por favor, verifica.");
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg(null);
 
@@ -23,7 +42,6 @@ export default function Register() {
         password,
         role: 'owner'
       });
-      // Auto-login or redirect to login? Let's redirect to login for clarity
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
@@ -65,7 +83,29 @@ export default function Register() {
             <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Contraseña</label>
             <div style={{ position: 'relative' }}>
               <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', height: '48px' }} />
+              <input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px' }} />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Confirmar Contraseña</label>
+            <div style={{ position: 'relative' }}>
+              <ShieldCheck size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type={showConfirm ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px' }} />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
