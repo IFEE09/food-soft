@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -33,7 +34,7 @@ export default function Login() {
       if (role === 'owner') {
         navigate('/dashboard/owner');
       } else {
-        navigate('/dashboard/cook');
+        navigate('/dashboard/kitchen');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -61,25 +62,36 @@ export default function Login() {
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-primary)' }}>Correo Electrónico</label>
-            <input 
-              type="email" 
-              placeholder="ejemplo@foodsoft.com" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <Mail 
+                size={18} 
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} 
+              />
+              <input 
+                type="email" 
+                placeholder="ejemplo@foodsoft.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{ width: '100%', paddingLeft: '40px' }}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-primary)' }}>Contraseña</label>
             <div style={{ position: 'relative' }}>
+              <Lock 
+                size={18} 
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} 
+              />
               <input 
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ width: '100%', paddingRight: '45px' }}
+                style={{ width: '100%', paddingLeft: '40px', paddingRight: '45px' }}
               />
               <button
                 type="button"
@@ -98,17 +110,7 @@ export default function Login() {
                   padding: '4px'
                 }}
               >
-                {showPassword ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                  </svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
@@ -116,10 +118,14 @@ export default function Login() {
           <button 
             type="submit" 
             className="btn-primary" 
-            style={{ marginTop: '0.5rem' }}
+            style={{ marginTop: '0.5rem', gap: '0.5rem' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+            {isLoading ? 'Iniciando sesión...' : (
+              <>
+                <LogIn size={18} /> Ingresar
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -127,11 +133,14 @@ export default function Login() {
       {errorMsg && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <div className="modal-header">
-              <h2>Aviso del Sistema</h2>
+            <div className="modal-header" style={{ color: 'var(--danger-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={20} />
+                <h2 style={{ fontSize: '1rem', fontWeight: 600 }}>Error de Sistema</h2>
+              </div>
               <button onClick={() => setErrorMsg(null)} className="modal-close">×</button>
             </div>
-            <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+            <div style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
               {errorMsg}
             </div>
             <button 

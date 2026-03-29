@@ -3,6 +3,7 @@ import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import OwnerDashboard from './pages/OwnerDashboard';
+import KitchenDashboard from './pages/KitchenDashboard';
 import CookDashboard from './pages/CookDashboard';
 import Supplies from './pages/Supplies';
 
@@ -20,6 +21,7 @@ function App() {
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route path="owner" element={<OwnerDashboard />} />
+          <Route path="kitchen" element={<KitchenDashboard />} />
           <Route path="supplies" element={<Supplies />} />
           <Route path="cook" element={<CookDashboard />} />
         </Route>

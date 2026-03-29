@@ -1,4 +1,12 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  ChefHat, 
+  Package, 
+  ClipboardList, 
+  BarChart3, 
+  LogOut 
+} from 'lucide-react';
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -7,14 +15,26 @@ export default function DashboardLayout() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('userName');
     navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;
 
+  const NavItem = ({ path, icon: Icon, label }) => (
+    <div 
+      className={`sidebar-link ${isActive(path) ? 'active' : ''}`} 
+      onClick={() => navigate(path)}
+      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+    >
+      <Icon size={18} />
+      <span>{label}</span>
+    </div>
+  );
+
   return (
     <div className="dashboard-container">
-      {/* Sidebar - Clean, responsive */}
+      {/* Sidebar - Clean, responsive with icons */}
       <aside className="sidebar">
         <div style={{ marginBottom: '2.5rem', paddingLeft: '0.5rem' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--primary-color)' }}>Food-Soft</h2>
@@ -22,29 +42,28 @@ export default function DashboardLayout() {
         </div>
         
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <div 
-            className={`sidebar-link ${isActive('/dashboard/owner') ? 'active' : ''}`} 
-            onClick={() => navigate('/dashboard/owner')}
-          >
-            Dashboard
+          <NavItem path="/dashboard/owner" icon={LayoutDashboard} label="Dashboard General" />
+          <NavItem path="/dashboard/kitchen" icon={ChefHat} label="Panel Cocinas" />
+          <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
+          
+          <div style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.95rem', opacity: 0.6 }}>
+            <ClipboardList size={18} />
+            <span>Órdenes Hist.</span>
           </div>
-          <div 
-            className={`sidebar-link ${isActive('/dashboard/supplies') ? 'active' : ''}`} 
-            onClick={() => navigate('/dashboard/supplies')}
-          >
-            Stock de Cocina
-          </div>
-          <div className="sidebar-link">
-            Órdenes
-          </div>
-          <div className="sidebar-link">
-            Reportes
+          
+          <div style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.95rem', opacity: 0.6 }}>
+            <BarChart3 size={18} />
+            <span>Reportes</span>
           </div>
         </nav>
 
         <button 
           onClick={handleLogout}
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.75rem',
             background: 'transparent',
             border: '1px solid var(--surface-border)',
             color: 'var(--text-primary)',
@@ -57,16 +76,17 @@ export default function DashboardLayout() {
             marginTop: '2rem'
           }}
           onMouseOver={(e) => {
-            e.target.style.background = 'var(--danger-bg)';
-            e.target.style.color = 'var(--danger-color)';
-            e.target.style.borderColor = 'var(--danger-border)';
+            e.currentTarget.style.background = 'var(--danger-bg)';
+            e.currentTarget.style.color = 'var(--danger-color)';
+            e.currentTarget.style.borderColor = 'var(--danger-border)';
           }}
           onMouseOut={(e) => {
-            e.target.style.background = 'transparent';
-            e.target.style.color = 'var(--text-primary)';
-            e.target.style.borderColor = 'var(--surface-border)';
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.borderColor = 'var(--surface-border)';
           }}
         >
+          <LogOut size={18} />
           Cerrar Sesión
         </button>
       </aside>
@@ -76,15 +96,21 @@ export default function DashboardLayout() {
         <header className="dashboard-header">
             <div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                {isActive('/dashboard/supplies') ? 'Stock de Cocina' : 'Dashboard General'}
+                {isActive('/dashboard/supplies') ? 'Inventario de Insumos' : 
+                 isActive('/dashboard/kitchen') ? 'Dashboard de Cocinas' : 
+                 'Dashboard General'}
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                {isActive('/dashboard/supplies') ? 'Gestión de inventario e insumos' : 'Métricas al día de hoy'}
+                {isActive('/dashboard/supplies') ? 'Control detallado de stock y reposición' : 
+                 isActive('/dashboard/kitchen') ? 'Monitor de flujo de pedidos para Dark Kitchens' : 
+                 'Métricas clave de operación hoy'}
               </p>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--surface-color)', padding: '0.5rem 1rem', borderRadius: '50px', border: '1px solid var(--surface-border)' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>Admin (James L.)</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                  Admin ({localStorage.getItem('userName') || 'James L.'})
+                </span>
                 <div style={{ 
                     width: '32px', height: '32px', 
                     borderRadius: '50%', 
@@ -94,7 +120,9 @@ export default function DashboardLayout() {
                     fontWeight: 600,
                     fontSize: '0.8rem',
                     border: '1px solid var(--surface-border)'
-                 }}>JL</div>
+                 }}>
+                   {localStorage.getItem('userName')?.substring(0,2).toUpperCase() || 'JL'}
+                 </div>
             </div>
         </header>
 
