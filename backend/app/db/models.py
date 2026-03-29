@@ -24,6 +24,15 @@ class Supply(Base):
     min_quantity = Column(Float, default=5.0) # threshold for alerts
     category = Column(String, index=True, nullable=True) # Proteins, Veggies, etc.
 
+class Kitchen(Base):
+    __tablename__ = "kitchens"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    is_active = Column(Boolean(), default=True)
+    
+    orders = relationship("Order", back_populates="kitchen")
+
 class Order(Base):
     __tablename__ = "orders"
     
@@ -32,11 +41,14 @@ class Order(Base):
     total = Column(Float, default=0.0)
     status = Column(String, default="pending") # pending, ready, delivered
     
+    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     ready_at = Column(DateTime(timezone=True), nullable=True)
     delivered_at = Column(DateTime(timezone=True), nullable=True)
     
     items = relationship("OrderItem", back_populates="order")
+    kitchen = relationship("Kitchen", back_populates="orders")
 
 class OrderItem(Base):
     __tablename__ = "order_items"

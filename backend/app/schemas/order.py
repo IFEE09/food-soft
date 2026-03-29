@@ -22,6 +22,7 @@ class OrderBase(BaseModel):
     client_name: Optional[str] = None
     total: float = 0.0
     status: str = "pending"
+    kitchen_id: Optional[int] = None
 
 class OrderCreate(OrderBase):
     items: List[OrderItemCreate]
@@ -29,6 +30,8 @@ class OrderCreate(OrderBase):
 class OrderUpdate(OrderBase):
     ready_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
+    status: Optional[str] = None
+    kitchen_id: Optional[int] = None
 
 class Order(OrderBase):
     id: int
