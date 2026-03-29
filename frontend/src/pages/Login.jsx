@@ -94,12 +94,12 @@ export default function Login() {
       ))}
 
       <div className="glass-card" style={{ zIndex: 10 }}>
-        <h1 className="title-premium" style={{ marginBottom: '0.5rem' }}>Food-Soft</h1>
-        <p style={{ textAlign: 'center', marginBottom: '2.5rem', opacity: 0.7, fontSize: '0.9rem' }}>
+        <h1 className="title-premium" style={{ marginBottom: '0.2rem' }}>Food-Soft</h1>
+        <p style={{ textAlign: 'center', marginBottom: '1rem', opacity: 0.7, fontSize: '0.9rem' }}>
           Sistema de Gestión Restaurantera
         </p>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Correo Electrónico</label>
             <input 
