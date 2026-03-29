@@ -65,16 +65,19 @@ export default function Supplies() {
     };
 
     try {
-      if (editingItem) {
-        await apiClient.put(`/supplies/${editingItem.id}`, dataToSend);
-      } else {
-        await apiClient.post('/supplies/', dataToSend);
-      }
-      fetchSupplies();
-      setIsModalOpen(false);
-      resetForm();
+        if (editingItem) {
+            await apiClient.put(`/supplies/${editingItem.id}`, dataToSend);
+        } else {
+            await apiClient.post('/supplies/', dataToSend);
+        }
+        fetchSupplies();
+        setIsModalOpen(false);
+        resetForm();
     } catch (err) {
-      console.error("Error saving supply:", err);
+        console.error("Error saving supply:", err);
+        const errorDetail = err.response?.data?.detail;
+        const errorMessage = typeof errorDetail === 'string' ? errorDetail : (errorDetail?.[0]?.msg || "No se pudo guardar el insumo.");
+        alert(`Error al registrar insumo: ${errorMessage}. Intenta cerrar sesión y volver a entrar.`);
     }
   };
 
