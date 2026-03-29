@@ -98,6 +98,11 @@ export default function Settings() {
     }
   };
 
+  const getConfirmBorder = () => {
+    if (!passData.confirm) return 'var(--surface-border)';
+    return passData.new_password === passData.confirm ? 'var(--success-color)' : 'var(--danger-color)';
+  };
+
   return (
     <div style={{ maxWidth: '900px' }}>
       <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.5rem' }}>
@@ -218,7 +223,7 @@ export default function Settings() {
                     type={showConfirm ? 'text' : 'password'} value={passData.confirm}
                     onChange={(e) => setPassData({...passData, confirm: e.target.value})}
                     required
-                    style={{ width: '100%', paddingRight: '45px' }}
+                    style={{ width: '100%', paddingRight: '45px', borderColor: getConfirmBorder() }}
                 />
                 <button
                     type="button"

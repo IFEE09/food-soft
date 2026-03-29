@@ -51,6 +51,11 @@ export default function Register() {
     }
   };
 
+  const getBorderColor = () => {
+    if (!confirmPassword) return 'var(--surface-border)';
+    return password === confirmPassword ? 'var(--success-color)' : 'var(--danger-color)';
+  };
+
   return (
     <div className="login-container" style={{ background: 'radial-gradient(circle at top right, #f1f5f9, #f8fafc)' }}>
       <div className="glass-card" style={{ padding: '3rem 2.5rem', width: '100%', maxWidth: '420px', margin: 'auto' }}>
@@ -97,8 +102,12 @@ export default function Register() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Confirmar Contraseña</label>
             <div style={{ position: 'relative' }}>
-              <ShieldCheck size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type={showConfirm ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px' }} />
+              <ShieldCheck size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: confirmPassword ? (password === confirmPassword ? 'var(--success-color)' : 'var(--danger-color)') : 'var(--text-secondary)' }} />
+              <input 
+                type={showConfirm ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} required 
+                style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px', borderColor: getBorderColor(), borderWidth: confirmPassword ? '2px' : '1px' }} 
+              />
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
