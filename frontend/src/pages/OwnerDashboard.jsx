@@ -111,10 +111,37 @@ export default function OwnerDashboard() {
               <div style={{ height: '80px', borderBottom: '1px dashed var(--surface-border)', borderLeft: '1px solid var(--surface-border)' }}></div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '1.5rem', minHeight: '180px', display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Órdenes por Día</h3>
-               <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', flex: 1 }}>Histórico de la semana</p>
-               <div style={{ height: '80px', borderBottom: '1px dashed var(--surface-border)', borderLeft: '1px solid var(--surface-border)' }}></div>
+            <div className="glass-panel" style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Stock de Cocina</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}>Ver Todo</span>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {[
+                  { item: 'Carne de Res', qty: '12 kg', status: 'Normal', color: 'var(--text-secondary)' },
+                  { item: 'Tomate Saladet', qty: '3 kg', status: 'Bajo', color: '#CA8A04' },
+                  { item: 'Pan Brioche', qty: '8 pz', status: 'Crítico', color: 'var(--danger-color)' },
+                  { item: 'Aceite Vegetal', qty: '15 L', status: 'Normal', color: 'var(--text-secondary)' },
+                  { item: 'Queso Cheddar', qty: '2 kg', status: 'Bajo', color: '#CA8A04' }
+                ].map((stock, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>{stock.item}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>En existencia: {stock.qty}</div>
+                    </div>
+                    <div style={{ 
+                      fontSize: '0.7rem', 
+                      fontWeight: 700, 
+                      color: stock.color,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.02em'
+                    }}>
+                      {stock.status}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
         </div>
 
