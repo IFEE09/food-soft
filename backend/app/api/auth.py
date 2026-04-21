@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import timedelta
 from typing import Any
@@ -5,7 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.db import models
 from app.db.session import get_db
@@ -34,6 +38,8 @@ def get_current_user(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Usuario inactivo")
     return user
 
 
@@ -124,7 +130,18 @@ def register_user(
         organization_id=new_org.id
     )
     db.add(new_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un usuario con este correo electrónico.",
+        )
+    except Exception:
+        db.rollback()
+        logger.exception("Error inesperado registrando usuario")
+        raise HTTPException(status_code=500, detail="No se pudo completar el registro.")
     db.refresh(new_user)
     log_activity(
         db, new_user,

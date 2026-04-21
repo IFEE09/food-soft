@@ -1,9 +1,13 @@
+import logging
+import secrets
 from fastapi import FastAPI, Depends, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-import secrets
 from app.core.config import settings
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 from app.db.session import engine, get_db
 from app.db import models
 from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs
@@ -12,10 +16,10 @@ from app.core import security
 
 # For simple MVP/Dev, we check for missing columns on startup
 def run_migrations():
-    print("Sincronizando esquema de base de datos...")
+    logger.info("Sincronizando esquema de base de datos...")
     # Create Organizations table FIRST
     models.Base.metadata.create_all(bind=engine)
-    
+
     migrations = [
         "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
@@ -25,14 +29,14 @@ def run_migrations():
         "ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0",
         "ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE",
     ]
-    
+
     for query in migrations:
         try:
             with engine.connect() as conn:
                 conn.execute(text(query))
                 conn.commit()
                 column_name = query.split('ADD COLUMN ')[1].split(' ')[0]
-                print(f"Migración: Columna '{column_name}' añadida con éxito.")
+                logger.info("Migración: Columna '%s' añadida con éxito.", column_name)
         except Exception:
             # El error es silencioso porque la columna probablemente ya existe (psycopg2.errors.DuplicateColumn)
             pass
@@ -48,7 +52,7 @@ def init_db_data():
         db.add(new_org)
         db.flush()
         lu.organization_id = new_org.id
-        print(f"Reparación: Organización asignada al usuario {lu.email}")
+        logger.info("Reparación: Organización asignada al usuario %s", lu.email)
     db.commit()
 
     # 2. SEED: Create initial Admin/Owner if table is completely empty
@@ -102,5 +106,6 @@ def health_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         return {"status": "ok"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Health check failed")
+        raise HTTPException(status_code=503, detail="Database unavailable")

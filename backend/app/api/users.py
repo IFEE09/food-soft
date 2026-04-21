@@ -6,7 +6,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import user as user_schema
 from app.core import security
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
 
 router = APIRouter()
@@ -14,11 +14,9 @@ router = APIRouter()
 @router.get("/team", response_model=list[user_schema.User])
 def list_team_members(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
 ) -> Any:
     """ List all users in the current user's organization. """
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="Solo el propietario puede ver el equipo.")
     users = db.query(models.User).filter(
         models.User.organization_id == current_user.organization_id
     ).all()
@@ -28,12 +26,10 @@ def list_team_members(
 def create_team_member(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     user_in: user_schema.UserCreate,
 ) -> Any:
     """ Owner creates a team member (receptionist or cook) in their organization. """
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="Solo el propietario puede crear miembros de equipo.")
     if user_in.role == "owner":
         raise HTTPException(status_code=400, detail="No puedes crear otro propietario.")
     
@@ -63,13 +59,10 @@ def create_team_member(
 def delete_team_member(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     user_id: int,
 ) -> Any:
     """ Owner deletes a team member from their organization. """
-    if current_user.role != "owner":
-        raise HTTPException(status_code=403, detail="Solo el propietario puede eliminar miembros.")
-    
     user = db.query(models.User).filter(
         models.User.id == user_id,
         models.User.organization_id == current_user.organization_id

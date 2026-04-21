@@ -1,6 +1,9 @@
+import logging
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.db import models
+
+logger = logging.getLogger(__name__)
 
 
 def log_activity(
@@ -31,7 +34,11 @@ def log_activity(
         db.add(entry)
         db.commit()
     except Exception:
+        logger.exception(
+            "No se pudo registrar actividad (action=%s, entity_type=%s, entity_id=%s)",
+            action, entity_type, entity_id,
+        )
         try:
             db.rollback()
         except Exception:
-            pass
+            logger.exception("Rollback también falló tras error de log_activity")

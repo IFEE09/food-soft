@@ -1,6 +1,9 @@
+import logging
 import os
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Food-Soft POS MVP"
@@ -25,26 +28,24 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
 
     def get_database_url(self) -> str:
-        # 1. Diagnostic (No secrets)
-        print("\n--- [CONEXIÓN DIAGNÓSTICA] ---")
-        
         # Prioritize DATABASE_URL
         url = self.DATABASE_URL
         if url:
-            # Mask sensitive parts for logs
             if "@" in url:
                 masked = f"postgresql://***:***@{url.split('@')[-1]}"
-                print(f"Punto de conexión: {masked}")
+                logger.info("Punto de conexión DB: %s", masked)
             else:
-                print("DATABASE_URL encontrada pero el formato es inusual.")
+                logger.warning("DATABASE_URL encontrada pero el formato es inusual.")
 
             # Safety fix for protocol
             if url.startswith("postgres://"):
                 url = url.replace("postgres://", "postgresql://", 1)
             return url
 
-        # 2. Fallback check
-        print(f"ADVERTENCIA: No se encontró DATABASE_URL. Usando config local: {self.POSTGRES_SERVER}:{self.POSTGRES_PORT}")
+        logger.warning(
+            "No se encontró DATABASE_URL. Usando config local: %s:%s",
+            self.POSTGRES_SERVER, self.POSTGRES_PORT,
+        )
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()

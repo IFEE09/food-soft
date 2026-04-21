@@ -7,6 +7,7 @@ from app.db import models
 from app.schemas import kitchen as kitchen_schema
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.tenant import get_owned_or_404
 
 router = APIRouter()
 
@@ -54,12 +55,8 @@ def update_kitchen(
     kitchen_in: kitchen_schema.KitchenUpdate,
 ) -> Any:
     """ Update kitchen station. """
-    kitchen = db.query(models.Kitchen)\
-               .filter(models.Kitchen.id == id, models.Kitchen.organization_id == current_user.organization_id)\
-               .first()
-    if not kitchen:
-        raise HTTPException(status_code=404, detail="Kitchen not found")
-    
+    kitchen = get_owned_or_404(db, models.Kitchen, id, current_user, "Kitchen not found")
+
     update_data = kitchen_in.model_dump(exclude_unset=True)
     for field in update_data:
         setattr(kitchen, field, update_data[field])
@@ -83,11 +80,7 @@ def delete_kitchen(
     id: int,
 ) -> Any:
     """ Delete a kitchen (station). """
-    kitchen = db.query(models.Kitchen)\
-               .filter(models.Kitchen.id == id, models.Kitchen.organization_id == current_user.organization_id)\
-               .first()
-    if not kitchen:
-        raise HTTPException(status_code=404, detail="Kitchen not found")
+    kitchen = get_owned_or_404(db, models.Kitchen, id, current_user, "Kitchen not found")
     deleted_name = kitchen.name
     deleted_id = kitchen.id
     db.delete(kitchen)

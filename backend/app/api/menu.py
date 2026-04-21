@@ -6,6 +6,7 @@ from app.db import models
 from app.schemas import menu as menu_schemas
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.tenant import get_owned_or_404
 
 router = APIRouter()
 
@@ -70,12 +71,8 @@ def update_menu_item(
     """
     Update a dish.
     """
-    db_item = db.query(models.MenuItem)\
-                .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == current_user.organization_id)\
-                .first()
-    if not db_item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
+    db_item = get_owned_or_404(db, models.MenuItem, item_id, current_user, "Item not found")
+
     update_data = item_in.model_dump(exclude_unset=True)
     if "recipe_items" in update_data:
         # Complex logic: Remove old ones and add new ones
@@ -111,11 +108,7 @@ def delete_menu_item(
     """
     Delete a dish.
     """
-    db_item = db.query(models.MenuItem)\
-                .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == current_user.organization_id)\
-                .first()
-    if not db_item:
-        raise HTTPException(status_code=404, detail="Item not found")
+    db_item = get_owned_or_404(db, models.MenuItem, item_id, current_user, "Item not found")
     deleted_name = db_item.name
     deleted_id = db_item.id
     db.delete(db_item)

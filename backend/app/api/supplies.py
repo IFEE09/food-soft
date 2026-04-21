@@ -8,6 +8,7 @@ from app.db import models
 from app.schemas import supply as supply_schema
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.tenant import get_owned_or_404
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -54,10 +55,10 @@ def create_supply(
             description=f"Creó insumo '{supply.name}' (cantidad: {supply.quantity} {supply.unit})"
         )
         return supply
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"Error creando insumo: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error interno del servidor al guardar: {str(e)}")
+        logger.exception("Error creando insumo")
+        raise HTTPException(status_code=500, detail="Error interno del servidor al guardar el insumo.")
 
 @router.put("/{id}", response_model=supply_schema.Supply)
 def update_supply(
@@ -68,12 +69,8 @@ def update_supply(
     supply_in: supply_schema.SupplyUpdate,
 ) -> Any:
     """ Update a supply. """
-    supply = db.query(models.Supply)\
-               .filter(models.Supply.id == id, models.Supply.organization_id == current_user.organization_id)\
-               .first()
-    if not supply:
-        raise HTTPException(status_code=404, detail="Insumo no encontrado")
-    
+    supply = get_owned_or_404(db, models.Supply, id, current_user, "Insumo no encontrado")
+
     update_data = supply_in.model_dump(exclude_unset=True)
     for field in update_data:
         setattr(supply, field, update_data[field])
@@ -97,11 +94,7 @@ def delete_supply(
     id: int,
 ) -> Any:
     """ Delete a supply. """
-    supply = db.query(models.Supply)\
-               .filter(models.Supply.id == id, models.Supply.organization_id == current_user.organization_id)\
-               .first()
-    if not supply:
-        raise HTTPException(status_code=404, detail="Insumo no encontrado")
+    supply = get_owned_or_404(db, models.Supply, id, current_user, "Insumo no encontrado")
     deleted_name = supply.name
     deleted_id = supply.id
     db.delete(supply)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, Literal
 
 # Shared properties
@@ -13,11 +13,11 @@ class UserBase(BaseModel):
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
     role: VALID_ROLES = "cook"
 
 class UserUpdate(UserBase):
-    password: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
 
 class UserInDBBase(UserBase):
     id: int
@@ -35,4 +35,4 @@ class UserInDB(UserInDBBase):
 
 class ChangePassword(BaseModel):
     current_password: str
-    new_password: str
+    new_password: str = Field(min_length=8, max_length=128)
