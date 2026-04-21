@@ -18,13 +18,16 @@ def read_orders(
     current_user: models.User = Depends(get_current_user),
     skip: int = 0,
     limit: int = 100,
-    status: str = None
+    status: str = None,
+    kitchen_id: int = None,
 ) -> Any:
     """ Retrieve orders for organization. """
     query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
     if status:
         query = query.filter(models.Order.status == status)
-    
+    if kitchen_id is not None:
+        query = query.filter(models.Order.kitchen_id == kitchen_id)
+
     # Sorting by creation date descendently
     orders = query.order_by(models.Order.created_at.desc()).offset(skip).limit(limit).all()
     return orders
@@ -41,6 +44,7 @@ async def create_order(
         client_name=order_in.client_name,
         total=order_in.total,
         status=order_in.status,
+        kitchen_id=order_in.kitchen_id,
         organization_id=current_user.organization_id
     )
     db.add(order)

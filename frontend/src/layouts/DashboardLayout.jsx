@@ -104,6 +104,9 @@ export default function DashboardLayout() {
 
   const page = getPageTitle();
   const roleLabel = ROLE_LABEL[role] || 'Usuario';
+  const RoleIcon = ROLE_ICON[role] || ShieldCheck;
+  const roleColor = role === 'owner' ? '#6366F1' : role === 'receptionist' ? '#F59E0B' : '#10B981';
+  const roleBg    = role === 'owner' ? '#EEF2FF' : role === 'receptionist' ? '#FFFBEB' : '#ECFDF5';
 
   return (
     <div className="dashboard-container">
@@ -164,17 +167,24 @@ export default function DashboardLayout() {
               </p>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--surface-color)', padding: '0.5rem 1rem', borderRadius: '50px', border: '1px solid var(--surface-border)' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                  {roleLabel} ({userName})
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.4rem 0.4rem 0.4rem 1rem', borderRadius: '50px', border: '1px solid var(--surface-border)' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                  fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
+                  background: roleBg, color: roleColor, padding: '0.25rem 0.6rem', borderRadius: '50px'
+                }}>
+                  <RoleIcon size={12} /> {roleLabel}
                 </span>
-                <div style={{ 
-                    width: '32px', height: '32px', 
-                    borderRadius: '50%', 
-                    background: '#F1F5F9',
-                    color: 'var(--text-primary)',
+                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                  {userName}
+                </span>
+                <div style={{
+                    width: '32px', height: '32px',
+                    borderRadius: '50%',
+                    background: roleBg,
+                    color: roleColor,
                     display: 'flex', justifyContent: 'center', alignItems: 'center',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     fontSize: '0.8rem',
                     border: '1px solid var(--surface-border)'
                  }}>

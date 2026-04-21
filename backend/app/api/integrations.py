@@ -40,6 +40,7 @@ async def create_external_order(
         client_name=order_in.client_name or "Cliente Robot",
         total=order_in.total,
         status="pending",
+        kitchen_id=order_in.kitchen_id,
         organization_id=org.id
     )
     db.add(new_order)

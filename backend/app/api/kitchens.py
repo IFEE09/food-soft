@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db import models
 from app.schemas import kitchen as kitchen_schema
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
 
 router = APIRouter()
@@ -26,7 +26,7 @@ def read_kitchens(
 def create_kitchen(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     kitchen_in: kitchen_schema.KitchenCreate,
 ) -> Any:
     """ Add new kitchen station for organization. """
@@ -49,7 +49,7 @@ def create_kitchen(
 def update_kitchen(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     id: int,
     kitchen_in: kitchen_schema.KitchenUpdate,
 ) -> Any:
@@ -79,7 +79,7 @@ def update_kitchen(
 def delete_kitchen(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     id: int,
 ) -> Any:
     """ Delete a kitchen (station). """

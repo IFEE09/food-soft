@@ -36,6 +36,24 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
+def require_roles(*roles: str):
+    """ FastAPI dependency factory: ensure current user has one of the given roles. """
+    def checker(current_user: models.User = Depends(get_current_user)) -> models.User:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Permiso denegado. Requiere rol: {', '.join(roles)}."
+            )
+        return current_user
+    return checker
+
+
+def require_owner(current_user: models.User = Depends(get_current_user)) -> models.User:
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Acción restringida al propietario.")
+    return current_user
+
 router = APIRouter()
 
 @router.post("/login")

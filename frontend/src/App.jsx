@@ -15,13 +15,29 @@ import TeamManagement from './pages/TeamManagement';
 
 import { NotificationProvider } from './components/NotificationProvider';
 
+const ROLE_HOME = {
+  owner: '/dashboard/owner',
+  receptionist: '/dashboard/reception',
+  cook: '/dashboard/kitchen',
+};
+
+function RoleRoute({ allowed, children }) {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+  if (!token) return <Navigate to="/login" replace />;
+  if (allowed && !allowed.includes(role)) {
+    return <Navigate to={ROLE_HOME[role] || '/login'} replace />;
+  }
+  return children;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <NotificationProvider>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
-          
+
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
@@ -30,17 +46,35 @@ function App() {
 
           {/* Protected Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route path="owner" element={<OwnerDashboard />} />
-            <Route path="kitchen" element={<KitchenDashboard />} />
-            <Route path="supplies" element={<Supplies />} />
-            <Route path="activity-logs" element={<ActivityLogs />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="menu" element={<Menu />} />
-            <Route path="cook" element={<CookDashboard />} />
-            <Route path="reception" element={<ReceptionDashboard />} />
-            <Route path="team" element={<TeamManagement />} />
+            <Route path="owner" element={
+              <RoleRoute allowed={['owner']}><OwnerDashboard /></RoleRoute>
+            } />
+            <Route path="kitchen" element={
+              <RoleRoute allowed={['owner', 'cook']}><KitchenDashboard /></RoleRoute>
+            } />
+            <Route path="supplies" element={
+              <RoleRoute allowed={['owner']}><Supplies /></RoleRoute>
+            } />
+            <Route path="activity-logs" element={
+              <RoleRoute allowed={['owner']}><ActivityLogs /></RoleRoute>
+            } />
+            <Route path="settings" element={
+              <RoleRoute><Settings /></RoleRoute>
+            } />
+            <Route path="menu" element={
+              <RoleRoute allowed={['owner', 'receptionist']}><Menu /></RoleRoute>
+            } />
+            <Route path="cook" element={
+              <RoleRoute allowed={['cook', 'owner']}><CookDashboard /></RoleRoute>
+            } />
+            <Route path="reception" element={
+              <RoleRoute allowed={['owner', 'receptionist']}><ReceptionDashboard /></RoleRoute>
+            } />
+            <Route path="team" element={
+              <RoleRoute allowed={['owner']}><TeamManagement /></RoleRoute>
+            } />
           </Route>
-          
+
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </NotificationProvider>

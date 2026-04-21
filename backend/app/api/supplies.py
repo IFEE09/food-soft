@@ -6,7 +6,7 @@ import logging
 from app.db.session import get_db
 from app.db import models
 from app.schemas import supply as supply_schema
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
 
 router = APIRouter()
@@ -28,7 +28,7 @@ def read_supplies(
 def create_supply(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     supply_in: supply_schema.SupplyCreate,
 ) -> Any:
     """ Create new supply for the user's organization. """
@@ -63,7 +63,7 @@ def create_supply(
 def update_supply(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     id: int,
     supply_in: supply_schema.SupplyUpdate,
 ) -> Any:
@@ -93,7 +93,7 @@ def update_supply(
 def delete_supply(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     id: int,
 ) -> Any:
     """ Delete a supply. """

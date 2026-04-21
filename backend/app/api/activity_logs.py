@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.db import models
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, require_owner
 
 router = APIRouter()
 
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/")
 def read_activity_logs(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     skip: int = 0,
     limit: int = Query(200, le=500),
     entity_type: Optional[str] = None,

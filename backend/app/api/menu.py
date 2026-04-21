@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db import models
 from app.schemas import menu as menu_schemas
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
 
 router = APIRouter()
@@ -25,7 +25,7 @@ def read_menu_items(
 def create_menu_item(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     item_in: menu_schemas.MenuItemCreate,
 ) -> Any:
     """
@@ -63,7 +63,7 @@ def create_menu_item(
 def update_menu_item(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     item_id: int,
     item_in: menu_schemas.MenuItemUpdate,
 ) -> Any:
@@ -105,7 +105,7 @@ def update_menu_item(
 def delete_menu_item(
     *,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_owner),
     item_id: int,
 ) -> Any:
     """
