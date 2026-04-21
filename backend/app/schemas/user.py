@@ -1,18 +1,20 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Literal
 
 # Shared properties
+VALID_ROLES = Literal["owner", "receptionist", "cook"]
+
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
-    role: Optional[str] = "cook"
+    role: Optional[VALID_ROLES] = "cook"
     is_active: Optional[bool] = True
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     email: EmailStr
     password: str
-    role: str = "cook"
+    role: VALID_ROLES = "cook"
 
 class UserUpdate(UserBase):
     password: Optional[str] = None

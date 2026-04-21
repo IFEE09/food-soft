@@ -101,7 +101,7 @@ def register_user(
         email=user_in.email,
         full_name=user_in.full_name,
         hashed_password=security.get_password_hash(user_in.password),
-        role=user_in.role or "owner",
+        role="owner",
         is_active=True,
         organization_id=new_org.id
     )

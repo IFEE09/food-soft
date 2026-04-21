@@ -43,6 +43,8 @@ export default function Login() {
 
       if (role === 'owner') {
         navigate('/dashboard/owner');
+      } else if (role === 'receptionist') {
+        navigate('/dashboard/reception');
       } else {
         navigate('/dashboard/kitchen');
       }

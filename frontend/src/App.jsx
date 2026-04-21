@@ -10,6 +10,8 @@ import Settings from './pages/Settings';
 import Register from './pages/Register';
 import Menu from './pages/Menu';
 import ActivityLogs from './pages/ActivityLogs';
+import ReceptionDashboard from './pages/ReceptionDashboard';
+import TeamManagement from './pages/TeamManagement';
 
 import { NotificationProvider } from './components/NotificationProvider';
 
@@ -35,6 +37,8 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="menu" element={<Menu />} />
             <Route path="cook" element={<CookDashboard />} />
+            <Route path="reception" element={<ReceptionDashboard />} />
+            <Route path="team" element={<TeamManagement />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/login" replace />} />
