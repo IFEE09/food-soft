@@ -5,6 +5,8 @@ from typing import Optional
 from app.db.session import get_db
 from app.core.bot.engine import BotEngine
 from app.core.config import settings
+import hmac
+import hashlib
 
 router = APIRouter()
 
@@ -54,9 +56,29 @@ def verify_meta_webhook(
 async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Receives real events from Meta (WhatsApp, IG, Messenger).
-    Extracts data and processes it asynchronously.
+    Extracts data and processes it asynchronously after validating signature.
     """
-    body = await request.json()
+    # 1. Signature Validation (X-Hub-Signature-256)
+    if settings.META_APP_SECRET:
+        signature = request.headers.get("X-Hub-Signature-256")
+        if not signature:
+            raise HTTPException(status_code=403, detail="Missing signature header")
+        
+        body_bytes = await request.body()
+        expected_sig = hmac.new(
+            settings.META_APP_SECRET.encode(),
+            body_bytes,
+            hashlib.sha256
+        ).hexdigest()
+        
+        # Format is 'sha256=HEX_SIG'
+        if signature.replace("sha256=", "") != expected_sig:
+            raise HTTPException(status_code=403, detail="Invalid signature")
+        
+        body = await request.json() # Already bytes consumed, but FastAPI handles JSON re-parse
+    else:
+        # Skip validation if secret is not set (not recommended for production)
+        body = await request.json()
     
     # Meta expects immediate 200 OK
     bg_tasks.add_task(process_meta_payload, body, db)

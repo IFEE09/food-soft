@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # Meta Platform (Bot)
     META_VERIFY_TOKEN: str = "omnikook_secret_verify_token"
     META_ACCESS_TOKEN: Optional[str] = None
+    META_APP_SECRET: Optional[str] = None
     
     # Use pydantic_settings model config to load .env if present
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
