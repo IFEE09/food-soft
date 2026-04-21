@@ -4,12 +4,11 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.db import models
-from app.api.auth import get_current_user, require_owner
+from app.schemas import activity as activity_schema
 
 router = APIRouter()
 
-
-@router.get("/")
+@router.get("/", response_model=List[activity_schema.ActivityLog])
 def read_activity_logs(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -33,17 +32,4 @@ def read_activity_logs(
     logs = query.order_by(models.ActivityLog.created_at.desc())\
                 .offset(skip).limit(limit).all()
 
-    return [
-        {
-            "id": log.id,
-            "user_id": log.user_id,
-            "user_name": log.user_name,
-            "user_role": log.user_role,
-            "action": log.action,
-            "entity_type": log.entity_type,
-            "entity_id": log.entity_id,
-            "description": log.description,
-            "created_at": log.created_at.isoformat() if log.created_at else None,
-        }
-        for log in logs
-    ]
+    return logs

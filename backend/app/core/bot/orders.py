@@ -38,11 +38,25 @@ class OrderService:
 
         db.commit()
 
-        # Notify kitchen via WebSockets (Fire & forget using event loop if needed, but we can just call it)
-        # Broadcasting to org room
+        db.commit()
+        db.refresh(new_order)
+
+        # Notify kitchen via WebSockets instantly!
         if session.organization_id:
-           # Safely running async broadcast from sync context might need asyncio loop handling
-           # In FastAPI we can just background task it, but for our mock we will just log it
-           pass
+            import asyncio
+            try:
+                # We use a helper to fire the notification since this is a sync method
+                asyncio.create_task(manager.notify_organization(
+                    session.organization_id, 
+                    {"type": "new_order", "order_id": new_order.id, "source": "bot"}
+                ))
+            except Exception:
+                # Fallback if no loop is running (e.g. in tests)
+                pass
+
+        # Update session tracking
+        session.last_interaction_at = models.func.now()
+        db.add(session)
+        db.commit()
 
         return True

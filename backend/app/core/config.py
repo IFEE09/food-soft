@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "yoursecretkeyhere_changeinprod"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+
+    # Meta Platform (Bot)
+    META_VERIFY_TOKEN: str = "omnikook_secret_verify_token"
+    META_ACCESS_TOKEN: Optional[str] = None
     
     # Use pydantic_settings model config to load .env if present
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')

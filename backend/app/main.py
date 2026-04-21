@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 from app.db.session import engine, get_db
 from app.db import models
-from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs, bot
+from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs, bot, organizations
 from app.core.notifier import manager
 from app.core import security
 
@@ -88,6 +88,7 @@ app.include_router(kitchens.router, prefix=f"{settings.API_V1_STR}/kitchens", ta
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(activity_logs.router, prefix=f"{settings.API_V1_STR}/activity-logs", tags=["activity-logs"])
 app.include_router(bot.router, prefix=f"{settings.API_V1_STR}/bot", tags=["bot"])
+app.include_router(organizations.router, prefix=f"{settings.API_V1_STR}/organizations", tags=["organizations"])
 
 @app.get("/")
 def root():
