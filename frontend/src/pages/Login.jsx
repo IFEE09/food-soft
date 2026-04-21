@@ -12,6 +12,8 @@ import {
   ArrowRight,
   UserPlus
 } from 'lucide-react';
+import { useTheme } from '../components/ThemeContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -61,6 +63,8 @@ export default function Login() {
     }
   };
 
+  const { theme } = useTheme();
+
   return (
     <div className="login-container">
       <div className="glass-card" style={{ 
@@ -70,6 +74,10 @@ export default function Login() {
         margin: 'auto',
         position: 'relative'
       }}>
+        <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}>
+          <ThemeToggle />
+        </div>
+
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img 
             src="/src/assets/omnikook-logo.png" 
@@ -77,7 +85,7 @@ export default function Login() {
             style={{ 
               height: '40px', 
               marginBottom: '1.5rem',
-              filter: 'brightness(0) invert(1)'
+              filter: theme === 'dark' ? 'brightness(0) invert(1)' : 'none'
             }} 
           />
           <h1 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--success-color)', marginBottom: '0.4rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>

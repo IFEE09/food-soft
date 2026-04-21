@@ -4,37 +4,62 @@
    OMNIKOOK — Design System Tokens
    ========================================== */
 :root {
-  /* Background */
-  --bg-color:       #0A0A0A;
-  --surface-color:  #141414;
-  --surface-border: #333333;
+  /* Default: Light Mode */
+  --bg-primary: #F8F9FA;
+  --bg-surface: #FFFFFF;
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --border: #E0E0E0;
+  --accent-success: #A3CC00;
+  --accent-error: #E60000;
+  --accent-action: #0033CC;
 
-  /* Text */
-  --text-primary:   #FFFFFF;
-  --text-secondary: #888888;
+  /* Aliases for compatibility */
+  --bg-color: var(--bg-primary);
+  --surface-color: var(--bg-surface);
+  --surface-border: var(--border);
+  --success-color: var(--accent-success);
+  --danger-color: var(--accent-error);
+  --primary-color: var(--accent-action);
 
-  /* Accent */
-  --primary-color:  #0044FF;
-  --primary-hover:  #0033CC;
-  --primary-bg:     rgba(0, 68, 255, 0.08);
-  --primary-border: rgba(0, 68, 255, 0.3);
-
-  --success-color:  #CCFF00;
-  --success-bg:     rgba(204, 255, 0, 0.08);
-  --success-border: rgba(204, 255, 0, 0.3);
-
-  --danger-color:   #FF3333;
-  --danger-bg:      rgba(255, 51, 51, 0.08);
-  --danger-border:  rgba(255, 51, 51, 0.3);
-
+  /* Transparent variants for Light Mode */
+  --success-bg: rgba(163, 204, 0, 0.08);
+  --success-border: rgba(163, 204, 0, 0.25);
+  --primary-bg: rgba(0, 51, 204, 0.08);
+  --primary-border: rgba(0, 51, 204, 0.25);
+  --danger-bg: rgba(230, 0, 0, 0.08);
+  --danger-border: rgba(230, 0, 0, 0.25);
+  --neutral-bg: rgba(0, 0, 0, 0.04);
+  
   --warning-color:  #FFD600;
   --warning-bg:     rgba(255, 214, 0, 0.08);
   --warning-border: rgba(255, 214, 0, 0.3);
 
-  --neutral-bg:     rgba(255, 255, 255, 0.04);
+  /* Utility */
+  --accent: var(--accent-success);
+  
+  /* Transition rule from manual */
+  --theme-transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
 
-  /* Legacy compat */
-  --accent: #CCFF00;
+.dark-theme {
+  --bg-primary: #0A0A0A;
+  --bg-surface: #141414;
+  --text-primary: #FFFFFF;
+  --text-secondary: #888888;
+  --border: #333333;
+  --accent-success: #CCFF00;
+  --accent-error: #FF3333;
+  --accent-action: #0044FF;
+
+  /* Transparent variants for Dark Mode */
+  --success-bg: rgba(204, 255, 0, 0.08);
+  --success-border: rgba(204, 255, 0, 0.3);
+  --primary-bg: rgba(0, 68, 255, 0.08);
+  --primary-border: rgba(0, 68, 255, 0.3);
+  --danger-bg: rgba(255, 51, 51, 0.08);
+  --danger-border: rgba(255, 51, 51, 0.3);
+  --neutral-bg: rgba(255, 255, 255, 0.04);
 }
 
 * {
@@ -50,6 +75,11 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: var(--theme-transition);
+}
+
+* {
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 /* Monospace for data/IDs/times */

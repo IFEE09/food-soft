@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   HeadphonesIcon
 } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
 const ROLE_LABEL = {
   owner: 'Dueño',
@@ -171,7 +172,10 @@ export default function DashboardLayout() {
               </p>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.5rem 0.75rem 0.5rem 1rem', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <ThemeToggle />
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.5rem 0.75rem 0.5rem 1rem', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                   fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -197,7 +201,8 @@ export default function DashboardLayout() {
                    {userName?.substring(0,2).toUpperCase() || 'OK'}
                  </div>
             </div>
-        </header>
+        </div>
+    </header>
 
         <div style={{ flex: 1, overflowX: 'auto' }}>
           <Outlet />

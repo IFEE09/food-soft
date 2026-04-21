@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
@@ -113,3 +113,41 @@ class ActivityLog(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User")
+
+class BotCustomer(Base):
+    """External customers interacting via Meta platforms"""
+    __tablename__ = "bot_customers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    
+    channel = Column(String, index=True, nullable=False) # 'whatsapp', 'messenger', 'instagram'
+    channel_user_id = Column(String, index=True, nullable=False) # Phone number or PSID/IGSID
+    
+    name = Column(String, nullable=True)
+    phone = Column(String, nullable=True) # Usually same as channel_user_id for WA
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    sessions = relationship("BotSession", back_populates="customer")
+
+
+class BotSession(Base):
+    """State machine tracker for order flows"""
+    __tablename__ = "bot_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    customer_id = Column(Integer, ForeignKey("bot_customers.id"), nullable=False)
+    
+    # State machine status: START, VIEWING_MENU, BUILDING_CART, CONFIRMING_ORDER, FINISHED
+    state = Column(String, default="START", index=True, nullable=False)
+    
+    # Holds shopping cart items before they become a real Order: [{'menu_item_id': 1, 'qty': 2}]
+    cart_data = Column(JSON, default=list) 
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_interaction_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    customer = relationship("BotCustomer", back_populates="sessions")

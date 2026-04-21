@@ -166,7 +166,7 @@ export default function OwnerDashboard() {
                 ) : supplies.map((stock, i) => {
                   const isLow = stock.quantity <= stock.min_quantity;
                   const isCritical = stock.quantity <= (stock.min_quantity / 2);
-                  const statusColor = isCritical ? 'var(--danger-color)' : isLow ? '#F59E0B' : 'var(--text-secondary)';
+                  const statusColor = isCritical ? 'var(--danger-color)' : isLow ? 'var(--warning-color)' : 'var(--text-secondary)';
                   const statusLabel = isCritical ? 'CRITICAL' : isLow ? 'LOW' : 'OK';
 
                   return (
