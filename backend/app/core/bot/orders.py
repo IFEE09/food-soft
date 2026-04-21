@@ -43,7 +43,6 @@ class OrderService:
 
         # Notify kitchen via WebSockets instantly!
         if session.organization_id:
-            import asyncio
             try:
                 # We use a helper to fire the notification since this is a sync method
                 asyncio.create_task(manager.notify_organization(

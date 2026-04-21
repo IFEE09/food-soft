@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -11,7 +11,7 @@ from app.core.activity import log_activity
 
 router = APIRouter()
 
-@router.get("/team", response_model=list[user_schema.User])
+@router.get("/team", response_model=List[user_schema.User])
 def list_team_members(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),

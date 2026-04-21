@@ -7,8 +7,10 @@ from app.core.bot.engine import BotEngine
 from app.core.config import settings
 import hmac
 import hashlib
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 class MockMetaPayload(BaseModel):
     channel: str # whatsapp, messenger
@@ -133,6 +135,6 @@ def process_meta_payload(body: dict, db: Session):
                         sender_id=sender_id,
                         text=text
                     )
-    except Exception as e:
-        print(f"Error parsing Meta payload: {e}")
+    except Exception:
+        logger.exception("Error parsing Meta payload")
 
