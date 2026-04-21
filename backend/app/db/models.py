@@ -89,11 +89,27 @@ class MenuItem(Base):
 
 class MenuItemRecipe(Base):
     __tablename__ = "menu_item_recipes"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     menu_item_id = Column(Integer, ForeignKey("menu_items.id"))
     supply_id = Column(Integer, ForeignKey("supplies.id"))
     quantity = Column(Float, default=1.0) # Quantity of supply needed
-    
+
     menu_item = relationship("MenuItem", back_populates="recipe_items")
     supply = relationship("Supply")
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), index=True, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    user_name = Column(String, nullable=True)
+    user_role = Column(String, nullable=True)
+    action = Column(String, index=True, nullable=False)  # create, update, delete, login, etc.
+    entity_type = Column(String, index=True, nullable=False)  # supply, menu_item, order, kitchen, user, auth
+    entity_id = Column(Integer, nullable=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User")

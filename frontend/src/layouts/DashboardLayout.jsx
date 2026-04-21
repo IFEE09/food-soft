@@ -1,13 +1,14 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  ChefHat, 
-  Package, 
-  ClipboardList, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  ChefHat,
+  Package,
+  ClipboardList,
+  BarChart3,
   LogOut,
   Settings as SettingsIcon,
-  Utensils 
+  Utensils,
+  Activity
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -48,6 +49,7 @@ export default function DashboardLayout() {
           <NavItem path="/dashboard/kitchen" icon={ChefHat} label="Panel Cocinas" />
           <NavItem path="/dashboard/menu" icon={Utensils} label="Menú Platillos" />
           <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
+          <NavItem path="/dashboard/activity-logs" icon={Activity} label="Historial de Actividad" />
           <NavItem path="/dashboard/settings" icon={SettingsIcon} label="Configuración" />
           
           <div style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.95rem', opacity: 0.6 }}>
@@ -100,16 +102,18 @@ export default function DashboardLayout() {
         <header className="dashboard-header">
             <div>
               <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                {isActive('/dashboard/supplies') ? 'Inventario de Insumos' : 
-                 isActive('/dashboard/kitchen') ? 'Dashboard de Cocinas' : 
-                 isActive('/dashboard/menu') ? 'Catálogo de Menú' : 
+                {isActive('/dashboard/supplies') ? 'Inventario de Insumos' :
+                 isActive('/dashboard/kitchen') ? 'Dashboard de Cocinas' :
+                 isActive('/dashboard/menu') ? 'Catálogo de Menú' :
+                 isActive('/dashboard/activity-logs') ? 'Historial de Actividad' :
                  isActive('/dashboard/settings') ? 'Configuración de Sistema' :
                  'Dashboard General'}
               </h1>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                {isActive('/dashboard/supplies') ? 'Control detallado de stock y reposición' : 
-                 isActive('/dashboard/kitchen') ? 'Monitor de flujo de pedidos para Dark Kitchens' : 
-                 isActive('/dashboard/menu') ? 'Gestiona tus platos y recetas conectadas a insumos' : 
+                {isActive('/dashboard/supplies') ? 'Control detallado de stock y reposición' :
+                 isActive('/dashboard/kitchen') ? 'Monitor de flujo de pedidos para Dark Kitchens' :
+                 isActive('/dashboard/menu') ? 'Gestiona tus platos y recetas conectadas a insumos' :
+                 isActive('/dashboard/activity-logs') ? 'Registro completo de movimientos de todos los usuarios' :
                  isActive('/dashboard/settings') ? 'Gestiona tu perfil corporativo y seguridad de cuenta' :
                  'Métricas clave de operación hoy'}
               </p>

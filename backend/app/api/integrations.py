@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
 from app.core.notifier import manager
+from app.core.activity import log_activity
 
 router = APIRouter()
 
@@ -57,7 +58,14 @@ async def create_external_order(
     db.commit()
     db.refresh(new_order)
 
+    log_activity(
+        db, None,
+        action="create", entity_type="order", entity_id=new_order.id,
+        description=f"Orden externa #{new_order.id} recibida (bot/API) para '{new_order.client_name}' (total: ${new_order.total})",
+        organization_id=org.id,
+    )
+
     # NOTIFY WebSocket Clients instantly!
     await manager.notify_organization(org.id, {"type": "new_order", "order_id": new_order.id})
-    
+
     return new_order

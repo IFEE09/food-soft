@@ -5,6 +5,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import menu as menu_schemas
 from app.api.auth import get_current_user
+from app.core.activity import log_activity
 
 router = APIRouter()
 
@@ -51,6 +52,11 @@ def create_menu_item(
     
     db.commit()
     db.refresh(new_item)
+    log_activity(
+        db, current_user,
+        action="create", entity_type="menu_item", entity_id=new_item.id,
+        description=f"Creó platillo '{new_item.name}' (${new_item.price})"
+    )
     return new_item
 
 @router.put("/{item_id}", response_model=menu_schemas.MenuItem)
@@ -85,9 +91,14 @@ def update_menu_item(
 
     for field, value in update_data.items():
         setattr(db_item, field, value)
-    
+
     db.commit()
     db.refresh(db_item)
+    log_activity(
+        db, current_user,
+        action="update", entity_type="menu_item", entity_id=db_item.id,
+        description=f"Actualizó platillo '{db_item.name}'"
+    )
     return db_item
 
 @router.delete("/{item_id}", response_model=menu_schemas.MenuItem)
@@ -105,6 +116,13 @@ def delete_menu_item(
                 .first()
     if not db_item:
         raise HTTPException(status_code=404, detail="Item not found")
+    deleted_name = db_item.name
+    deleted_id = db_item.id
     db.delete(db_item)
     db.commit()
+    log_activity(
+        db, current_user,
+        action="delete", entity_type="menu_item", entity_id=deleted_id,
+        description=f"Eliminó platillo '{deleted_name}'"
+    )
     return db_item

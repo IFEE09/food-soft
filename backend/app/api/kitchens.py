@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import kitchen as kitchen_schema
 from app.api.auth import get_current_user
+from app.core.activity import log_activity
 
 router = APIRouter()
 
@@ -37,6 +38,11 @@ def create_kitchen(
     db.add(kitchen)
     db.commit()
     db.refresh(kitchen)
+    log_activity(
+        db, current_user,
+        action="create", entity_type="kitchen", entity_id=kitchen.id,
+        description=f"Creó cocina '{kitchen.name}'"
+    )
     return kitchen
 
 @router.put("/{id}", response_model=kitchen_schema.Kitchen)
@@ -57,10 +63,16 @@ def update_kitchen(
     update_data = kitchen_in.model_dump(exclude_unset=True)
     for field in update_data:
         setattr(kitchen, field, update_data[field])
-    
+
     db.add(kitchen)
     db.commit()
     db.refresh(kitchen)
+    changed = ", ".join(update_data.keys()) if update_data else "sin cambios"
+    log_activity(
+        db, current_user,
+        action="update", entity_type="kitchen", entity_id=kitchen.id,
+        description=f"Actualizó cocina '{kitchen.name}' (campos: {changed})"
+    )
     return kitchen
 
 @router.delete("/{id}", response_model=kitchen_schema.Kitchen)
@@ -76,6 +88,13 @@ def delete_kitchen(
                .first()
     if not kitchen:
         raise HTTPException(status_code=404, detail="Kitchen not found")
+    deleted_name = kitchen.name
+    deleted_id = kitchen.id
     db.delete(kitchen)
     db.commit()
+    log_activity(
+        db, current_user,
+        action="delete", entity_type="kitchen", entity_id=deleted_id,
+        description=f"Eliminó cocina '{deleted_name}'"
+    )
     return kitchen

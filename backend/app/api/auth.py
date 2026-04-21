@@ -11,6 +11,7 @@ from app.db import models
 from app.db.session import get_db
 from app.core import security
 from app.core.config import settings
+from app.core.activity import log_activity
 from app.schemas.user import User as UserSchema, UserCreate
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -58,6 +59,11 @@ def login_access_token(
         )
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    log_activity(
+        db, user,
+        action="login", entity_type="auth", entity_id=user.id,
+        description=f"Inicio de sesión de {user.email}"
+    )
     return {
         "access_token": security.create_access_token(
             user.id, expires_delta=access_token_expires
@@ -102,4 +108,9 @@ def register_user(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    log_activity(
+        db, new_user,
+        action="create", entity_type="user", entity_id=new_user.id,
+        description=f"Registro de nuevo usuario '{new_user.email}' ({new_user.role})"
+    )
     return new_user

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNotification } from '../components/NotificationProvider';
 import { apiClient } from '../api/client';
 import { 
   User, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function Settings() {
+  const { showAlert: notify, showConfirm: confirmAction } = useNotification();
   const [activeTab, setActiveTab] = useState('profile'); // profile, security, stations
   const [profileData, setProfileData] = useState({ full_name: '', email: '' });
   const [passData, setPassData] = useState({ current_password: '', new_password: '', confirm: '' });
@@ -88,12 +90,18 @@ export default function Settings() {
   };
 
   const deleteKitchen = async (id) => {
-    if (window.confirm("¿Eliminar esta estación definitivamente?")) {
+    const confirmed = await confirmAction(
+      '¿Eliminar Estación?', 
+      'Esta estación dejará de estar disponible para monitor de pedidos. ¿Deseas continuar?'
+    );
+    if (confirmed) {
         try {
           await apiClient.delete(`/kitchens/${id}`);
           fetchData();
+          notify('Completado', 'La estación ha sido eliminada.', 'success');
         } catch (err) {
           console.error("Error deleting kitchen:", err);
+          notify('Error', 'No se pudo eliminar la estación.', 'error');
         }
     }
   };

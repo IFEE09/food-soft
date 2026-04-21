@@ -8,6 +8,7 @@ from app.db import models
 from app.schemas import order as order_schema
 from app.api.auth import get_current_user
 from app.core.notifier import manager
+from app.core.activity import log_activity
 
 router = APIRouter()
 
@@ -57,6 +58,11 @@ async def create_order(
     
     db.commit()
     db.refresh(order)
+    log_activity(
+        db, current_user,
+        action="create", entity_type="order", entity_id=order.id,
+        description=f"Creó orden #{order.id} para '{order.client_name}' (total: ${order.total})"
+    )
     return order
 
 @router.put("/{id}", response_model=order_schema.Order)
@@ -87,6 +93,12 @@ def update_order(
     db.add(order)
     db.commit()
     db.refresh(order)
+    changed = ", ".join(update_data.keys()) if update_data else "sin cambios"
+    log_activity(
+        db, current_user,
+        action="update", entity_type="order", entity_id=order.id,
+        description=f"Actualizó orden #{order.id} (campos: {changed}, estado: {order.status})"
+    )
     return order
 
 @router.delete("/{id}", response_model=order_schema.Order)
@@ -105,7 +117,14 @@ def delete_order(
     
     # Delete items first
     db.query(models.OrderItem).filter(models.OrderItem.order_id == id).delete()
-    
+
+    deleted_id = order.id
+    deleted_client = order.client_name
     db.delete(order)
     db.commit()
+    log_activity(
+        db, current_user,
+        action="delete", entity_type="order", entity_id=deleted_id,
+        description=f"Eliminó orden #{deleted_id} de '{deleted_client}'"
+    )
     return order

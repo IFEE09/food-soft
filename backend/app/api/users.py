@@ -7,6 +7,7 @@ from app.db import models
 from app.schemas import user as user_schema
 from app.core import security
 from app.api.auth import get_current_user
+from app.core.activity import log_activity
 
 router = APIRouter()
 
@@ -37,6 +38,12 @@ def update_user_me(
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
+    changed = ", ".join(update_data.keys()) if update_data else "contraseña"
+    log_activity(
+        db, current_user,
+        action="update", entity_type="user", entity_id=current_user.id,
+        description=f"Actualizó su perfil (campos: {changed})"
+    )
     return current_user
 
 @router.post("/me/change-password")
@@ -53,4 +60,9 @@ def change_password(
     current_user.hashed_password = security.get_password_hash(password_in.new_password)
     db.add(current_user)
     db.commit()
+    log_activity(
+        db, current_user,
+        action="update", entity_type="user", entity_id=current_user.id,
+        description="Cambió su contraseña"
+    )
     return {"message": "Contraseña actualizada correctamente"}

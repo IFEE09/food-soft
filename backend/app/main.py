@@ -6,7 +6,7 @@ import secrets
 from app.core.config import settings
 from app.db.session import engine, get_db
 from app.db import models
-from app.api import auth, kitchens, users, supplies, orders, menu, integrations
+from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs
 from app.core.notifier import manager
 from app.core import security
 
@@ -82,6 +82,7 @@ app.include_router(menu.router, prefix=f"{settings.API_V1_STR}/menu", tags=["men
 app.include_router(integrations.router, prefix=f"{settings.API_V1_STR}/integrations", tags=["integrations"])
 app.include_router(kitchens.router, prefix=f"{settings.API_V1_STR}/kitchens", tags=["kitchens"])
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(activity_logs.router, prefix=f"{settings.API_V1_STR}/activity-logs", tags=["activity-logs"])
 
 @app.get("/")
 def root():

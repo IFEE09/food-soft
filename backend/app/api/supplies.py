@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import supply as supply_schema
 from app.api.auth import get_current_user
+from app.core.activity import log_activity
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -47,6 +48,11 @@ def create_supply(
         db.add(supply)
         db.commit()
         db.refresh(supply)
+        log_activity(
+            db, current_user,
+            action="create", entity_type="supply", entity_id=supply.id,
+            description=f"Creó insumo '{supply.name}' (cantidad: {supply.quantity} {supply.unit})"
+        )
         return supply
     except Exception as e:
         db.rollback()
@@ -71,10 +77,16 @@ def update_supply(
     update_data = supply_in.model_dump(exclude_unset=True)
     for field in update_data:
         setattr(supply, field, update_data[field])
-    
+
     db.add(supply)
     db.commit()
     db.refresh(supply)
+    changed = ", ".join(update_data.keys()) if update_data else "sin cambios"
+    log_activity(
+        db, current_user,
+        action="update", entity_type="supply", entity_id=supply.id,
+        description=f"Actualizó insumo '{supply.name}' (campos: {changed})"
+    )
     return supply
 
 @router.delete("/{id}", response_model=supply_schema.Supply)
@@ -90,6 +102,13 @@ def delete_supply(
                .first()
     if not supply:
         raise HTTPException(status_code=404, detail="Insumo no encontrado")
+    deleted_name = supply.name
+    deleted_id = supply.id
     db.delete(supply)
     db.commit()
+    log_activity(
+        db, current_user,
+        action="delete", entity_type="supply", entity_id=deleted_id,
+        description=f"Eliminó insumo '{deleted_name}'"
+    )
     return supply

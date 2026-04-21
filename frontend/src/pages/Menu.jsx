@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNotification } from '../components/NotificationProvider';
 import { apiClient } from '../api/client';
 import { 
   Plus, 
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function Menu() {
+  const { showAlert, showConfirm } = useNotification();
   const [menuItems, setMenuItems] = useState([]);
   const [supplies, setSupplies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,12 +99,18 @@ export default function Menu() {
   };
 
   const deleteItem = async (id) => {
-    if (window.confirm('¿Eliminar este platillo del menú?')) {
+    const confirmed = await showConfirm(
+      '¿Eliminar Platillo?', 
+      '¿Estás seguro de que deseas eliminar este platillo del menú?'
+    );
+    if (confirmed) {
         try {
             await apiClient.delete(`/menu/${id}`);
             fetchData();
+            showAlert('Eliminado', 'El platillo ha sido removido.', 'success');
         } catch (err) {
             console.error("Error deleting menu item:", err);
+            showAlert('Error', 'No se pudo eliminar el platillo.', 'error');
         }
     }
   };

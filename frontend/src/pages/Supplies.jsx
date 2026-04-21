@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNotification } from '../components/NotificationProvider';
 import { apiClient } from '../api/client';
 import { 
   Plus, 
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function Supplies() {
+  const { showAlert, showConfirm } = useNotification();
   const [supplies, setSupplies] = useState([]);
   const [filteredSupplies, setFilteredSupplies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,17 +80,27 @@ export default function Supplies() {
         const errorDetail = err.response?.data?.detail;
         const status = err.response?.status;
         const errorMessage = typeof errorDetail === 'string' ? errorDetail : (JSON.stringify(errorDetail) || "Desconocido");
-        alert(`FALLO CRÍTICO (Status: ${status}):\nError: ${errorMessage}\n\nPor favor, intenta CERRAR SESIÓN, refrescar con CMD+SHIFT+R y volver a entrar.`);
+        showAlert(
+          'Error del Sistema', 
+          `FALLO CRÍTICO (Status: ${status}): ${errorMessage}. Intenta cerrar sesión y refrescar.`, 
+          'error'
+        );
     }
   };
 
   const deleteItem = async (id) => {
-    if (window.confirm('¿Eliminar este insumo definitivamente?')) {
+    const confirmed = await showConfirm(
+      '¿Eliminar Insumo?', 
+      'Esta acción no se puede deshacer. ¿Deseas continuar?'
+    );
+    if (confirmed) {
       try {
         await apiClient.delete(`/supplies/${id}`);
         fetchSupplies();
+        showAlert('Eliminado', 'El insumo ha sido removido correctamente.', 'success');
       } catch (err) {
         console.error("Error deleting supply:", err);
+        showAlert('Error', 'No se pudo eliminar el insumo.', 'error');
       }
     }
   };
