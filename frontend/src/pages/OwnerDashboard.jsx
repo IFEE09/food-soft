@@ -34,97 +34,99 @@ export default function OwnerDashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Metrics Row - Only Pending and Ready as requested */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+      {/* Metrics Row - Brutalist Style */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: 'var(--surface-border)', border: '1px solid var(--surface-border)' }}>
         
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', borderLeft: '4px solid var(--danger-color)' }}>
+        <div style={{ background: 'var(--surface-color)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '2px solid var(--danger-color)' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <h4 style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Órdenes Pendientes</h4>
-             <AlertCircle size={18} style={{ color: 'var(--danger-color)' }} />
+             <h4 style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>PENDING_ORDERS</h4>
+             <AlertCircle size={14} style={{ color: 'var(--danger-color)' }} />
            </div>
            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-             <h3 style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--danger-color)', margin: 0, lineHeight: 1 }}>{pendingCount}</h3>
-             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>En cola hoy</span>
+             <h3 className="mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1 }}>{pendingCount}</h3>
+             <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>In Queue // Real-Time</span>
            </div>
         </div>
         
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', borderLeft: '4px solid #10B981' }}>
+        <div style={{ background: 'var(--surface-color)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '2px solid var(--success-color)' }}>
            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <h4 style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Órdenes Listas</h4>
-             <CheckCircle2 size={18} style={{ color: '#10B981' }} />
+             <h4 style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>READY_TO_SERVE</h4>
+             <CheckCircle2 size={14} style={{ color: 'var(--success-color)' }} />
            </div>
            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-             <h3 style={{ fontSize: '2.5rem', fontWeight: 700, color: '#10B981', margin: 0, lineHeight: 1 }}>{readyCount}</h3>
-             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>Por entregar</span>
+             <h3 className="mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--success-color)', margin: 0, lineHeight: 1 }}>{readyCount}</h3>
+             <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>Awaiting Delivery</span>
            </div>
         </div>
 
       </div>
 
-      {/* Tables and Charts Area */}
+      {/* Tables Area */}
       <div className="dashboard-grid">
         
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Órdenes Recientes</h3>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>RECENT_TRANSACTIONS</h3>
             <button 
               onClick={() => navigate('/dashboard/kitchen')}
-              style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              className="mono"
+              style={{ background: 'transparent', border: 'none', color: 'var(--success-color)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', textTransform: 'uppercase' }}
             >
-              Monitor de cocina <ArrowUpRight size={14} />
+              System Monitor <ArrowUpRight size={14} />
             </button>
           </div>
           
-          <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+          <div style={{ width: '100%', overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Orden</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Cliente</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Entrada</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Salida</th>
-                  <th style={{ padding: '0.75rem 0', fontWeight: 500 }}>Estado</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ID</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timestamp</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ready</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="mono">
                 {isLoading ? (
-                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center' }}>Cargando datos...</td></tr>
+                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>FETCHING_DATA...</td></tr>
                 ) : orders.length === 0 ? (
-                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center' }}>No hay órdenes recientes.</td></tr>
+                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>NO_RECORDS_FOUND</td></tr>
                 ) : orders.map((row, i) => {
-                  let badgeBg = '#F1F5F9';
-                  let badgeColor = 'var(--text-primary)';
+                  let badgeBg = 'transparent';
+                  let badgeColor = 'var(--text-secondary)';
+                  let borderColor = 'var(--surface-border)';
                   
                   if (row.status === 'pending') {
-                    badgeBg = 'var(--danger-bg)';
                     badgeColor = 'var(--danger-color)';
+                    borderColor = 'var(--danger-color)';
                   } else if (row.status === 'ready') {
-                    badgeBg = '#FEF9C3'; 
-                    badgeColor = '#CA8A04'; 
+                    badgeColor = 'var(--success-color)';
+                    borderColor = 'var(--success-color)';
                   } else if (row.status === 'delivered') {
-                    badgeBg = '#ECFDF5'; 
-                    badgeColor = '#059669'; 
+                    badgeColor = 'var(--primary-color)';
+                    borderColor = 'var(--primary-color)';
                   }
 
                   return (
                     <tr key={i} style={{ borderBottom: '1px solid var(--surface-border)' }}>
-                      <td style={{ padding: '1rem 0', fontWeight: 600, color: 'var(--primary-color)' }}>
-                        #{row.id.toString().padStart(3, '0')}
+                      <td style={{ padding: '1rem 0', color: 'var(--success-color)' }}>
+                        #{row.id.toString().padStart(4, '0')}
                       </td>
-                      <td style={{ padding: '1rem 0', fontWeight: 500, color: 'var(--text-secondary)' }}>{row.client_name || 'Generic'}</td>
-                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>
-                        {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <td style={{ padding: '1rem 0', color: 'var(--text-primary)' }}>{row.client_name || 'WEB_DIRECT'}</td>
+                      <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>
+                        {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                       </td>
                       <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>
-                        {row.ready_at ? new Date(row.ready_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                        {row.ready_at ? new Date(row.ready_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
                       </td>
                       <td style={{ padding: '1rem 0' }}>
                         <span style={{ 
-                          fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '4px', fontWeight: 600,
-                          backgroundColor: badgeBg,
+                          fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontWeight: 700,
+                          border: `1px solid ${badgeColor}44`,
                           color: badgeColor,
                           whiteSpace: 'nowrap',
-                          textTransform: 'capitalize'
+                          textTransform: 'uppercase'
                         }}>
                           {row.status}
                         </span>
@@ -139,47 +141,47 @@ export default function OwnerDashboard() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div className="glass-panel" style={{ padding: '1.5rem', minHeight: '180px', display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Resumen Semanal</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', flex: 1 }}>Datos actualizados desde el monitor.</p>
-              <div style={{ height: '80px', borderBottom: '1px dashed var(--surface-border)', borderLeft: '1px solid var(--surface-border)' }}></div>
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>WEEKLY_ANALYTICS</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', flex: 1, fontFamily: 'JetBrains Mono, monospace' }}>STREAM_ACTIVE: Latency 0ms</p>
+              <div style={{ height: '60px', borderBottom: '1px dashed var(--surface-border)', borderLeft: '1px solid var(--surface-border)' }}></div>
             </div>
 
             <div className="glass-panel" style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Stock de Cocina</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>INVENTORY_STATUS</h3>
                 <span 
-                  style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600, cursor: 'pointer' }}
+                  className="mono"
+                  style={{ fontSize: '0.65rem', color: 'var(--success-color)', fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase' }}
                   onClick={() => navigate('/dashboard/supplies')}
                 >
-                  Gestionar
+                  Configure
                 </span>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 {isLoading ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Cargando...</p>
+                  <p className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>SCANNING...</p>
                 ) : supplies.length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sin insumos registrados.</p>
+                  <p className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>EMPTY_SLOTS</p>
                 ) : supplies.map((stock, i) => {
                   const isLow = stock.quantity <= stock.min_quantity;
                   const isCritical = stock.quantity <= (stock.min_quantity / 2);
-                  const statusColor = isCritical ? 'var(--danger-color)' : isLow ? '#CA8A04' : 'var(--text-secondary)';
-                  const statusLabel = isCritical ? 'Crítico' : isLow ? 'Bajo' : 'Normal';
+                  const statusColor = isCritical ? 'var(--danger-color)' : isLow ? '#F59E0B' : 'var(--text-secondary)';
+                  const statusLabel = isCritical ? 'CRITICAL' : isLow ? 'LOW' : 'OK';
 
                   return (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ minWidth: 0, flex: 1, paddingRight: '0.5rem' }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stock.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{stock.quantity} {stock.unit}</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase' }}>{stock.name}</div>
+                        <div className="mono" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{stock.quantity} {stock.unit}</div>
                       </div>
-                      <div style={{ 
-                        fontSize: '0.65rem', 
+                      <div className="mono" style={{ 
+                        fontSize: '0.6rem', 
                         fontWeight: 700, 
                         color: statusColor,
-                        textTransform: 'uppercase',
-                        backgroundColor: isCritical ? 'var(--danger-bg)' : isLow ? '#FFFBEB' : '#F1F5F9',
+                        border: `1px solid ${statusColor}44`,
                         padding: '0.1rem 0.4rem',
-                        borderRadius: '4px'
+                        borderRadius: '2px'
                       }}>
                         {statusLabel}
                       </div>

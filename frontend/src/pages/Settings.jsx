@@ -112,52 +112,53 @@ export default function Settings() {
 
   return (
     <div style={{ maxWidth: '900px' }}>
-      <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0rem' }}>
         <button 
           onClick={() => setActiveTab('profile')}
           style={{ 
-            background: 'none', border: 'none', padding: '0.5rem 0', cursor: 'pointer',
-            color: activeTab === 'profile' ? 'var(--primary-color)' : 'var(--text-secondary)',
-            fontWeight: 600, fontSize: '0.95rem',
-            borderBottom: activeTab === 'profile' ? '2px solid var(--primary-color)' : '2px solid transparent'
+            background: 'none', border: 'none', padding: '1rem 0', cursor: 'pointer',
+            color: activeTab === 'profile' ? 'var(--success-color)' : 'var(--text-secondary)',
+            fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em',
+            borderBottom: activeTab === 'profile' ? '2px solid var(--success-color)' : '2px solid transparent'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><User size={18}/> Perfil</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><User size={16}/> PROFILE_DATA</div>
         </button>
         <button 
           onClick={() => setActiveTab('security')}
           style={{ 
-            background: 'none', border: 'none', padding: '0.5rem 0', cursor: 'pointer',
-            color: activeTab === 'security' ? 'var(--primary-color)' : 'var(--text-secondary)',
-            fontWeight: 600, fontSize: '0.95rem',
-            borderBottom: activeTab === 'security' ? '2px solid var(--primary-color)' : '2px solid transparent'
+            background: 'none', border: 'none', padding: '1rem 0', cursor: 'pointer',
+            color: activeTab === 'security' ? 'var(--success-color)' : 'var(--text-secondary)',
+            fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em',
+            borderBottom: activeTab === 'security' ? '2px solid var(--success-color)' : '2px solid transparent'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={18}/> Seguridad</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={16}/> ACCESS_SECURITY</div>
         </button>
         <button 
           onClick={() => setActiveTab('stations')}
           style={{ 
-            background: 'none', border: 'none', padding: '0.5rem 0', cursor: 'pointer',
-            color: activeTab === 'stations' ? 'var(--primary-color)' : 'var(--text-secondary)',
-            fontWeight: 600, fontSize: '0.95rem',
-            borderBottom: activeTab === 'stations' ? '2px solid var(--primary-color)' : '2px solid transparent'
+            background: 'none', border: 'none', padding: '1rem 0', cursor: 'pointer',
+            color: activeTab === 'stations' ? 'var(--success-color)' : 'var(--text-secondary)',
+            fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em',
+            borderBottom: activeTab === 'stations' ? '2px solid var(--success-color)' : '2px solid transparent'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={18}/> Estaciones</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={16}/> NETWORK_NODES</div>
         </button>
       </div>
 
       <div className="glass-panel" style={{ padding: '2.5rem' }}>
         {msg.text && (
-          <div style={{ 
-            padding: '1rem', marginBottom: '1.5rem', borderRadius: '8px', 
-            backgroundColor: msg.type === 'success' ? '#ECFDF5' : '#FEF2F2',
-            color: msg.type === 'success' ? '#059669' : '#DC2626',
-            fontSize: '0.9rem', fontWeight: 600,
+          <div className="mono" style={{ 
+            padding: '0.75rem 1rem', marginBottom: '1.5rem', borderRadius: '2px', 
+            border: `1px solid ${msg.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}`,
+            backgroundColor: 'rgba(255,255,255,0.02)',
+            color: msg.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
+            fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
             display: 'flex', alignItems: 'center', gap: '0.5rem'
           }}>
-            <ShieldCheck size={18} /> {msg.text}
+            <ShieldCheck size={16} /> {msg.text}
           </div>
         )}
 
@@ -254,31 +255,32 @@ export default function Settings() {
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Configura aquí tus estaciones del monitor de cocina.</p>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
               {kitchens.map(k => (
                 <div key={k.id} style={{ 
-                    padding: '1.25rem', border: '1px solid var(--surface-border)', borderRadius: '10px',
+                    padding: '1.25rem', border: '1px solid var(--surface-border)', borderRadius: '2px', background: 'var(--surface-color)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
                    <div>
-                     <div style={{ fontWeight: 700, fontSize: '0.95rem', color: k.is_active ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{k.name}</div>
-                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: k.is_active ? '#059669' : 'var(--danger-color)' }}>
-                         {k.is_active ? 'Activa' : 'Desconectada'}
+                     <div className="mono" style={{ fontWeight: 800, fontSize: '0.85rem', color: k.is_active ? 'var(--text-primary)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>{k.name}</div>
+                     <span className="mono" style={{ fontSize: '0.65rem', fontWeight: 700, color: k.is_active ? 'var(--success-color)' : 'var(--danger-color)', textTransform: 'uppercase' }}>
+                         {k.is_active ? 'STATE::LINKED' : 'STATE::OFFLINE'}
                      </span>
                    </div>
-                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                      <button 
                         onClick={() => toggleKitchen(k.id, k.is_active)}
-                        style={{ background: 'none', border: 'none', color: 'var(--primary-color)', cursor: 'pointer' }}
-                        title="Alternar estado"
+                        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                        title="REBOOT"
                      >
-                        <Activity size={18} />
+                        <Activity size={16} />
                      </button>
                      <button 
                         onClick={() => deleteKitchen(k.id)}
                         style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}
+                        title="TERMINATE"
                      >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                      </button>
                    </div>
                 </div>

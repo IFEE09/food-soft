@@ -15,9 +15,9 @@ import {
 } from 'lucide-react';
 
 const ROLE_CONFIG = {
-  owner: { label: 'Propietario', color: '#6366F1', bg: '#EEF2FF', icon: ShieldCheck },
-  receptionist: { label: 'Recepcionista', color: '#F59E0B', bg: '#FFFBEB', icon: HeadphonesIcon },
-  cook: { label: 'Cocinero', color: '#10B981', bg: '#ECFDF5', icon: ChefHat },
+  owner: { label: 'SYSTEM_OWNER', color: '#0044FF', bg: 'rgba(0,68,255,0.1)', icon: ShieldCheck },
+  receptionist: { label: 'RECEPTION_OFFICER', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: HeadphonesIcon },
+  cook: { label: 'KITCHEN_STAFF', color: 'var(--success-color)', bg: 'rgba(204,255,0,0.1)', icon: ChefHat },
 };
 
 export default function TeamManagement() {
@@ -104,10 +104,11 @@ export default function TeamManagement() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ 
-                      width: '42px', height: '42px', borderRadius: '50%', 
-                      background: roleConf.bg, color: roleConf.color,
+                      width: '42px', height: '42px', borderRadius: '2px', 
+                      background: 'var(--surface-border)', color: 'var(--text-primary)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: '0.85rem'
+                      fontWeight: 800, fontSize: '0.85rem', border: '1px solid var(--surface-border)',
+                      fontFamily: 'JetBrains Mono, monospace'
                     }}>
                       {member.full_name?.substring(0, 2).toUpperCase() || '??'}
                     </div>
@@ -126,11 +127,11 @@ export default function TeamManagement() {
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ 
+                  <span className="mono" style={{ 
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                    fontSize: '0.75rem', fontWeight: 700, 
-                    padding: '0.25rem 0.6rem', borderRadius: '50px',
-                    background: roleConf.bg, color: roleConf.color,
+                    fontSize: '0.65rem', fontWeight: 800, 
+                    padding: '0.2rem 0.5rem', borderRadius: '2px',
+                    border: `1px solid ${roleConf.color}44`, color: roleConf.color,
                     textTransform: 'uppercase'
                   }}>
                     <RoleIcon size={12} /> {roleConf.label}

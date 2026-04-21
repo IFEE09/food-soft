@@ -57,12 +57,13 @@ export const NotificationProvider = ({ children }) => {
     }, []);
 
     const getIcon = () => {
+        const iconSize = 40;
         switch (modal.type) {
-            case 'success': return <CheckCircle size={48} className="notification-icon-success" />;
-            case 'warning': return <AlertTriangle size={48} className="notification-icon-warning" />;
-            case 'error': return <XCircle size={48} className="notification-icon-error" />;
-            case 'confirm': return <AlertTriangle size={48} className="notification-icon-confirm" />;
-            default: return <Info size={48} className="notification-icon-info" />;
+            case 'success': return <CheckCircle size={iconSize} style={{ color: 'var(--success-color)' }} />;
+            case 'warning': return <AlertTriangle size={iconSize} style={{ color: '#F59E0B' }} />;
+            case 'error': return <XCircle size={iconSize} style={{ color: 'var(--danger-color)' }} />;
+            case 'confirm': return <AlertTriangle size={iconSize} style={{ color: 'var(--primary-color)' }} />;
+            default: return <Info size={iconSize} style={{ color: 'var(--text-secondary)' }} />;
         }
     };
 
@@ -72,32 +73,37 @@ export const NotificationProvider = ({ children }) => {
             {modal.isOpen && (
                 <div className="modal-overlay" style={{ zIndex: 9999 }}>
                     <div className="modal-content" style={{ 
-                        maxWidth: '400px', 
+                        maxWidth: '420px', 
                         textAlign: 'center',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '1rem',
-                        padding: '2.5rem 2rem'
+                        gap: '1.25rem',
+                        padding: '2.5rem 2rem',
+                        borderRadius: '2px',
+                        border: '1px solid var(--surface-border)'
                     }}>
                         <div className="notification-icon-container">
                             {getIcon()}
                         </div>
                         
                         <h2 style={{ 
-                            fontSize: '1.25rem', 
+                            fontSize: '1rem', 
                             fontWeight: 700, 
                             margin: 0,
-                            color: 'var(--text-primary)' 
+                            color: 'var(--text-primary)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em'
                         }}>
                             {modal.title}
                         </h2>
                         
                         <p style={{ 
-                            fontSize: '0.95rem', 
+                            fontSize: '0.85rem', 
                             color: 'var(--text-secondary)', 
                             margin: 0,
-                            lineHeight: '1.5'
+                            lineHeight: '1.6',
+                            fontFamily: 'JetBrains Mono, monospace'
                         }}>
                             {modal.message}
                         </p>
@@ -106,7 +112,7 @@ export const NotificationProvider = ({ children }) => {
                             display: 'flex', 
                             gap: '0.75rem', 
                             width: '100%', 
-                            marginTop: '1rem' 
+                            marginTop: '0.5rem' 
                         }}>
                             {modal.type === 'confirm' ? (
                                 <>
@@ -115,26 +121,28 @@ export const NotificationProvider = ({ children }) => {
                                         style={{ 
                                             flex: 1, 
                                             padding: '0.75rem', 
-                                            background: 'none', 
+                                            background: 'transparent', 
                                             border: '1px solid var(--surface-border)', 
-                                            borderRadius: '8px', 
+                                            borderRadius: '2px', 
                                             cursor: 'pointer',
                                             fontWeight: 600,
-                                            color: 'var(--text-secondary)'
+                                            fontSize: '0.8rem',
+                                            color: 'var(--text-secondary)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em'
                                         }}
                                     >
-                                        Cancelar
+                                        ABORT
                                     </button>
                                     <button 
                                         onClick={modal.onConfirm}
                                         className="btn-primary"
                                         style={{ 
                                             flex: 1,
-                                            background: 'var(--primary-color)',
-                                            borderRadius: '8px'
+                                            fontSize: '0.8rem'
                                         }}
                                     >
-                                        Aceptar
+                                        PROCEED
                                     </button>
                                 </>
                             ) : (
@@ -143,10 +151,10 @@ export const NotificationProvider = ({ children }) => {
                                     className="btn-primary"
                                     style={{ 
                                         width: '100%',
-                                        borderRadius: '8px'
+                                        fontSize: '0.8rem'
                                     }}
                                 >
-                                    Entendido
+                                    ACKNOWLEDGE
                                 </button>
                             )}
                         </div>
@@ -155,13 +163,8 @@ export const NotificationProvider = ({ children }) => {
             )}
             <style dangerouslySetInnerHTML={{ __html: `
                 .notification-icon-container {
-                    margin-bottom: 0.5rem;
+                    margin-bottom: 0.25rem;
                 }
-                .notification-icon-success { color: #10B981; }
-                .notification-icon-warning { color: #F59E0B; }
-                .notification-icon-error { color: #EF4444; }
-                .notification-icon-confirm { color: #6366F1; }
-                .notification-icon-info { color: #3B82F6; }
             `}} />
         </NotificationContext.Provider>
     );

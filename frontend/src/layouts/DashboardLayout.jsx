@@ -99,22 +99,23 @@ export default function DashboardLayout() {
     if (isActive('/dashboard/activity-logs')) return { title: 'Historial de Actividad', sub: 'Registro completo de movimientos de todos los usuarios' };
     if (isActive('/dashboard/settings')) return { title: 'Configuración de Sistema', sub: 'Gestiona tu perfil corporativo y seguridad de cuenta' };
     if (isActive('/dashboard/cook')) return { title: 'Mis Órdenes', sub: 'Órdenes asignadas a tu estación' };
-    return { title: 'Food-Soft', sub: 'Sistema de gestión' };
+    return { title: 'OMNIKOOK', sub: 'Dark Kitchen OS' };
   };
 
   const page = getPageTitle();
   const roleLabel = ROLE_LABEL[role] || 'Usuario';
   const RoleIcon = ROLE_ICON[role] || ShieldCheck;
-  const roleColor = role === 'owner' ? '#6366F1' : role === 'receptionist' ? '#F59E0B' : '#10B981';
-  const roleBg    = role === 'owner' ? '#EEF2FF' : role === 'receptionist' ? '#FFFBEB' : '#ECFDF5';
+  const roleColor = role === 'owner' ? 'var(--success-color)' : role === 'receptionist' ? 'var(--primary-color)' : 'var(--text-secondary)';
+  const roleBg    = role === 'owner' ? 'var(--success-bg)'    : role === 'receptionist' ? 'var(--primary-bg)'    : 'var(--neutral-bg)';
+  const roleBorder = role === 'owner' ? 'var(--success-border)' : role === 'receptionist' ? 'var(--primary-border)' : 'var(--surface-border)';
 
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div style={{ marginBottom: '2.5rem', paddingLeft: '0.5rem' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--primary-color)' }}>Food-Soft</h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Management</span>
+        <div style={{ marginBottom: '2rem', paddingLeft: '0.25rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--success-color)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>OMNIKOOK</h2>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Dark Kitchen OS</span>
         </div>
         
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -127,17 +128,20 @@ export default function DashboardLayout() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.75rem',
+            gap: '0.6rem',
             background: 'transparent',
             border: '1px solid var(--surface-border)',
-            color: 'var(--text-primary)',
-            padding: '0.75rem',
-            borderRadius: '6px',
+            color: 'var(--text-secondary)',
+            padding: '0.65rem 0.75rem',
+            borderRadius: '2px',
             cursor: 'pointer',
             fontWeight: 500,
-            fontSize: '0.9rem',
-            transition: 'all 0.2s',
-            marginTop: '2rem'
+            fontSize: '0.82rem',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            transition: 'all 0.15s',
+            marginTop: '1.5rem',
+            width: '100%'
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.background = 'var(--danger-bg)';
@@ -146,11 +150,11 @@ export default function DashboardLayout() {
           }}
           onMouseOut={(e) => {
             e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.color = 'var(--text-secondary)';
             e.currentTarget.style.borderColor = 'var(--surface-border)';
           }}
         >
-          <LogOut size={18} />
+          <LogOut size={15} />
           Cerrar Sesión
         </button>
       </aside>
@@ -159,36 +163,38 @@ export default function DashboardLayout() {
       <main className="main-content">
         <header className="dashboard-header">
             <div>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {page.title}
               </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.3rem', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.02em' }}>
                 {page.sub}
               </p>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.4rem 0.4rem 0.4rem 1rem', borderRadius: '50px', border: '1px solid var(--surface-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.5rem 0.75rem 0.5rem 1rem', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                  fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-                  background: roleBg, color: roleColor, padding: '0.25rem 0.6rem', borderRadius: '50px'
+                  fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                  background: roleBg, color: roleColor, padding: '0.2rem 0.5rem', borderRadius: '2px',
+                  fontFamily: 'JetBrains Mono, monospace', border: `1px solid ${roleBorder}`
                 }}>
-                  <RoleIcon size={12} /> {roleLabel}
+                  <RoleIcon size={11} /> {roleLabel}
                 </span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {userName}
                 </span>
                 <div style={{
-                    width: '32px', height: '32px',
-                    borderRadius: '50%',
+                    width: '30px', height: '30px',
+                    borderRadius: '2px',
                     background: roleBg,
                     color: roleColor,
                     display: 'flex', justifyContent: 'center', alignItems: 'center',
                     fontWeight: 700,
-                    fontSize: '0.8rem',
-                    border: '1px solid var(--surface-border)'
+                    fontSize: '0.75rem',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    border: `1px solid ${roleBorder}`
                  }}>
-                   {userName?.substring(0,2).toUpperCase() || 'FS'}
+                   {userName?.substring(0,2).toUpperCase() || 'OK'}
                  </div>
             </div>
         </header>

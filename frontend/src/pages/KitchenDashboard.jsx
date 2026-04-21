@@ -75,44 +75,50 @@ export default function KitchenDashboard() {
         gap: '1rem' 
       }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => setSelectedKitchen(null)}
-            style={{
-              padding: '0.6rem 1.2rem',
-              borderRadius: '50px',
-              border: selectedKitchen === null ? '1px solid var(--primary-color)' : '1px solid var(--surface-border)',
-              background: selectedKitchen === null ? 'var(--primary-color)' : 'var(--surface-color)',
-              color: selectedKitchen === null ? 'white' : 'var(--text-secondary)',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <Monitor size={16} /> Monitor General
-          </button>
+            <button 
+              onClick={() => setSelectedKitchen(null)}
+              style={{
+                padding: '0.6rem 1rem',
+                borderRadius: '2px',
+                border: selectedKitchen === null ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
+                background: selectedKitchen === null ? 'rgba(204,255,0,0.1)' : 'var(--surface-color)',
+                color: selectedKitchen === null ? 'var(--success-color)' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'JetBrains Mono, monospace'
+              }}
+            >
+              <Monitor size={14} /> MASTER_MONITOR
+            </button>
           
           {kitchens.map(k => (
             <button 
               key={k.id}
               onClick={() => setSelectedKitchen(k.id)}
               style={{
-                padding: '0.6rem 1.2rem',
-                borderRadius: '50px',
-                border: selectedKitchen === k.id ? '1px solid var(--primary-color)' : '1px solid var(--surface-border)',
-                background: selectedKitchen === k.id ? 'var(--primary-color)' : 'var(--surface-color)',
-                color: selectedKitchen === k.id ? 'white' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '0.85rem',
+                padding: '0.6rem 1rem',
+                borderRadius: '2px',
+                border: selectedKitchen === k.id ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
+                background: selectedKitchen === k.id ? 'rgba(204,255,0,0.1)' : 'var(--surface-color)',
+                color: selectedKitchen === k.id ? 'var(--success-color)' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '0.75rem',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.5rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'JetBrains Mono, monospace'
               }}
             >
-              <Activity size={16} /> {k.name}
+              <Activity size={14} /> {k.name}
             </button>
           ))}
           
@@ -121,21 +127,19 @@ export default function KitchenDashboard() {
               onClick={() => setIsModalOpen(true)}
               style={{
                 padding: '0.6rem',
-                borderRadius: '50%',
-                border: '1px dashed var(--primary-color)',
-                background: 'none',
-                color: 'var(--primary-color)',
+                borderRadius: '2px',
+                border: '1px dashed var(--success-color)',
+                background: 'transparent',
+                color: 'var(--success-color)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'all 0.2s'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-bg)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-              title="Agregar Estación"
+              title="Add Node"
             >
-              <Plus size={18} />
+              <Plus size={16} />
             </button>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary-color)', opacity: 0.8 }}>
               Agrega tus cocinas
@@ -143,16 +147,17 @@ export default function KitchenDashboard() {
           </div>
         </div>
 
-        <div style={{ 
-          padding: '0.5rem 1rem', 
-          backgroundColor: 'var(--danger-bg)', 
+        <div className="mono" style={{ 
+          padding: '0.4rem 0.75rem', 
+          backgroundColor: 'rgba(255,51,51,0.1)', 
           color: 'var(--danger-color)', 
-          border: '1px solid var(--danger-border)',
-          borderRadius: '50px',
+          border: '1px solid var(--danger-color)',
+          borderRadius: '2px',
           fontWeight: 700,
-          fontSize: '0.8rem'
+          fontSize: '0.7rem',
+          textTransform: 'uppercase'
         }}>
-          {filteredOrders.length} Pendientes
+          {filteredOrders.length} PENDING_TASKS
         </div>
       </div>
 

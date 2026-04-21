@@ -56,76 +56,78 @@ export default function Register() {
     return password === confirmPassword ? 'var(--success-color)' : 'var(--danger-color)';
   };
 
-  return (
-    <div className="login-container" style={{ background: 'radial-gradient(circle at top right, #f1f5f9, #f8fafc)' }}>
+  return (    <div className="login-container">
       <div className="glass-card" style={{ padding: '3rem 2.5rem', width: '100%', maxWidth: '420px', margin: 'auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div style={{ display: 'inline-flex', padding: '12px', borderRadius: '16px', background: 'var(--primary-color)', color: 'white', marginBottom: '1rem' }}>
-            <ChefHat size={28} />
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>Crea tu Cuenta</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Management para Dark Kitchens</p>
+          <img 
+            src="/src/assets/omnikook-logo.png" 
+            alt="OMNIKOOK" 
+            style={{ height: '36px', marginBottom: '1.25rem', filter: 'brightness(0) invert(1)' }} 
+          />
+          <h1 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--success-color)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>New Registration</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>Management Layer for Dark Kitchens</p>
         </div>
 
         <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Nombre Completo / Empresa</label>
+            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Organization Name</label>
             <div style={{ position: 'relative' }}>
-              <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="text" placeholder="James L. / Food-Soft" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', height: '48px' }} />
+              <User size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type="text" placeholder="GHOST_KITCHEN_01" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mono" style={{ width: '100%', paddingLeft: '44px', height: '48px' }} />
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Correo Electrónico</label>
+            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Email Endpoint</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type="email" placeholder="ejemplo@foodsoft.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', height: '48px' }} />
+              <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type="email" placeholder="ops@omnikook.cx" value={email} onChange={(e) => setEmail(e.target.value)} required className="mono" style={{ width: '100%', paddingLeft: '44px', height: '48px' }} />
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Contraseña</label>
+            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Access Key</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-              <input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px' }} />
+              <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="mono" style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px' }} />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px' }}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>Confirmar Contraseña</label>
+            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Verify Key</label>
             <div style={{ position: 'relative' }}>
-              <ShieldCheck size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: confirmPassword ? (password === confirmPassword ? 'var(--success-color)' : 'var(--danger-color)') : 'var(--text-secondary)' }} />
+              <ShieldCheck size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: confirmPassword ? (password === confirmPassword ? 'var(--success-color)' : 'var(--danger-color)') : 'var(--text-secondary)' }} />
               <input 
                 type={showConfirm ? 'text' : 'password'} placeholder="••••••••" value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)} required 
-                style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px', borderColor: getBorderColor(), borderWidth: confirmPassword ? '2px' : '1px' }} 
+                className="mono"
+                style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px', borderColor: getBorderColor() }} 
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', opacity: 0.6 }}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px' }}
               >
-                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          {errorMsg && <p style={{ color: 'var(--danger-color)', fontSize: '0.85rem', fontWeight: 600 }}>{errorMsg}</p>}
+          {errorMsg && <p className="mono" style={{ color: 'var(--danger-color)', fontSize: '0.75rem', fontWeight: 600 }}>ERROR: {errorMsg}</p>}
 
           <button type="submit" className="btn-primary" style={{ height: '52px', marginTop: '0.5rem', gap: '0.75rem' }} disabled={isLoading}>
-            {isLoading ? 'Registrando...' : <>Crear Cuenta <ArrowRight size={18} /></>}
+            {isLoading ? 'INITIATING...' : <>COMMIT_REGISTRATION <ArrowRight size={18} /></>}
           </button>
 
-          <button type="button" onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <ArrowLeft size={16} /> Ya tengo cuenta
+          <button type="button" onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <ArrowLeft size={14} /> Back to Login
           </button>
         </form>
       </div>

@@ -142,19 +142,19 @@ export default function ReceptionDashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Metrics Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid var(--danger-color)' }}>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500, textTransform: 'uppercase' }}>En Cola</p>
-          <h3 style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: 'var(--danger-color)' }}>{pendingCount}</h3>
+      {/* Metrics Row - OMNIKOOK Grid Style */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1px', background: 'var(--surface-border)', border: '1px solid var(--surface-border)' }}>
+        <div style={{ padding: '1.25rem', background: 'var(--surface-color)', borderLeft: '2px solid var(--danger-color)' }}>
+          <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>QUEUE_STATUS</p>
+          <h3 className="mono" style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: 'var(--danger-color)' }}>{pendingCount}</h3>
         </div>
-        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #F59E0B' }}>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500, textTransform: 'uppercase' }}>Por Entregar</p>
-          <h3 style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#F59E0B' }}>{readyCount}</h3>
+        <div style={{ padding: '1.25rem', background: 'var(--surface-color)', borderLeft: '2px solid #F59E0B' }}>
+          <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>AWAITING_DELIVERY</p>
+          <h3 className="mono" style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#F59E0B' }}>{readyCount}</h3>
         </div>
-        <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '4px solid #10B981' }}>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500, textTransform: 'uppercase' }}>Total Hoy</p>
-          <h3 style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#10B981' }}>{orders.length}</h3>
+        <div style={{ padding: '1.25rem', background: 'var(--surface-color)', borderLeft: '2px solid var(--success-color)' }}>
+          <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>DAILY_THROUGHPUT</p>
+          <h3 className="mono" style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: 'var(--success-color)' }}>{orders.length}</h3>
         </div>
       </div>
 
@@ -162,23 +162,26 @@ export default function ReceptionDashboard() {
       <div className="glass-panel" style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {[
-            { key: 'pending', label: 'Pendientes', color: 'var(--danger-color)' },
-            { key: 'ready', label: 'Listas', color: '#F59E0B' },
-            { key: 'delivered', label: 'Entregadas', color: '#10B981' }
+            { key: 'pending', label: 'IN_QUEUE', color: 'var(--danger-color)' },
+            { key: 'ready', label: 'READY_STATION', color: '#F59E0B' },
+            { key: 'delivered', label: 'FULFILLED', color: 'var(--success-color)' }
           ].map(tab => (
-            <button 
+            <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
                 padding: '0.5rem 1rem',
-                borderRadius: '50px',
+                borderRadius: '2px',
                 border: activeTab === tab.key ? `1px solid ${tab.color}` : '1px solid var(--surface-border)',
                 background: activeTab === tab.key ? tab.color : 'transparent',
-                color: activeTab === tab.key ? 'white' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '0.85rem',
+                color: activeTab === tab.key ? '#0A0A0A' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.15s',
+                fontFamily: 'JetBrains Mono, monospace'
               }}
             >
               {tab.label}
@@ -206,17 +209,17 @@ export default function ReceptionDashboard() {
               <div key={order.id} className="glass-panel" style={{ 
                 padding: '1.25rem', 
                 display: 'flex', flexDirection: 'column', gap: '1rem',
-                borderTop: `3px solid ${order.status === 'pending' ? 'var(--danger-color)' : order.status === 'ready' ? '#F59E0B' : '#10B981'}`
+                borderTop: `2px solid ${order.status === 'pending' ? 'var(--danger-color)' : order.status === 'ready' ? '#F59E0B' : 'var(--success-color)'}`
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary-color)' }}>#{order.id.toString().padStart(3, '0')}</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                      <User size={12} /> {order.client_name || 'Sin nombre'}
+                    <h3 className="mono" style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--success-color)' }}>#{order.id.toString().padStart(4, '0')}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.3rem', textTransform: 'uppercase', fontWeight: 600 }}>
+                      <User size={11} /> {order.client_name || 'WEB_CLIENT'}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: timeAgo > 15 ? 'var(--danger-color)' : 'var(--text-secondary)', fontWeight: 600 }}>
-                    <Clock size={14} /> {timeAgo} min
+                  <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: timeAgo > 15 ? 'var(--danger-color)' : 'var(--text-secondary)', fontWeight: 600 }}>
+                    <Clock size={12} /> {timeAgo}m
                   </div>
                 </div>
 
@@ -225,12 +228,12 @@ export default function ReceptionDashboard() {
                     {order.items.map((item, idx) => (
                       <li key={idx} style={{ 
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '0.4rem 0.6rem', background: '#F8FAFC', borderRadius: '6px', fontSize: '0.85rem'
+                        padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--surface-border)', borderRadius: '2px', fontSize: '0.8rem'
                       }}>
-                        <span style={{ fontWeight: 500 }}>{item.product_name}</span>
-                        <span style={{ 
-                          background: 'var(--primary-color)', color: 'white', 
-                          fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase' }}>{item.product_name}</span>
+                        <span className="mono" style={{ 
+                          background: 'var(--surface-border)', color: 'var(--success-color)',
+                          fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '1px', fontWeight: 700
                         }}>x{item.quantity}</span>
                       </li>
                     ))}
@@ -238,8 +241,8 @@ export default function ReceptionDashboard() {
                 </div>
 
                 {order.total > 0 && (
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--primary-color)', textAlign: 'right' }}>
-                    Total: ${order.total.toFixed(2)}
+                  <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'right' }}>
+                    VAL: ${order.total.toFixed(2)}
                   </div>
                 )}
 
@@ -248,7 +251,7 @@ export default function ReceptionDashboard() {
                     <button 
                       onClick={() => markAsDelivered(order.id)}
                       className="btn-primary" 
-                      style={{ flex: 1, gap: '0.5rem', background: '#059669', fontSize: '0.85rem' }}
+                      style={{ flex: 1, gap: '0.5rem', background: 'var(--success-color)', color: '#0A0A0A', fontSize: '0.85rem' }}
                     >
                       <CheckCircle2 size={16} /> Entregar
                     </button>
@@ -258,7 +261,7 @@ export default function ReceptionDashboard() {
                       onClick={() => deleteOrder(order.id)}
                       style={{ 
                         flex: 1, padding: '0.6rem', background: 'none', 
-                        border: '1px solid var(--danger-border)', borderRadius: '6px',
+                        border: '1px solid var(--danger-border)', borderRadius: '2px',
                         color: 'var(--danger-color)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem'
                       }}
@@ -305,7 +308,7 @@ export default function ReceptionDashboard() {
               </div>
 
               {/* Menu items to add */}
-              <div style={{ background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid var(--surface-border)' }}>
+              <div style={{ background: 'var(--neutral-bg)', padding: '1rem', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem', display: 'block' }}>Agregar del Menú</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
                   {menuItems.map(mi => (
@@ -313,8 +316,8 @@ export default function ReceptionDashboard() {
                       key={mi.id} type="button"
                       onClick={() => addItemToOrder(mi)}
                       style={{
-                        padding: '0.4rem 0.75rem', borderRadius: '50px',
-                        border: '1px solid var(--surface-border)', background: 'white',
+                        padding: '0.4rem 0.75rem', borderRadius: '2px',
+                        border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)',
                         cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500,
                         color: 'var(--text-primary)', transition: 'all 0.15s'
                       }}
@@ -335,15 +338,15 @@ export default function ReceptionDashboard() {
                   {orderItems.map((item, idx) => (
                     <div key={idx} style={{ 
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0.5rem 0.75rem', background: '#F8FAFC', borderRadius: '8px', border: '1px solid var(--surface-border)'
+                      padding: '0.5rem 0.75rem', background: 'var(--neutral-bg)', borderRadius: '2px', border: '1px solid var(--surface-border)'
                     }}>
                       <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{item.product_name}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <button type="button" onClick={() => updateItemQuantity(idx, item.quantity - 1)}
-                          style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid var(--surface-border)', background: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '1rem' }}>−</button>
+                          style={{ width: '28px', height: '28px', borderRadius: '2px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 700, fontSize: '1rem' }}>−</button>
                         <span style={{ fontWeight: 700, minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
                         <button type="button" onClick={() => updateItemQuantity(idx, item.quantity + 1)}
-                          style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid var(--surface-border)', background: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '1rem' }}>+</button>
+                          style={{ width: '28px', height: '28px', borderRadius: '2px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 700, fontSize: '1rem' }}>+</button>
                         <span style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.85rem', minWidth: '60px', textAlign: 'right' }}>${(item.price * item.quantity).toFixed(2)}</span>
                         <button type="button" onClick={() => removeItemFromOrder(idx)}
                           style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '4px' }}>

@@ -145,12 +145,12 @@ export default function Menu() {
             <div key={item.id} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 700, background: '#EFF6FF', color: '#1E40AF', padding: '0.2rem 0.6rem', borderRadius: '50px', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(0,68,255,0.1)', color: 'var(--primary-color)', padding: '0.2rem 0.6rem', borderRadius: '2px', textTransform: 'uppercase', border: '1px solid var(--primary-color)', letterSpacing: '0.05em' }}>
                             {item.category}
                         </span>
-                        <h3 style={{ margin: '0.5rem 0 0.25rem 0', fontSize: '1.15rem', fontWeight: 700 }}>{item.name}</h3>
+                        <h3 style={{ margin: '0.75rem 0 0.25rem 0', fontSize: '1.1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{item.name}</h3>
                     </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary-color)' }}>
+                    <div className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--success-color)' }}>
                         ${item.price.toFixed(2)}
                     </div>
                 </div>
@@ -159,12 +159,12 @@ export default function Menu() {
                 </p>
                 
                 <div style={{ marginTop: '0.5rem', borderTop: '1px solid var(--surface-border)', paddingTop: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.6rem' }}>
-                        <BookOpen size={14} /> RECETA ({item.recipe_items.length} Ingredientes)
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        <BookOpen size={12} /> RECIPE_MATRIX ({item.recipe_items.length}_INPUTS)
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                         {item.recipe_items.map(ri => (
-                           <div key={ri.id} style={{ fontSize: '0.75rem', background: '#F8FAFC', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
+                           <div key={ri.id} className="mono" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem 0.5rem', borderRadius: '2px', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                              {ri.quantity}{ri.supply?.unit} {ri.supply?.name}
                            </div>
                         ))}

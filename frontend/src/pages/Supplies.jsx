@@ -135,33 +135,33 @@ export default function Supplies() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10B981' }}>
-          <div style={{ padding: '0.75rem', borderRadius: '12px', background: '#ECFDF5', color: '#10B981' }}>
-            <DollarSign size={24} />
+        <div style={{ padding: '1.25rem', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '2px solid var(--success-color)', borderBottom: '1px solid var(--surface-border)' }}>
+          <div style={{ padding: '0.75rem', borderRadius: '2px', background: 'rgba(204,255,0,0.05)', color: 'var(--success-color)', border: '1px solid var(--success-border)' }}>
+            <DollarSign size={20} />
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Valor Total Inventario</p>
-            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>
+            <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>TOTAL_ASSET_VALUE</p>
+            <h3 className="mono" style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               {isLoading ? (
-                <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', opacity: 0.7 }}>Calculando...</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>SCANNING...</span>
               ) : (
-                `$${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
               )}
             </h3>
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid var(--danger-color)' }}>
-          <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'var(--danger-bg)', color: 'var(--danger-color)' }}>
-            <TrendingDown size={24} />
+        <div style={{ padding: '1.25rem', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '2px solid var(--danger-color)', borderBottom: '1px solid var(--surface-border)' }}>
+          <div style={{ padding: '0.75rem', borderRadius: '2px', background: 'rgba(255,51,51,0.05)', color: 'var(--danger-color)', border: '1px solid var(--danger-border)' }}>
+            <TrendingDown size={20} />
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Alertas de Reabastecimiento</p>
-            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700 }}>
+            <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>DEPLETION_ALERTS</p>
+            <h3 className="mono" style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--danger-color)' }}>
               {isLoading ? (
-                <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', opacity: 0.7 }}>Verificando...</span>
+                <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>VERIFYING...</span>
               ) : (
-                `${lowStockCount} Insumos`
+                `${lowStockCount} UNITS`
               )}
             </h3>
           </div>
@@ -188,7 +188,7 @@ export default function Supplies() {
         <div style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
             <thead>
-              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid var(--surface-border)' }}>
+              <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>
                 <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>INSUMO</th>
                 <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>CATEGORÍA</th>
                 <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>STOCK ACTUAL</th>
@@ -214,27 +214,27 @@ export default function Supplies() {
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</div>
                     </td>
                     <td style={{ padding: '1.25rem 1.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', background: '#F1F5F9', padding: '0.2rem 0.6rem', borderRadius: '50px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.7rem', background: 'var(--neutral-bg)', padding: '0.2rem 0.6rem', borderRadius: '2px', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.04em', border: '1px solid var(--surface-border)' }}>
                         {item.category || 'Sin Cat.'}
                       </span>
                     </td>
-                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 500 }}>
-                      {item.quantity} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{item.unit}</span>
+                    <td className="mono" style={{ padding: '1.25rem 1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {item.quantity} <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{item.unit}</span>
                     </td>
-                    <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)' }}>
+                    <td className="mono" style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                       ${(item.cost || 0).toFixed(3)}
                     </td>
-                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600, color: 'var(--primary-color)' }}>
-                      ${itemTotalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    <td className="mono" style={{ padding: '1.25rem 1.5rem', fontWeight: 700, color: 'var(--success-color)' }}>
+                      ${itemTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
                     <td style={{ padding: '1.25rem 1.5rem' }}>
                       <div style={{ 
                         display: 'flex', alignItems: 'center', gap: '0.4rem', 
-                        color: isCritical ? 'var(--danger-color)' : isLow ? '#CA8A04' : '#059669',
-                        fontSize: '0.85rem', fontWeight: 600
+                        color: isCritical ? 'var(--danger-color)' : isLow ? '#F59E0B' : 'var(--success-color)',
+                        fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em'
                       }}>
-                        {isLow && <AlertTriangle size={14} />}
-                        {isCritical ? 'Crítico' : isLow ? 'Bajo' : 'Suficiente'}
+                        {isLow && <AlertTriangle size={12} />}
+                        {isCritical ? 'CRITICAL_LOW' : isLow ? 'LOW_STOCK' : 'STABLE'}
                       </div>
                     </td>
                     <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
@@ -322,7 +322,7 @@ export default function Supplies() {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} style={{ flex: 1, padding: '0.75rem', background: 'none', border: '1px solid var(--surface-border)', borderRadius: '6px', cursor: 'pointer' }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ flex: 1, padding: '0.75rem', background: 'none', border: '1px solid var(--surface-border)', borderRadius: '2px', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.8rem' }}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }}>
@@ -335,7 +335,7 @@ export default function Supplies() {
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .table-row-hover:hover { background-color: #F8FAFC; }
+        .table-row-hover:hover { background-color: var(--neutral-bg); }
       `}} />
 
     </div>
