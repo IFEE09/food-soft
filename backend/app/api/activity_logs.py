@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.db import models
+from app.api.auth import require_owner
 from app.schemas import activity as activity_schema
 
 router = APIRouter()
