@@ -7,7 +7,6 @@ import {
   Utensils, 
   BookOpen, 
   Trash2, 
-  Edit2, 
   X, 
   ChevronRight,
   Database

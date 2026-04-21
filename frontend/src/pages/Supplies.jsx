@@ -4,11 +4,8 @@ import { apiClient } from '../api/client';
 import { 
   Plus, 
   Search, 
-  MoreVertical, 
   AlertTriangle, 
   TrendingDown, 
-  Package, 
-  Filter,
   Trash2,
   Edit2,
   DollarSign

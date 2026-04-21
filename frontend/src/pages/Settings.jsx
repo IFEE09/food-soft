@@ -9,7 +9,6 @@ import {
   ShieldCheck, 
   Building2,
   Trash2,
-  Plus,
   Eye,
   EyeOff
 } from 'lucide-react';

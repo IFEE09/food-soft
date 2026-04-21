@@ -23,7 +23,7 @@ function App() {
           {/* Public Auth Routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<Register />} />
           </Route>
 
           {/* Protected Dashboard Routes */}
