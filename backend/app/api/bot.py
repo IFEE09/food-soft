@@ -55,7 +55,7 @@ def verify_meta_webhook(
     raise HTTPException(status_code=403, detail="Verification token mismatch")
 
 @router.post("/webhook")
-async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
     """
     Receives real events from Meta (WhatsApp, IG, Messenger).
     Extracts data and processes it asynchronously after validating signature.
@@ -83,14 +83,18 @@ async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks, db: Se
         body = await request.json()
     
     # Meta expects immediate 200 OK
-    bg_tasks.add_task(process_meta_payload, body, db)
+    bg_tasks.add_task(process_meta_payload, body)
     
     return {"status": "EVENT_RECEIVED"}
 
-def process_meta_payload(body: dict, db: Session):
+def process_meta_payload(body: dict):
     """
-    Parser logic for the complex Meta JSON payloads
+    Parser logic for the complex Meta JSON payloads.
+    Uses a fresh DB session (request session must not be used after the HTTP response).
     """
+    from app.db.session import SessionLocal
+
+    db = SessionLocal()
     try:
         # 1. WhatsApp Parser
         if body.get("object") == "whatsapp_business_account":
@@ -109,10 +113,9 @@ def process_meta_payload(body: dict, db: Session):
                             elif interactive.get("type") == "list_reply":
                                 interactive_id = interactive.get("list_reply", {}).get("id")
 
-                        # We assume org_id=1 for this MVP or resolve from WhatsApp Business ID
                         BotEngine.process_message(
                             db=db,
-                            organization_id=1,
+                            organization_id=settings.DEFAULT_BOT_ORGANIZATION_ID,
                             channel="whatsapp",
                             sender_id=sender_id,
                             text=text,
@@ -127,14 +130,15 @@ def process_meta_payload(body: dict, db: Session):
                     message = messaging.get("message", {})
                     text = message.get("text", "")
                     
-                    # We assume org_id=1
                     BotEngine.process_message(
                         db=db,
-                        organization_id=1,
+                        organization_id=settings.DEFAULT_BOT_ORGANIZATION_ID,
                         channel="messenger" if body.get("object") == "page" else "instagram",
                         sender_id=sender_id,
                         text=text
                     )
     except Exception:
         logger.exception("Error parsing Meta payload")
+    finally:
+        db.close()
 

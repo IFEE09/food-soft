@@ -7,6 +7,7 @@ from app.db import models
 from app.schemas import order as order_schema
 from app.core.notifier import manager
 from app.core.activity import log_activity
+from app.core.inventory import deduct_supplies_for_line_items
 
 router = APIRouter()
 
@@ -45,16 +46,18 @@ async def create_external_order(
     db.add(new_order)
     db.flush()
 
+    lines: list[tuple[str, int]] = []
     for item_in in order_in.items:
-        # We could also automatically match names with menu_items to calculate recipe stock here
-        # For now, just add the order item
-        item = models.OrderItem(
-            order_id=new_order.id,
-            product_name=item_in.product_name,
-            quantity=item_in.quantity
+        db.add(
+            models.OrderItem(
+                order_id=new_order.id,
+                product_name=item_in.product_name,
+                quantity=item_in.quantity,
+            )
         )
-        db.add(item)
-    
+        lines.append((item_in.product_name, item_in.quantity))
+
+    deduct_supplies_for_line_items(db, org.id, lines)
     db.commit()
     db.refresh(new_order)
 
@@ -66,6 +69,9 @@ async def create_external_order(
     )
 
     # NOTIFY WebSocket Clients instantly!
-    await manager.notify_organization(org.id, {"type": "new_order", "order_id": new_order.id})
+    await manager.notify_organization(
+        org.id,
+        {"type": "new_order", "order_id": new_order.id, "source": "api_key"},
+    )
 
     return new_order

@@ -2,10 +2,8 @@ import logging
 import secrets
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import jwt
-from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -14,6 +12,7 @@ logger = logging.getLogger(__name__)
 from app.db import models
 from app.db.session import get_db
 from app.core import security
+from app.core.rate_limit import limiter
 from app.core.config import settings
 from app.core.activity import log_activity
 from app.schemas.user import User as UserSchema, UserCreate
@@ -26,11 +25,8 @@ def get_current_user(
     db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> models.User:
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id = payload.get("sub")
-    except (jwt.JWTError, ValidationError):
+        user_id = security.decode_access_token_subject(token)
+    except security.InvalidAccessToken:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
@@ -63,9 +59,11 @@ def require_owner(current_user: models.User = Depends(get_current_user)) -> mode
 router = APIRouter()
 
 @router.post("/login")
+@limiter.limit("30/minute")
 def login_access_token(
-    db: Session = Depends(get_db), 
-    form_data: OAuth2PasswordRequestForm = Depends()
+    request: Request,
+    db: Session = Depends(get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Any:
     """
     OAuth2 compatible token login, retrieve an access token for future requests
@@ -94,7 +92,8 @@ def login_access_token(
         ),
         "token_type": "bearer",
         "role": user.role,
-        "full_name": user.full_name
+        "full_name": user.full_name,
+        "organization_id": user.organization_id,
     }
 
 @router.post("/register", response_model=UserSchema)
@@ -106,6 +105,11 @@ def register_user(
     """
     Register a new user. Default role is owner for this MVP.
     """
+    if not settings.PUBLIC_REGISTRATION_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="El registro público está desactivado.",
+        )
     user = db.query(models.User).filter(models.User.email == user_in.email).first()
     if user:
         raise HTTPException(

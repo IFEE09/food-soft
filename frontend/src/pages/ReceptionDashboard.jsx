@@ -317,9 +317,9 @@ export default function ReceptionDashboard() {
                       onClick={() => addItemToOrder(mi)}
                       style={{
                         padding: '0.4rem 0.75rem', borderRadius: '2px',
-                        border: '1px solid var(--surface-border)', background: 'var(--surface-color)', color: 'var(--text-primary)',
-                        cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500,
-                        color: 'var(--text-primary)', transition: 'all 0.15s'
+                        border: '1px solid var(--surface-border)', background: 'var(--surface-color)',
+                        color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500,
+                        transition: 'all 0.15s'
                       }}
                     >
                       {mi.name} <span style={{ color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>${mi.price.toFixed(2)}</span>

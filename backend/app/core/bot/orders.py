@@ -1,10 +1,11 @@
-import asyncio
-
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db import models
-from app.core.notifier import manager
+from app.core.activity import log_activity
+from app.core.inventory import deduct_supplies_for_line_items
+from app.core.notifier import schedule_notify_organization
+
 
 class OrderService:
     @staticmethod
@@ -34,28 +35,40 @@ class OrderService:
         db.add(new_order)
         db.flush()
 
+        lines: list[tuple[str, int]] = []
         for it in items:
-            order_item = models.OrderItem(
-                order_id=new_order.id,
-                product_name=it["name"],
-                quantity=it["qty"]
+            name = (it.get("name") or "").strip()
+            if not name:
+                continue
+            qty = int(it.get("qty") or 1)
+            db.add(
+                models.OrderItem(
+                    order_id=new_order.id,
+                    product_name=name,
+                    quantity=qty,
+                )
             )
-            db.add(order_item)
+            lines.append((name, qty))
 
+        deduct_supplies_for_line_items(db, session.organization_id, lines)
         db.commit()
         db.refresh(new_order)
 
-        # Notify kitchen via WebSockets instantly!
+        log_activity(
+            db,
+            None,
+            action="create",
+            entity_type="order",
+            entity_id=new_order.id,
+            description=f"Pedido WhatsApp/bot #{new_order.id} para '{new_order.client_name}' (${new_order.total})",
+            organization_id=session.organization_id,
+        )
+
         if session.organization_id:
-            try:
-                # We use a helper to fire the notification since this is a sync method
-                asyncio.create_task(manager.notify_organization(
-                    session.organization_id, 
-                    {"type": "new_order", "order_id": new_order.id, "source": "bot"}
-                ))
-            except Exception:
-                # Fallback if no loop is running (e.g. in tests)
-                pass
+            schedule_notify_organization(
+                session.organization_id,
+                {"type": "new_order", "order_id": new_order.id, "source": "bot"},
+            )
 
         # Update session tracking
         session.last_interaction_at = func.now()

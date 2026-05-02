@@ -37,11 +37,16 @@ export default function Login() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      const { access_token, role, full_name } = response.data;
-      
+      const { access_token, role, full_name, organization_id } = response.data;
+
       localStorage.setItem('token', access_token);
       localStorage.setItem('role', role);
       localStorage.setItem('userName', full_name);
+      if (organization_id != null) {
+        localStorage.setItem('organizationId', String(organization_id));
+      } else {
+        localStorage.removeItem('organizationId');
+      }
 
       if (role === 'owner') {
         navigate('/dashboard/owner');

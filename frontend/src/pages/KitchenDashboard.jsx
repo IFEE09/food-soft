@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
+import { useOrgKitchenOrders } from '../hooks/useOrgKitchenOrders';
 import { 
   Clock, 
   CheckCircle2, 
@@ -12,31 +13,27 @@ import {
 } from 'lucide-react';
 
 export default function KitchenDashboard() {
+  const { orders, refetch, isLoading: ordersLoading } = useOrgKitchenOrders();
   const [kitchens, setKitchens] = useState([]);
-  const [orders, setOrders] = useState([]);
   const [selectedKitchen, setSelectedKitchen] = useState(null); // null = All
-  const [isLoading, setIsLoading] = useState(true);
+  const [kitchensLoading, setKitchensLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newKitchenName, setNewKitchenName] = useState('');
 
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
+  const isLoading = ordersLoading || kitchensLoading;
 
-  const fetchInitialData = async () => {
-    try {
-      const [kRes, oRes] = await Promise.all([
-        apiClient.get('/kitchens/'),
-        apiClient.get('/orders/?status=pending')
-      ]);
-      setKitchens(kRes.data);
-      setOrders(oRes.data);
-    } catch (err) {
-      console.error("Error fetching kitchen data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    (async () => {
+      try {
+        const kRes = await apiClient.get('/kitchens/');
+        setKitchens(kRes.data);
+      } catch (err) {
+        console.error('Error fetching kitchens:', err);
+      } finally {
+        setKitchensLoading(false);
+      }
+    })();
+  }, []);
 
   const handleCreateKitchen = async (e) => {
     e.preventDefault();
@@ -53,7 +50,7 @@ export default function KitchenDashboard() {
   const markAsReady = async (orderId) => {
     try {
       await apiClient.put(`/orders/${orderId}`, { status: 'ready' });
-      setOrders(orders.filter(o => o.id !== orderId));
+      await refetch();
     } catch (err) {
       console.error("Error updating order status:", err);
     }

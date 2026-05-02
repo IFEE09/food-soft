@@ -27,7 +27,7 @@ class UserInDBBase(UserBase):
 
 # Additional properties to return via API
 class User(UserInDBBase):
-    pass
+    organization_id: Optional[int] = None
 
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):

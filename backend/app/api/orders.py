@@ -8,6 +8,7 @@ from app.db import models
 from app.schemas import order as order_schema
 from app.api.auth import get_current_user
 from app.core.activity import log_activity
+from app.core.inventory import deduct_supplies_for_line_items
 
 router = APIRouter()
 
@@ -47,18 +48,20 @@ async def create_order(
         organization_id=current_user.organization_id
     )
     db.add(order)
-    db.commit()
-    db.refresh(order)
-    
-    # Add items
+    db.flush()
+
+    lines: list[tuple[str, int]] = []
     for item_in in order_in.items:
-        item = models.OrderItem(
-            order_id=order.id,
-            product_name=item_in.product_name,
-            quantity=item_in.quantity
+        db.add(
+            models.OrderItem(
+                order_id=order.id,
+                product_name=item_in.product_name,
+                quantity=item_in.quantity,
+            )
         )
-        db.add(item)
-    
+        lines.append((item_in.product_name, item_in.quantity))
+
+    deduct_supplies_for_line_items(db, current_user.organization_id, lines)
     db.commit()
     db.refresh(order)
     log_activity(

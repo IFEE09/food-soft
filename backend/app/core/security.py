@@ -1,11 +1,16 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Union
-from jose import jwt
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+class InvalidAccessToken(Exception):
+    """Token JWT ausente, inválido o expirado."""
 
 
 def create_access_token(
@@ -22,6 +27,20 @@ def create_access_token(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
+
+def decode_access_token_subject(token: str) -> int:
+    """Extrae el user id del JWT; lanza InvalidAccessToken si falla."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        sub = payload.get("sub")
+        if sub is None:
+            raise InvalidAccessToken("Token sin subject")
+        return int(sub)
+    except (JWTError, ValueError, TypeError) as e:
+        raise InvalidAccessToken(str(e)) from e
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

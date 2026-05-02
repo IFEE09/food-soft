@@ -1,18 +1,26 @@
+import asyncio
 import logging
 import secrets
-from fastapi import FastAPI, Depends, HTTPException, WebSocket
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, HTTPException, Query, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-from app.db.session import engine, get_db
+from app.db.session import SessionLocal, engine, get_db
 from app.db import models
 from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs, bot, organizations
-from app.core.notifier import manager
+from app.core.notifier import manager, set_main_loop
 from app.core import security
+from app.core.rate_limit import limiter
+from app.core.security_headers import SecurityHeadersMiddleware
 
 # For simple MVP/Dev, we check for missing columns on startup
 def run_migrations():
@@ -63,20 +71,32 @@ def init_db_data():
 run_migrations()
 init_db_data()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    set_main_loop(asyncio.get_running_loop())
+    yield
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Backend API for Smart POS System",
     version="1.0.0",
+    lifespan=lifespan,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Register Routers
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
@@ -95,13 +115,34 @@ def root():
     return {"message": "Food-Soft Dark Kitchen System API is Online"}
 
 @app.websocket("/ws/{org_id}")
-async def websocket_endpoint(websocket: WebSocket, org_id: int):
-    await manager.connect(websocket, org_id)
+async def websocket_endpoint(
+    websocket: WebSocket,
+    org_id: int,
+    token: str = Query(..., description="JWT Bearer del mismo usuario que la cocina"),
+):
+    db = SessionLocal()
     try:
-        while True:
-            await websocket.receive_text()
-    except Exception:
-        manager.disconnect(websocket, org_id)
+        try:
+            uid = security.decode_access_token_subject(token)
+        except security.InvalidAccessToken:
+            await websocket.close(code=4401)
+            return
+        user = db.query(models.User).filter(models.User.id == uid).first()
+        if not user or not user.is_active:
+            await websocket.close(code=4401)
+            return
+        if user.organization_id != org_id:
+            await websocket.close(code=4403)
+            return
+
+        await manager.connect(websocket, org_id)
+        try:
+            while True:
+                await websocket.receive_text()
+        except Exception:
+            manager.disconnect(websocket, org_id)
+    finally:
+        db.close()
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
