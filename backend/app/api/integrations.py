@@ -1,4 +1,6 @@
+import secrets
 from typing import Any, List
+
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 from sqlalchemy.orm import Session
@@ -18,13 +20,27 @@ async def get_organization_by_key(
     api_key: str = Security(api_key_header),
     db: Session = Depends(get_db)
 ) -> models.Organization:
-    org = db.query(models.Organization).filter(models.Organization.api_key == api_key).first()
-    if not org:
+    """
+    Resuelve la organización por API key con comparación en tiempo constante
+    (evita filtrar por igualdad directa en BD por filas candidatas).
+    """
+    if not api_key or not api_key.strip():
         raise HTTPException(
             status_code=403,
-            detail="Llave de API inválida o expirada."
+            detail="Llave de API inválida o expirada.",
         )
-    return org
+    candidates = (
+        db.query(models.Organization)
+        .filter(models.Organization.api_key.isnot(None))
+        .all()
+    )
+    for org in candidates:
+        if org.api_key and secrets.compare_digest(api_key.strip(), org.api_key):
+            return org
+    raise HTTPException(
+        status_code=403,
+        detail="Llave de API inválida o expirada.",
+    )
 
 @router.post("/orders", response_model=order_schema.Order)
 async def create_external_order(

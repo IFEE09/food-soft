@@ -42,6 +42,9 @@ class Settings(BaseSettings):
 
     # WhatsApp/Meta bot → internal orders (until mapped per phone_number_id)
     DEFAULT_BOT_ORGANIZATION_ID: int = 1
+
+    # Si True, permite POST /bot/mock fuera de producción (en prod siempre denegado)
+    ENABLE_BOT_MOCK_ENDPOINT: bool = True
     
     # Use pydantic_settings model config to load .env if present
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
@@ -60,6 +63,10 @@ class Settings(BaseSettings):
             if self.PUBLIC_REGISTRATION_ENABLED:
                 logger.warning(
                     "PUBLIC_REGISTRATION_ENABLED=True: el endpoint /auth/register está expuesto."
+                )
+            if not (self.META_APP_SECRET or "").strip():
+                logger.warning(
+                    "META_APP_SECRET vacío en producción: el POST /bot/webhook no validará firmas."
                 )
         return self
 

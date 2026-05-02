@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, Request, Query, HTTPException
-from sqlalchemy.orm import Session
+import hashlib
+import hmac
+import json
+import logging
+import secrets
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from typing import Optional
+
 from app.db.session import get_db
 from app.core.bot.engine import BotEngine
 from app.core.config import settings
-import hmac
-import hashlib
-import logging
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -25,7 +29,11 @@ def mock_webhook_receive(payload: MockMetaPayload, db: Session = Depends(get_db)
     """
     Simulates receiving a payload from Meta APIs without needing ngrok or internet connection.
     """
-    
+    if settings.ENV == "production":
+        raise HTTPException(status_code=404, detail="Not Found")
+    if not settings.ENABLE_BOT_MOCK_ENDPOINT:
+        raise HTTPException(status_code=404, detail="Not Found")
+
     response_logs = BotEngine.process_message(
         db=db,
         organization_id=payload.org_id,
@@ -60,27 +68,32 @@ async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
     Receives real events from Meta (WhatsApp, IG, Messenger).
     Extracts data and processes it asynchronously after validating signature.
     """
-    # 1. Signature Validation (X-Hub-Signature-256)
+    if settings.ENV == "production" and not (settings.META_APP_SECRET or "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail="META_APP_SECRET no configurado; webhook deshabilitado.",
+        )
+
+    body_bytes = await request.body()
+
     if settings.META_APP_SECRET:
         signature = request.headers.get("X-Hub-Signature-256")
         if not signature:
             raise HTTPException(status_code=403, detail="Missing signature header")
-        
-        body_bytes = await request.body()
+
         expected_sig = hmac.new(
             settings.META_APP_SECRET.encode(),
             body_bytes,
-            hashlib.sha256
+            hashlib.sha256,
         ).hexdigest()
-        
-        # Format is 'sha256=HEX_SIG'
-        if signature.replace("sha256=", "") != expected_sig:
+        sig_hex = signature.replace("sha256=", "").strip()
+        if not hmac.compare_digest(sig_hex, expected_sig):
             raise HTTPException(status_code=403, detail="Invalid signature")
-        
-        body = await request.json() # Already bytes consumed, but FastAPI handles JSON re-parse
-    else:
-        # Skip validation if secret is not set (not recommended for production)
-        body = await request.json()
+
+    try:
+        body = json.loads(body_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
     
     # Meta expects immediate 200 OK
     bg_tasks.add_task(process_meta_payload, body)

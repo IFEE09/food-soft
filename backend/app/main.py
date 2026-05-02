@@ -78,11 +78,15 @@ async def lifespan(app: FastAPI):
     yield
 
 
+_docs = settings.ENV != "production"
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Backend API for Smart POS System",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if _docs else None,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
