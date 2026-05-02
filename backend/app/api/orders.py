@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -7,7 +7,6 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
 from app.api.auth import get_current_user
-from app.core.notifier import manager
 from app.core.activity import log_activity
 
 router = APIRouter()
@@ -18,8 +17,8 @@ def read_orders(
     current_user: models.User = Depends(get_current_user),
     skip: int = 0,
     limit: int = 100,
-    status: str = None,
-    kitchen_id: int = None,
+    status: Optional[str] = None,
+    kitchen_id: Optional[int] = None,
 ) -> Any:
     """ Retrieve orders for organization. """
     query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)

@@ -46,7 +46,7 @@ def init_db_data():
     db = next(get_db())
     
     # 1. FIX: Assign default organization to users that don't have one (legacy users)
-    legacy_users = db.query(models.User).filter(models.User.organization_id == None).all()
+    legacy_users = db.query(models.User).filter(models.User.organization_id.is_(None)).all()
     for lu in legacy_users:
         new_org = models.Organization(name=f"Kitchen of {lu.full_name}", api_key=secrets.token_urlsafe(32))
         db.add(new_org)

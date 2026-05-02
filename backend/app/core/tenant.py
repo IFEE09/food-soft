@@ -1,15 +1,15 @@
-from typing import Type, TypeVar
+from typing import TypeVar
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import DeclarativeBase, Session
 
 from app.db import models
 
-T = TypeVar("T")
+T = TypeVar("T", bound=DeclarativeBase)
 
 
 def get_owned_or_404(
     db: Session,
-    model: Type[T],
+    model: type[T],
     entity_id: int,
     current_user: models.User,
     not_found_detail: str = "Recurso no encontrado",

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Any, Dict, List
 from fastapi import WebSocket
 
 class ConnectionManager:
@@ -16,7 +16,7 @@ class ConnectionManager:
         if org_id in self.active_connections:
             self.active_connections[org_id].remove(websocket)
 
-    async def notify_organization(self, org_id: int, message: dict):
+    async def notify_organization(self, org_id: int, message: dict[str, Any]):
         if org_id in self.active_connections:
             for connection in self.active_connections[org_id]:
                 try:

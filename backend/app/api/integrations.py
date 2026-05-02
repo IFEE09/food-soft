@@ -1,5 +1,5 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException, Security, Request
+from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -31,7 +31,6 @@ async def create_external_order(
     db: Session = Depends(get_db),
     org: models.Organization = Depends(get_organization_by_key),
     order_in: order_schema.OrderCreate,
-    request: Request
 ) -> Any:
     """
     Receives an order from an external bot (WhatsApp, etc.) using DeepSeek.

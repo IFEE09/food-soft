@@ -1,8 +1,11 @@
+from typing import Any, List
+
+
 class WhatsAppAdapter:
     """Formatter for Meta WhatsApp Cloud API messages."""
 
     @staticmethod
-    def format_text(to: str, text: str) -> dict:
+    def format_text(to: str, text: str) -> dict[str, Any]:
         return {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -12,7 +15,13 @@ class WhatsAppAdapter:
         }
 
     @staticmethod
-    def format_list(to: str, header_text: str, body_text: str, button_text: str, sections: list) -> dict:
+    def format_list(
+        to: str,
+        header_text: str,
+        body_text: str,
+        button_text: str,
+        sections: List[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         sections must be a list of dicts: {"title": "Menu Category", "rows": [{"id": "xyz", "title": "Pizza", "description": "$12"}]}
         """
@@ -33,7 +42,9 @@ class WhatsAppAdapter:
         }
 
     @staticmethod
-    def format_buttons(to: str, body_text: str, buttons: list) -> dict:
+    def format_buttons(
+        to: str, body_text: str, buttons: List[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         buttons must be a list of dicts: {"id": "btn_1", "title": "Accept"} -- max 3 buttons
         """
@@ -64,6 +75,6 @@ class WhatsAppAdapter:
 class MessengerAdapter:
     """Mock for Facebook Messenger Adapter (Placeholder for Phase 5)"""
     @staticmethod
-    def format_text(to: str, text: str) -> dict:
+    def format_text(to: str, text: str) -> dict[str, Any]:
         # Generic Template logic would go here
         return {"messaging_type": "RESPONSE", "recipient": {"id": to}, "message": {"text": text}}

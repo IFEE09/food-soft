@@ -17,7 +17,7 @@ class MockMetaPayload(BaseModel):
     channel_user_id: str
     message: str 
     # Optional field to simulate interactive button/list clicks
-    interactive_id: str = None 
+    interactive_id: Optional[str] = None
     org_id: int = 1
 
 @router.post("/mock")

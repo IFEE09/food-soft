@@ -1,7 +1,10 @@
+import asyncio
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session
+
 from app.db import models
 from app.core.notifier import manager
-import asyncio
 
 class OrderService:
     @staticmethod
@@ -15,7 +18,10 @@ class OrderService:
 
         # Build order internally
         # We need a kitchen to assign. Just grab the first active one for simplicity.
-        kitchen = db.query(models.Kitchen).filter(models.Kitchen.is_active == True, models.Kitchen.organization_id == session.organization_id).first()
+        kitchen = db.query(models.Kitchen).filter(
+            models.Kitchen.is_active.is_(True),
+            models.Kitchen.organization_id == session.organization_id,
+        ).first()
         kitchen_id = kitchen.id if kitchen else None
 
         new_order = models.Order(
@@ -37,8 +43,6 @@ class OrderService:
             db.add(order_item)
 
         db.commit()
-
-        db.commit()
         db.refresh(new_order)
 
         # Notify kitchen via WebSockets instantly!
@@ -54,7 +58,7 @@ class OrderService:
                 pass
 
         # Update session tracking
-        session.last_interaction_at = models.func.now()
+        session.last_interaction_at = func.now()
         db.add(session)
         db.commit()
 

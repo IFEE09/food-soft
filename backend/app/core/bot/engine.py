@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy.orm import Session
 from app.db import models
 from app.core.bot.adapters import WhatsAppAdapter
@@ -37,7 +39,14 @@ class BotEngine:
         return customer, session
 
     @staticmethod
-    def process_message(db: Session, organization_id: int, channel: str, sender_id: str, text: str, interactive_id: str = None):
+    def process_message(
+        db: Session,
+        organization_id: int,
+        channel: str,
+        sender_id: str,
+        text: str,
+        interactive_id: Optional[str] = None,
+    ):
         """
         State Machine engine that decides what to say/do based on the user's current status in the DB.
         Returns a list of hypothetical external payloads we would fire via requests/axios.
