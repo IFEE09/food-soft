@@ -11,9 +11,15 @@ logger = logging.getLogger(__name__)
 class BotEngine:
     @staticmethod
     def get_or_create_session(db: Session, org_id: int, channel: str, sender_id: str):
-        customer = db.query(models.BotCustomer).filter_by(
-            channel_user_id=sender_id, channel=channel
-        ).first()
+        customer = (
+            db.query(models.BotCustomer)
+            .filter_by(
+                organization_id=org_id,
+                channel_user_id=sender_id,
+                channel=channel,
+            )
+            .first()
+        )
         
         if not customer:
             customer = models.BotCustomer(
@@ -93,7 +99,14 @@ class BotEngine:
         elif session.state == "ARMANDO_PEDIDO":
             if interactive_id and interactive_id.startswith("add_item_"):
                 item_id = int(interactive_id.split("_")[-1])
-                menu_item = db.query(models.MenuItem).filter_by(id=item_id).first()
+                menu_item = (
+                    db.query(models.MenuItem)
+                    .filter(
+                        models.MenuItem.id == item_id,
+                        models.MenuItem.organization_id == organization_id,
+                    )
+                    .first()
+                )
                 if menu_item:
                     cart = dict(session.cart_data) if session.cart_data else {"items": [], "total": 0.0}
                     cart["items"].append({"id": menu_item.id, "name": menu_item.name, "qty": 1, "price": menu_item.price})

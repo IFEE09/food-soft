@@ -2,14 +2,16 @@ import hashlib
 import hmac
 import json
 import logging
-import secrets
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Dict, Optional
+
+from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.db import models
 from app.core.bot.engine import BotEngine
 from app.core.config import settings
 
@@ -100,6 +102,35 @@ async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
     
     return {"status": "EVENT_RECEIVED"}
 
+
+def _resolve_whatsapp_organization_id(db: Session, metadata: Optional[Dict]) -> int:
+    """Multitenancy: metadata.phone_number_id → Organization.whatsapp_phone_number_id."""
+    meta = metadata or {}
+    pn = meta.get("phone_number_id")
+    if pn:
+        pn_str = str(pn).strip()
+        org = (
+            db.query(models.Organization)
+            .filter(models.Organization.whatsapp_phone_number_id == pn_str)
+            .first()
+        )
+        if org:
+            return org.id
+        logger.warning(
+            "WhatsApp phone_number_id=%s sin organización vinculada; usar PATCH "
+            "/organizations/me/whatsapp. DEFAULT_BOT_ORGANIZATION_ID=%s.",
+            pn_str,
+            settings.DEFAULT_BOT_ORGANIZATION_ID,
+        )
+    else:
+        logger.warning(
+            "Webhook WhatsApp sin metadata.phone_number_id; usando "
+            "DEFAULT_BOT_ORGANIZATION_ID=%s.",
+            settings.DEFAULT_BOT_ORGANIZATION_ID,
+        )
+    return settings.DEFAULT_BOT_ORGANIZATION_ID
+
+
 def process_meta_payload(body: dict):
     """
     Parser logic for the complex Meta JSON payloads.
@@ -114,6 +145,8 @@ def process_meta_payload(body: dict):
             for entry in body.get("entry", []):
                 for change in entry.get("changes", []):
                     value = change.get("value", {})
+                    metadata = value.get("metadata") or {}
+                    org_id = _resolve_whatsapp_organization_id(db, metadata)
                     for message in value.get("messages", []):
                         sender_id = message.get("from")
                         text = message.get("text", {}).get("body", "")
@@ -128,7 +161,7 @@ def process_meta_payload(body: dict):
 
                         BotEngine.process_message(
                             db=db,
-                            organization_id=settings.DEFAULT_BOT_ORGANIZATION_ID,
+                            organization_id=org_id,
                             channel="whatsapp",
                             sender_id=sender_id,
                             text=text,

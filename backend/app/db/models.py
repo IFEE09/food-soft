@@ -10,6 +10,8 @@ class Organization(Base):
     # Legacy: texto plano (se migra a api_key_hash y se anula)
     api_key = Column(String, unique=True, index=True, nullable=True)
     api_key_hash = Column(String, unique=True, index=True, nullable=True)
+    # Meta WhatsApp Cloud: metadata.phone_number_id del webhook → organización
+    whatsapp_phone_number_id = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class User(Base):

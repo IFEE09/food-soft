@@ -9,6 +9,7 @@ from app.schemas import order as order_schema
 from app.api.auth import get_current_user
 from app.core.activity import log_activity
 from app.core.inventory import deduct_supplies_for_line_items
+from app.core.tenant import assert_kitchen_in_organization
 
 router = APIRouter()
 
@@ -40,6 +41,8 @@ async def create_order(
     order_in: order_schema.OrderCreate,
 ) -> Any:
     """ Create new order for organization. """
+    assert_kitchen_in_organization(db, order_in.kitchen_id, current_user.organization_id)
+
     order = models.Order(
         client_name=order_in.client_name,
         total=order_in.total,
@@ -87,6 +90,10 @@ def update_order(
         raise HTTPException(status_code=404, detail="Order not found")
     
     update_data = order_in.model_dump(exclude_unset=True)
+    if "kitchen_id" in update_data and update_data["kitchen_id"] is not None:
+        assert_kitchen_in_organization(
+            db, update_data["kitchen_id"], current_user.organization_id
+        )
     for field in update_data:
         setattr(order, field, update_data[field])
     

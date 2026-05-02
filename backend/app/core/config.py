@@ -70,6 +70,14 @@ class Settings(BaseSettings):
                 )
         return self
 
+    @model_validator(mode="after")
+    def warn_default_secret_in_dev(self):
+        if self.ENV != "production" and self.SECRET_KEY == _DEFAULT_SECRET:
+            logger.warning(
+                "SECRET_KEY sigue siendo el valor por defecto; cambiar en .env antes de exponer la API."
+            )
+        return self
+
     def get_cors_origins(self) -> List[str]:
         raw = (self.ALLOWED_ORIGINS or "").strip()
         if raw:

@@ -6,7 +6,7 @@ from app.db import models
 from app.schemas import menu as menu_schemas
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
-from app.core.tenant import get_owned_or_404
+from app.core.tenant import assert_supply_in_organization, get_owned_or_404
 
 router = APIRouter()
 
@@ -42,8 +42,11 @@ def create_menu_item(
     db.add(new_item)
     db.flush() # To get ID
 
-    # Add recipe items
+    # Add recipe items (insumos solo de la misma organización)
     for recipe_in in item_in.recipe_items:
+        assert_supply_in_organization(
+            db, recipe_in.supply_id, current_user.organization_id
+        )
         recipe_entry = models.MenuItemRecipe(
             menu_item_id=new_item.id,
             supply_id=recipe_in.supply_id,
@@ -78,6 +81,9 @@ def update_menu_item(
         # Complex logic: Remove old ones and add new ones
         db.query(models.MenuItemRecipe).filter(models.MenuItemRecipe.menu_item_id == item_id).delete()
         for recipe_in in item_in.recipe_items:
+            assert_supply_in_organization(
+                db, recipe_in.supply_id, current_user.organization_id
+            )
             recipe_entry = models.MenuItemRecipe(
                 menu_item_id=item_id,
                 supply_id=recipe_in.supply_id,

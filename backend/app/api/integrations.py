@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
 from app.core.notifier import manager
+from app.core.tenant import assert_kitchen_in_organization
 
 router = APIRouter()
 
@@ -69,6 +70,8 @@ async def create_external_order(
     """
     Receives an order from an external bot (WhatsApp, etc.) using DeepSeek.
     """
+    assert_kitchen_in_organization(db, order_in.kitchen_id, org.id)
+
     new_order = models.Order(
         client_name=order_in.client_name or "Cliente Robot",
         total=order_in.total,

@@ -38,6 +38,7 @@ def run_migrations():
         "ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0",
         "ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE",
         "ALTER TABLE organizations ADD COLUMN api_key_hash VARCHAR UNIQUE",
+        "ALTER TABLE organizations ADD COLUMN whatsapp_phone_number_id VARCHAR UNIQUE",
     ]
 
     for query in migrations:
