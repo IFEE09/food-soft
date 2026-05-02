@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.db import models
 from app.api.auth import require_owner
 from app.core.activity import log_activity
+from app.core.api_keys import hash_api_key
 
 router = APIRouter()
 
@@ -27,7 +28,8 @@ def rotate_api_key(
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
     
     new_key = secrets.token_urlsafe(32)
-    org.api_key = new_key
+    org.api_key_hash = hash_api_key(new_key)
+    org.api_key = None
     db.add(org)
     db.commit()
     db.refresh(org)

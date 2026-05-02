@@ -21,6 +21,7 @@ from app.core.notifier import manager, set_main_loop
 from app.core import security
 from app.core.rate_limit import limiter
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.api_keys import hash_api_key
 
 # For simple MVP/Dev, we check for missing columns on startup
 def run_migrations():
@@ -36,6 +37,7 @@ def run_migrations():
         "ALTER TABLE menu_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0",
         "ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE",
+        "ALTER TABLE organizations ADD COLUMN api_key_hash VARCHAR UNIQUE",
     ]
 
     for query in migrations:
@@ -56,12 +58,29 @@ def init_db_data():
     # 1. FIX: Assign default organization to users that don't have one (legacy users)
     legacy_users = db.query(models.User).filter(models.User.organization_id.is_(None)).all()
     for lu in legacy_users:
-        new_org = models.Organization(name=f"Kitchen of {lu.full_name}", api_key=secrets.token_urlsafe(32))
+        raw_k = secrets.token_urlsafe(32)
+        new_org = models.Organization(
+            name=f"Kitchen of {lu.full_name}",
+            api_key_hash=hash_api_key(raw_k),
+        )
         db.add(new_org)
         db.flush()
         lu.organization_id = new_org.id
         logger.info("Reparación: Organización asignada al usuario %s", lu.email)
     db.commit()
+
+    # 1b. API keys: rellenar hash desde texto plano y borrar plano
+    orgs_plain = db.query(models.Organization).filter(
+        models.Organization.api_key.isnot(None),
+        models.Organization.api_key_hash.is_(None),
+    ).all()
+    for org in orgs_plain:
+        org.api_key_hash = hash_api_key(org.api_key)
+        org.api_key = None
+        db.add(org)
+    if orgs_plain:
+        db.commit()
+        logger.info("Migración: %s api_key migradas a api_key_hash.", len(orgs_plain))
 
     # 2. SEED: Create initial Admin/Owner if table is completely empty
     owner = db.query(models.User).filter(models.User.role == "owner").first()
@@ -116,6 +135,8 @@ app.include_router(organizations.router, prefix=f"{settings.API_V1_STR}/organiza
 
 @app.get("/")
 def root():
+    if settings.ENV == "production":
+        return {"ok": True}
     return {"message": "Food-Soft Dark Kitchen System API is Online"}
 
 @app.websocket("/ws/{org_id}")
@@ -152,7 +173,9 @@ async def websocket_endpoint(
 def health_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
-        return {"status": "ok"}
+        if settings.ENV == "production":
+            return {"status": "ok"}
+        return {"status": "ok", "env": settings.ENV}
     except Exception:
         logger.exception("Health check failed")
         raise HTTPException(status_code=503, detail="Database unavailable")

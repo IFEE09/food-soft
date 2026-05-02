@@ -15,6 +15,7 @@ from app.core import security
 from app.core.rate_limit import limiter
 from app.core.config import settings
 from app.core.activity import log_activity
+from app.core.api_keys import hash_api_key
 from app.schemas.user import User as UserSchema, UserCreate
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -117,10 +118,10 @@ def register_user(
             detail="Ya existe un usuario con este correo electrónico.",
         )
     
-    # Create organization for New Owner with Secure API Key
+    raw_api = secrets.token_urlsafe(32)
     new_org = models.Organization(
         name=f"Kitchen of {user_in.full_name}",
-        api_key=secrets.token_urlsafe(32)
+        api_key_hash=hash_api_key(raw_api),
     )
     db.add(new_org)
     db.flush()

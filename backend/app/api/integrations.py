@@ -4,39 +4,56 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 from sqlalchemy.orm import Session
+
+from app.core.activity import log_activity
+from app.core.api_keys import hash_api_key
+from app.core.inventory import deduct_supplies_for_line_items
 from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
 from app.core.notifier import manager
-from app.core.activity import log_activity
-from app.core.inventory import deduct_supplies_for_line_items
 
 router = APIRouter()
 
 API_KEY_NAME = "X-API-KEY"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
 
+
 async def get_organization_by_key(
     api_key: str = Security(api_key_header),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> models.Organization:
-    """
-    Resuelve la organización por API key con comparación en tiempo constante
-    (evita filtrar por igualdad directa en BD por filas candidatas).
-    """
+    """Resuelve por SHA-256; migra texto plano legacy una vez."""
     if not api_key or not api_key.strip():
         raise HTTPException(
             status_code=403,
             detail="Llave de API inválida o expirada.",
         )
-    candidates = (
+    stripped = api_key.strip()
+    digest = hash_api_key(stripped)
+    org = (
+        db.query(models.Organization)
+        .filter(models.Organization.api_key_hash == digest)
+        .first()
+    )
+    if org:
+        return org
+
+    legacy = (
         db.query(models.Organization)
         .filter(models.Organization.api_key.isnot(None))
         .all()
     )
-    for org in candidates:
-        if org.api_key and secrets.compare_digest(api_key.strip(), org.api_key):
-            return org
+    for row in legacy:
+        if row.api_key and secrets.compare_digest(stripped, row.api_key):
+            plain = row.api_key
+            row.api_key_hash = hash_api_key(plain)
+            row.api_key = None
+            db.add(row)
+            db.commit()
+            db.refresh(row)
+            return row
+
     raise HTTPException(
         status_code=403,
         detail="Llave de API inválida o expirada.",
