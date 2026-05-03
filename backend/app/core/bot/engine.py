@@ -593,7 +593,13 @@ class BotEngine:
                     db, channel, sender_id, session, organization_id, int(item_id)
                 )
                 out.extend(result)
-                ai_reply = f"Producto ID:{item_id} agregado al carrito."
+                # Obtener el nombre real del producto para el historial
+                menu_item = db.query(models.MenuItem).filter(
+                    models.MenuItem.id == int(item_id),
+                    models.MenuItem.organization_id == organization_id
+                ).first()
+                product_name = menu_item.name if menu_item else f"Producto {item_id}"
+                ai_reply = f"{product_name} agregado al carrito."
 
         elif action == "VIEW_CART":
             result = BotEngine._execute_view_cart(channel, sender_id, session)
@@ -612,7 +618,12 @@ class BotEngine:
                     db, channel, sender_id, session, int(item_id), int(quantity)
                 )
                 out.extend(result)
-                ai_reply = f"Cantidad de producto ID:{item_id} actualizada a {quantity}."
+                menu_item_upd = db.query(models.MenuItem).filter(
+                    models.MenuItem.id == int(item_id),
+                    models.MenuItem.organization_id == organization_id
+                ).first()
+                product_name_upd = menu_item_upd.name if menu_item_upd else f"Producto {item_id}"
+                ai_reply = f"Cantidad de {product_name_upd} actualizada a {quantity}."
 
         elif action == "REMOVE_FROM_CART":
             item_id = ai_response.get("item_id")
@@ -625,7 +636,12 @@ class BotEngine:
                     db, channel, sender_id, session, int(item_id)
                 )
                 out.extend(result)
-                ai_reply = f"Producto ID:{item_id} eliminado del carrito."
+                menu_item_rm = db.query(models.MenuItem).filter(
+                    models.MenuItem.id == int(item_id),
+                    models.MenuItem.organization_id == organization_id
+                ).first()
+                product_name_rm = menu_item_rm.name if menu_item_rm else f"Producto {item_id}"
+                ai_reply = f"{product_name_rm} eliminado del carrito."
 
         elif action == "ASK_ADDRESS":
             result = BotEngine._execute_ask_address(channel, sender_id, session, db)
