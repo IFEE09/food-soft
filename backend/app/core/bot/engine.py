@@ -145,14 +145,18 @@ class BotEngine:
         # STATE: PIDIENDO_DIRECCION -> text received is the address
         elif session.state == "PIDIENDO_DIRECCION":
             cart = dict(session.cart_data) if session.cart_data else {}
-            cart["address"] = text
+            
+            # Sanitization: trim, limit length and remove potentially malicious chars
+            sanitized_address = (text or "")[:255].strip().replace("<", "").replace(">", "")
+            
+            cart["address"] = sanitized_address
             session.cart_data = cart
             session.state = "CONFIRMANDO_PEDIDO"
             db.commit()
 
             # Format total to 2 decimals for professional display
             formatted_total = f"{cart.get('total', 0):.2f}"
-            msg_body = f"Resumen: ${formatted_total}\nEnvío a: {text}\n¿Confirmar pedido?"
+            msg_body = f"Resumen: ${formatted_total}\nEnvío a: {sanitized_address}\n¿Confirmar pedido?"
             buttons = [
                 {"id": "btn_confirm_order", "title": "Sí, confirmar"},
                 {"id": "btn_cancel_order", "title": "Cancelar"}
