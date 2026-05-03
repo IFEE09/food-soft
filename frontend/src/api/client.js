@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-// Default FastAPI backend port on local development, or relative in production/railway
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Detect if we are running in a production environment (non-localhost)
+const isProduction = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
+
+// If in production and no explicit VITE_API_URL is set, we assume the API is on the same host under /api/v1
+const DEFAULT_PROD_URL = `${window.location.protocol}//${window.location.host}/api/v1`;
+const DEFAULT_DEV_URL = 'http://localhost:8000/api/v1';
+
+const API_URL = import.meta.env.VITE_API_URL || (isProduction ? DEFAULT_PROD_URL : DEFAULT_DEV_URL);
 
 export const apiClient = axios.create({
   baseURL: API_URL,
