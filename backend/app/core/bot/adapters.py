@@ -1,17 +1,26 @@
+"""
+Adaptadores de mensajería para Meta Cloud API.
+
+Cada adaptador formatea los payloads JSON que se envían a la Graph API
+para su canal correspondiente:
+  - WhatsAppAdapter   → WhatsApp Business Cloud API
+  - MessengerAdapter  → Facebook Messenger (Page Messaging)
+  - InstagramAdapter  → Instagram Direct Messages (Messaging API)
+"""
 from typing import Any, List
 
 
 class WhatsAppAdapter:
-    """Formatter for Meta WhatsApp Cloud API messages."""
+    """Formateador para Meta WhatsApp Cloud API."""
 
     @staticmethod
-    def format_text(to: str, text: str) -> dict[str, Any]:
+    def format_text(to: str, text: str) -> dict:
         return {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
             "to": to,
             "type": "text",
-            "text": {"preview_url": False, "body": text}
+            "text": {"preview_url": False, "body": text},
         }
 
     @staticmethod
@@ -20,11 +29,8 @@ class WhatsAppAdapter:
         header_text: str,
         body_text: str,
         button_text: str,
-        sections: List[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """
-        sections must be a list of dicts: {"title": "Menu Category", "rows": [{"id": "xyz", "title": "Pizza", "description": "$12"}]}
-        """
+        sections: List[dict],
+    ) -> dict:
         return {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -35,29 +41,21 @@ class WhatsAppAdapter:
                 "header": {"type": "text", "text": header_text},
                 "body": {"text": body_text},
                 "action": {
-                    "button": button_text[:20],  # max 20 chars
-                    "sections": sections
-                }
-            }
+                    "button": button_text[:20],
+                    "sections": sections,
+                },
+            },
         }
 
     @staticmethod
-    def format_buttons(
-        to: str, body_text: str, buttons: List[dict[str, Any]]
-    ) -> dict[str, Any]:
-        """
-        buttons must be a list of dicts: {"id": "btn_1", "title": "Accept"} -- max 3 buttons
-        """
-        action_buttons = []
-        for btn in buttons[:3]:
-            action_buttons.append({
+    def format_buttons(to: str, body_text: str, buttons: List[dict]) -> dict:
+        action_buttons = [
+            {
                 "type": "reply",
-                "reply": {
-                    "id": btn["id"],
-                    "title": btn["title"][:20]  # max 20 chars
-                }
-            })
-
+                "reply": {"id": btn["id"], "title": btn["title"][:20]},
+            }
+            for btn in buttons[:3]
+        ]
         return {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -66,15 +64,97 @@ class WhatsAppAdapter:
             "interactive": {
                 "type": "button",
                 "body": {"text": body_text},
-                "action": {
-                    "buttons": action_buttons
-                }
-            }
+                "action": {"buttons": action_buttons},
+            },
         }
 
+
 class MessengerAdapter:
-    """Mock for Facebook Messenger Adapter (Placeholder for Phase 5)"""
+    """Formateador para Facebook Messenger (Page Messaging API)."""
+
     @staticmethod
-    def format_text(to: str, text: str) -> dict[str, Any]:
-        # Generic Template logic would go here
-        return {"messaging_type": "RESPONSE", "recipient": {"id": to}, "message": {"text": text}}
+    def format_text(to: str, text: str) -> dict:
+        return {
+            "messaging_type": "RESPONSE",
+            "recipient": {"id": to},
+            "message": {"text": text},
+        }
+
+    @staticmethod
+    def format_quick_replies(to: str, text: str, buttons: List[dict]) -> dict:
+        quick_replies = [
+            {
+                "content_type": "text",
+                "title": btn["title"][:20],
+                "payload": btn["id"],
+            }
+            for btn in buttons[:13]
+        ]
+        return {
+            "messaging_type": "RESPONSE",
+            "recipient": {"id": to},
+            "message": {
+                "text": text,
+                "quick_replies": quick_replies,
+            },
+        }
+
+    @staticmethod
+    def format_generic_template(to: str, elements: List[dict]) -> dict:
+        return {
+            "messaging_type": "RESPONSE",
+            "recipient": {"id": to},
+            "message": {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "generic",
+                        "elements": elements[:10],
+                    },
+                }
+            },
+        }
+
+
+class InstagramAdapter:
+    """Formateador para Instagram Direct Messages (Messaging API)."""
+
+    @staticmethod
+    def format_text(to: str, text: str) -> dict:
+        return {
+            "recipient": {"id": to},
+            "message": {"text": text},
+        }
+
+    @staticmethod
+    def format_quick_replies(to: str, text: str, buttons: List[dict]) -> dict:
+        quick_replies = [
+            {
+                "content_type": "text",
+                "title": btn["title"][:20],
+                "payload": btn["id"],
+            }
+            for btn in buttons[:13]
+        ]
+        return {
+            "recipient": {"id": to},
+            "message": {
+                "text": text,
+                "quick_replies": quick_replies,
+            },
+        }
+
+    @staticmethod
+    def format_generic_template(to: str, elements: List[dict]) -> dict:
+        return {
+            "recipient": {"id": to},
+            "message": {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "generic",
+                        "elements": elements[:10],
+                    },
+                }
+            },
+        }
