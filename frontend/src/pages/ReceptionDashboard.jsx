@@ -21,6 +21,12 @@ export default function ReceptionDashboard() {
   const [menuItems, setMenuItems] = useState([]);
   const [stations, setStations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('pending');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clientName, setClientName] = useState('');
+  const [selectedStation, setSelectedStation] = useState('');
+  const [orderItems, setOrderItems] = useState([]);
+  
   const currentKitchenId = localStorage.getItem('kitchenId');
   const currentKitchenName = localStorage.getItem('kitchenName');
 
@@ -51,9 +57,6 @@ export default function ReceptionDashboard() {
     }
   };
 
-  if (!currentKitchenId) {
-    // ... selection prompt already exists
-  }
 
   if (!isLoading && stations.length === 0) {
     return (
