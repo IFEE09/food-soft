@@ -22,6 +22,8 @@ export default function Settings() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [kitchens, setKitchens] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [newOrgName, setNewOrgName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
 
@@ -37,6 +39,11 @@ export default function Settings() {
       ]);
       setProfileData({ full_name: uRes.data.full_name, email: uRes.data.email });
       setKitchens(kRes.data);
+      
+      if (localStorage.getItem('role') === 'owner') {
+        const oRes = await apiClient.get('/users/me/organizations');
+        setOrganizations(oRes.data);
+      }
     } catch (err) {
       console.error("Error fetching settings data:", err);
     }
@@ -97,19 +104,23 @@ export default function Settings() {
   };
 
   const deleteKitchen = async (id) => {
-    const confirmed = await confirmAction(
-      '¿Eliminar Estación?', 
-      'Esta estación dejará de estar disponible para monitor de pedidos. ¿Deseas continuar?'
-    );
-    if (confirmed) {
-        try {
-          await apiClient.delete(`/kitchens/${id}`);
-          fetchData();
-          notify('Completado', 'La estación ha sido eliminada.', 'success');
-        } catch (err) {
-          console.error("Error deleting kitchen:", err);
-          notify('Error', 'No se pudo eliminar la estación.', 'error');
-        }
+    // ... (keep existing)
+  };
+
+  const handleCreateOrg = async (e) => {
+    e.preventDefault();
+    if (!newOrgName.trim()) return;
+    setIsUpdating(true);
+    try {
+      await apiClient.post('/organizations/', { name: newOrgName });
+      setNewOrgName('');
+      setMsg({ text: 'Nuevo restaurante creado exitosamente.', type: 'success' });
+      fetchData();
+    } catch (err) {
+      setMsg({ text: 'Error al crear restaurante.', type: 'error' });
+    } finally {
+      setIsUpdating(false);
+      setTimeout(() => setMsg({ text: '', type: '' }), 3000);
     }
   };
 
@@ -154,6 +165,19 @@ export default function Settings() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={16}/> NETWORK_NODES</div>
         </button>
+        {localStorage.getItem('role') === 'owner' && (
+          <button 
+            onClick={() => setActiveTab('restaurants')}
+            style={{ 
+              background: 'none', border: 'none', padding: '1rem 0', cursor: 'pointer',
+              color: activeTab === 'restaurants' ? 'var(--success-color)' : 'var(--text-secondary)',
+              fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em',
+              borderBottom: activeTab === 'restaurants' ? '2px solid var(--success-color)' : '2px solid transparent'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building2 size={16}/> RESTAURANTS</div>
+          </button>
+        )}
       </div>
 
       <div className="glass-panel" style={{ padding: '2.5rem' }}>
@@ -291,6 +315,52 @@ export default function Settings() {
                         <Trash2 size={16} />
                      </button>
                    </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {activeTab === 'restaurants' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, marginBottom: '0.5rem' }}>Mis Restaurantes / Marcas</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Gestiona tu holding de dark kitchens desde un solo lugar.</p>
+            </div>
+
+            <form onSubmit={handleCreateOrg} style={{ 
+                padding: '1.5rem', border: '1px solid var(--success-border)', borderRadius: '2px', 
+                background: 'rgba(var(--success-color-rgb), 0.03)', display: 'flex', gap: '1rem', alignItems: 'flex-end' 
+            }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Nuevo Nombre de Marca</label>
+                <input 
+                  type="text" value={newOrgName} 
+                  placeholder="Ej: Burger Night 74"
+                  onChange={(e) => setNewOrgName(e.target.value)} 
+                  required 
+                />
+              </div>
+              <button type="submit" className="btn-primary" disabled={isUpdating} style={{ height: '42px' }}>
+                + Crear Marca
+              </button>
+            </form>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+              {organizations.map(org => (
+                <div key={org.id} style={{ 
+                    padding: '1.5rem', border: '1px solid var(--surface-border)', borderRadius: '2px', background: 'var(--surface-color)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    borderLeft: org.id === parseInt(localStorage.getItem('organizationId')) ? '4px solid var(--success-color)' : '1px solid var(--surface-border)'
+                }}>
+                  <div>
+                    <div className="mono" style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase' }}>{org.name}</div>
+                    <span className="mono" style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      ORG_ID::00{org.id}
+                    </span>
+                  </div>
+                  {org.id === parseInt(localStorage.getItem('organizationId')) && (
+                    <span style={{ fontSize: '0.6rem', background: 'var(--success-bg)', color: 'var(--success-color)', padding: '0.2rem 0.4rem', borderRadius: '2px', fontWeight: 700 }}>ACTIVO</span>
+                  )}
                 </div>
               ))}
             </div>

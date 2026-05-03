@@ -4,6 +4,9 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 
+class OrganizationCreate(BaseModel):
+    name: str
+
 class OrganizationPublic(BaseModel):
     """Salida API: sin api_key / api_key_hash."""
 
