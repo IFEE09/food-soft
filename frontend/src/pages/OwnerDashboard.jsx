@@ -80,18 +80,17 @@ export default function OwnerDashboard() {
             <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ID</th>
-                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source</th>
-                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timestamp</th>
-                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ready</th>
-                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}># PEDIDO</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ORDEN CON NOTA</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>NOMBRE</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ESTATUS</th>
                 </tr>
               </thead>
               <tbody className="mono">
                 {isLoading ? (
-                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>FETCHING_DATA...</td></tr>
+                  <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>FETCHING_DATA...</td></tr>
                 ) : orders.length === 0 ? (
-                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>NO_RECORDS_FOUND</td></tr>
+                  <tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>NO_RECORDS_FOUND</td></tr>
                 ) : orders.map((row, i) => {
                   let badgeBg = 'transparent';
                   let badgeColor = 'var(--text-secondary)';
@@ -113,13 +112,12 @@ export default function OwnerDashboard() {
                       <td style={{ padding: '1rem 0', color: 'var(--success-color)' }}>
                         #{row.id.toString().padStart(4, '0')}
                       </td>
-                      <td style={{ padding: '1rem 0', color: 'var(--text-primary)' }}>{row.client_name || 'WEB_DIRECT'}</td>
-                      <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>
-                        {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                      <td style={{ padding: '1rem 0', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {row.notes
+                          ? <span title={row.notes} style={{ color: '#f0c040' }}>✎ {row.notes}</span>
+                          : <span style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>—</span>}
                       </td>
-                      <td style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}>
-                        {row.ready_at ? new Date(row.ready_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
-                      </td>
+                      <td style={{ padding: '1rem 0', color: 'var(--text-primary)' }}>{row.client_name || row.customer_name || '—'}</td>
                       <td style={{ padding: '1rem 0' }}>
                         <span style={{ 
                           fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontWeight: 700,

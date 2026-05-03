@@ -326,11 +326,11 @@ class BotEngine:
                 channel, sender_id,
                 "Tu pedido está vacío. Primero dime qué quieres pedir 😊"
             )}]
-        session.state = "PIDIENDO_NOMBRE"
+        session.state = "PIDIENDO_NOTA"
         db.commit()
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(
             channel, sender_id,
-            "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
+            "¿Tienes alguna nota especial para tu pedido? (ej: sin cebolla, extra salsa, etc.) Si no tienes ninguna, escribe *no* 😊"
         )}]
 
     @staticmethod
@@ -358,12 +358,15 @@ class BotEngine:
             for it in items_list
         )
         customer_name = cart.get("customer_name", "")
+        notes = cart.get("notes", "")
         name_line = f"👤 Nombre: {customer_name}\n" if customer_name else ""
+        notes_line = f"📝 Nota: {notes}\n" if notes else ""
         body = (
             f"📋 Resumen de tu pedido:\n\n"
             f"{summary}\n\n"
             f"{name_line}"
             f"📍 Dirección: {address}\n"
+            f"{notes_line}"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
             f"¿Confirmamos? Responde *sí* para confirmar o díme si quieres agregar algo más 😊"
         )
@@ -553,6 +556,23 @@ class BotEngine:
             session.state = "ACTIVO"
             db.commit()
             state = "ACTIVO"
+
+        # ── Estado especial: esperando nota (sin IA) ─────────────────────────────────────────
+        if state == "PIDIENDO_NOTA":
+            nota = user_text.strip()
+            cart = dict(session.cart_data)
+            if nota.lower() not in {"no", "ninguna", "nada", "sin nota", "n", "no gracias"}:
+                cart["notes"] = nota[:200]
+            else:
+                cart["notes"] = ""
+            session.cart_data = cart
+            session.state = "PIDIENDO_NOMBRE"
+            db.commit()
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
+            )})
+            return out
 
         # ── Estado especial: esperando nombre (sin IA) ───────────────────────────────────────
         if state == "PIDIENDO_NOMBRE":
