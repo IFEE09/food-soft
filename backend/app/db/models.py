@@ -20,6 +20,10 @@ class Organization(Base):
     api_key_hash = Column(String, unique=True, index=True, nullable=True)
     # Meta WhatsApp Cloud: metadata.phone_number_id del webhook → organización
     whatsapp_phone_number_id = Column(String, unique=True, index=True, nullable=True)
+    # Meta Messenger: entry[].id del webhook de Facebook Messenger → organización
+    facebook_page_id = Column(String, unique=True, index=True, nullable=True)
+    # Meta Instagram: entry[].id del webhook de Instagram DM → organización
+    instagram_page_id = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     users = relationship("User", secondary=user_organization_link, back_populates="organizations")
