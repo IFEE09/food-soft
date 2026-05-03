@@ -326,11 +326,11 @@ class BotEngine:
                 channel, sender_id,
                 "Tu pedido está vacío. Primero dime qué quieres pedir 😊"
             )}]
-        session.state = "PIDIENDO_DIRECCION"
+        session.state = "PIDIENDO_NOMBRE"
         db.commit()
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(
             channel, sender_id,
-            "¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
+            "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
         )}]
 
     @staticmethod
@@ -357,9 +357,12 @@ class BotEngine:
             f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
             for it in items_list
         )
+        customer_name = cart.get("customer_name", "")
+        name_line = f"👤 Nombre: {customer_name}\n" if customer_name else ""
         body = (
             f"📋 Resumen de tu pedido:\n\n"
             f"{summary}\n\n"
+            f"{name_line}"
             f"📍 Dirección: {address}\n"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
             f"¿Confirmo el pedido? Responde *sí* para confirmar o *no* para cancelar."
@@ -547,9 +550,27 @@ class BotEngine:
             if user_text.lower() in cancelaciones:
                 return BotEngine._execute_cancel_order(db, channel, sender_id, session)
             # Si escribe otra cosa estando en confirmación, DeepSeek decide
-            # (puede ser que quiera cambiar algo del pedido)
 
-        # ── Estado especial: esperando dirección (sin IA) ─────────────────────
+        # ── Estado especial: esperando nombre (sin IA) ───────────────────────────────────────
+        if state == "PIDIENDO_NOMBRE":
+            if user_text and len(user_text.strip()) >= 2:
+                cart = dict(session.cart_data)
+                cart["customer_name"] = user_text.strip()[:80]
+                session.cart_data = cart
+                session.state = "PIDIENDO_DIRECCION"
+                db.commit()
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    f"Gracias, {user_text.strip().split()[0].capitalize()} 😊 ¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
+                )})
+                return out
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Por favor escribe tu nombre para continuar 😊"
+            )})
+            return out
+
+        # ── Estado especial: esperando dirección (sin IA) ───────────────────────────────────
         if state == "PIDIENDO_DIRECCION":
             if user_text and len(user_text.strip()) > 5:
                 return BotEngine._execute_confirm_order(db, channel, sender_id, session, customer, user_text.strip())
@@ -558,7 +579,6 @@ class BotEngine:
                 "Por favor escribe tu dirección de entrega completa para continuar 📍"
             )})
             return out
-
         # ── Sin mensaje (primer contacto) ─────────────────────────────────────
         if not user_text:
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
