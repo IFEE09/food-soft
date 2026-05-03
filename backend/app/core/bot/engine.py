@@ -648,11 +648,6 @@ class BotEngine:
             out.extend(result)
             ai_reply = "Pedido cancelado."
 
-        else:  # CHAT
-            message_text = ai_response.get("message", "¿En qué más puedo ayudarte?")
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
-            ai_reply = message_text
-
         elif action == "CHECK_ORDER_STATUS":
             result = BotEngine._execute_check_order_status(db, channel, sender_id, session, organization_id)
             out.extend(result)
@@ -669,6 +664,11 @@ class BotEngine:
             result = BotEngine._execute_complaint(db, channel, sender_id, session, organization_id, customer, complaint_text)
             out.extend(result)
             ai_reply = f"Queja registrada: {complaint_text}"
+
+        else:  # CHAT
+            message_text = ai_response.get("message", "¿En qué más puedo ayudarte?")
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
+            ai_reply = message_text
 
         # ── Guardar historial ─────────────────────────────────────────────────
         BotEngine._append_history(session, "user", user_text)
