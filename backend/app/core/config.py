@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     META_ACCESS_TOKEN: Optional[str] = None
     META_APP_SECRET: Optional[str] = None
 
-    # Si True, permite POST /bot/mock fuera de producción (en prod siempre denegado)
-    ENABLE_BOT_MOCK_ENDPOINT: bool = True
+    # Si True, permite POST /bot/mock fuera de producción. Por seguridad, por defecto es False.
+    ENABLE_BOT_MOCK_ENDPOINT: bool = False
     
     # Use pydantic_settings model config to load .env if present
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production(self):
         if self.ENV == "production":
+            # Forzar apagado de endpoints de prueba/mock en producción
+            self.ENABLE_BOT_MOCK_ENDPOINT = False
+            
             if self.SECRET_KEY == _DEFAULT_SECRET:
                 raise ValueError(
                     "SECRET_KEY no puede ser el valor por defecto cuando ENV=production."
