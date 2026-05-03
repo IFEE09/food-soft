@@ -365,7 +365,7 @@ class BotEngine:
             f"{name_line}"
             f"📍 Dirección: {address}\n"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"¿Confirmo el pedido? Responde *sí* para confirmar o *no* para cancelar."
+            f"¿Confirmamos? Responde *sí* para confirmar o díme si quieres agregar algo más 😊"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -549,7 +549,10 @@ class BotEngine:
                 return out
             if user_text.lower() in cancelaciones:
                 return BotEngine._execute_cancel_order(db, channel, sender_id, session)
-            # Si escribe otra cosa estando en confirmación, DeepSeek decide
+            # Si escribe otra cosa, volver a ACTIVO para que DeepSeek procese (puede querer agregar más)
+            session.state = "ACTIVO"
+            db.commit()
+            state = "ACTIVO"
 
         # ── Estado especial: esperando nombre (sin IA) ───────────────────────────────────────
         if state == "PIDIENDO_NOMBRE":
