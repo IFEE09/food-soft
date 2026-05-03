@@ -205,6 +205,50 @@ class BotEngine:
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
     @staticmethod
+    def _execute_remove_from_cart(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, item_id: int
+    ) -> list:
+        """Quita un producto del carrito por ID."""
+        cart = dict(session.cart_data)
+        items_list = list(cart.get("items", []))
+
+        item_to_remove = next((it for it in items_list if it.get("id") == item_id), None)
+        if not item_to_remove:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Ese producto no está en tu carrito. ¿Quieres ver lo que tienes?"
+            )}]
+
+        if item_to_remove["qty"] > 1:
+            item_to_remove["qty"] -= 1
+        else:
+            items_list = [it for it in items_list if it.get("id") != item_id]
+
+        cart["items"] = items_list
+        cart["total"] = _round_price(sum(it["price"] * it["qty"] for it in items_list))
+        session.cart_data = cart
+        db.commit()
+
+        if not items_list:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                f"✅ {item_to_remove['name']} eliminado. Tu carrito está vacío. ¿Quieres pedir algo más?"
+            )}]
+
+        summary = "\n".join(
+            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
+            for it in items_list
+        )
+        body = (
+            f"✅ {item_to_remove['name']} eliminado del carrito.\n\n"
+            f"🛒 Tu pedido actualizado:\n{summary}\n\n"
+            f"💰 Total: ${cart['total']}\n\n"
+            f"¿Deseas agregar algo más o terminamos el pedido?"
+        )
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+
+    @staticmethod
     def _execute_ask_address(channel: str, sender_id: str, session: models.BotSession, db: Session) -> list:
         cart = dict(session.cart_data)
         if not cart.get("items"):
@@ -369,7 +413,6 @@ class BotEngine:
         elif action == "ADD_TO_CART":
             item_id = ai_response.get("item_id")
             if item_id is None:
-                # DeepSeek no pudo identificar el producto — pedir aclaración
                 msg = ai_response.get("message", "No encontré ese producto. ¿Puedes decirme exactamente cuál quieres?")
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                 ai_reply = msg
@@ -379,6 +422,19 @@ class BotEngine:
                 )
                 out.extend(result)
                 ai_reply = f"Producto ID:{item_id} agregado al carrito."
+
+        elif action == "REMOVE_FROM_CART":
+            item_id = ai_response.get("item_id")
+            if item_id is None:
+                msg = ai_response.get("message", "No identifiqué cuál producto quieres quitar. ¿Puedes decirme el nombre exacto?")
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                ai_reply = msg
+            else:
+                result = BotEngine._execute_remove_from_cart(
+                    db, channel, sender_id, session, int(item_id)
+                )
+                out.extend(result)
+                ai_reply = f"Producto ID:{item_id} eliminado del carrito."
 
         elif action == "ASK_ADDRESS":
             result = BotEngine._execute_ask_address(channel, sender_id, session, db)

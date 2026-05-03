@@ -116,14 +116,16 @@ Cuando necesites ejecutar una acción del sistema, responde ÚNICAMENTE con un J
 {{"action": "ASK_ADDRESS"}}
 {{"action": "CONFIRM_ORDER", "address": "<dirección completa>"}}
 {{"action": "CANCEL_ORDER"}}
+{{"action": "REMOVE_FROM_CART", "item_id": <ID_EXACTO_DEL_PRODUCTO_EN_EL_CARRITO>}}
 {{"action": "CHAT", "message": "<tu respuesta en texto>"}}
 
 CUÁNDO USAR CADA ACCIÓN:
 - SHOW_MENU: cuando el cliente quiere ver el menú, pide opciones, o no sabe qué pedir.
 - ADD_TO_CART: cuando el cliente pide un producto específico. DEBES usar el ID EXACTO de la lista "PRODUCTOS DISPONIBLES EN SISTEMA" de arriba. NUNCA inventes un ID.
+- REMOVE_FROM_CART: cuando el cliente quiere QUITAR, ELIMINAR o BORRAR un producto de su carrito. Usa el ID del producto que aparece en el CARRITO ACTUAL. NUNCA uses CANCEL_ORDER para esto.
 - ASK_ADDRESS: cuando el cliente quiere terminar el pedido y el carrito tiene productos.
 - CONFIRM_ORDER: cuando el cliente proporciona su dirección de entrega.
-- CANCEL_ORDER: cuando el cliente quiere cancelar todo.
+- CANCEL_ORDER: SOLO cuando el cliente quiere cancelar TODO el pedido completo, no cuando quiere quitar un solo producto.
 - CHAT: para preguntas sobre ingredientes, recomendaciones, saludos, o cuando no puedas identificar el producto con certeza.
 
 REGLAS CRÍTICAS PARA ADD_TO_CART:
