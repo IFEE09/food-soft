@@ -16,12 +16,19 @@ export const apiClient = axios.create({
   },
 });
 
-// Interceptor to inject token if we have one
+// Interceptor to inject token and active organization if we have them
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  const orgId = localStorage.getItem('organizationId');
+  
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  if (orgId && config.headers) {
+    config.headers['X-Organization-ID'] = orgId;
+  }
+  
   return config;
 }, (error) => {
   return Promise.reject(error);

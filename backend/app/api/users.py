@@ -99,6 +99,15 @@ def read_user_me(
     """ Get current user. """
     return current_user
 
+@router.get("/me/organizations", response_model=List[user_schema.OrganizationBase])
+@limiter.limit("60/minute")
+def read_user_organizations(
+    request: Request,
+    current_user: models.User = Depends(get_current_user),
+) -> Any:
+    """ Get organizations linked to current user. """
+    return current_user.organizations
+
 @router.put("/me", response_model=user_schema.User)
 @limiter.limit("60/minute")
 def update_user_me(

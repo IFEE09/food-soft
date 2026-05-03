@@ -25,7 +25,9 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
+    db: Session = Depends(get_db), 
+    token: str = Depends(reusable_oauth2),
+    request: Request = None
 ) -> models.User:
     try:
         user_id = security.decode_access_token_subject(token)
@@ -40,6 +42,23 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Usuario inactivo")
+    
+    # Manejo de Multi-tenancy dinámico
+    # Si viene el header X-Organization-ID, verificamos si el usuario tiene acceso
+    requested_org_id = request.headers.get("X-Organization-ID") if request else None
+    if requested_org_id:
+        try:
+            requested_org_id = int(requested_org_id)
+            # Verificar si el usuario pertenece a esa organización
+            if any(org.id == requested_org_id for org in user.organizations):
+                # Sobreescribimos temporalmente para esta petición
+                user.organization_id = requested_org_id
+            else:
+                # Si no tiene acceso, lanzamos error o ignoramos? Mejor error por seguridad.
+                raise HTTPException(status_code=403, detail="No tienes acceso a este restaurante.")
+        except ValueError:
+            pass # Header malformado, ignorar
+            
     return user
 
 

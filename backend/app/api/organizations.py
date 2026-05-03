@@ -28,14 +28,46 @@ class WhatsAppPhoneBinding(BaseModel):
 @limiter.limit("120/minute")
 def get_my_organization(
     request: Request,
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
 ) -> Any:
-    org = current_user.organization
+    # Usamos el organization_id "efectivo" resuelto por get_current_user
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
     return org
 
+@router.post("/", response_model=organization_schema.OrganizationPublic)
+@limiter.limit("10/hour")
+def create_organization(
+    request: Request,
+    body: organization_schema.OrganizationCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_owner),
+) -> Any:
+    """ Dueño crea un nuevo restaurante (organización). """
+    new_key = secrets.token_urlsafe(32)
+    org = models.Organization(
+        name=body.name,
+        api_key_hash=hash_api_key(new_key)
+    )
+    db.add(org)
+    db.flush()
+    
+    # Vincular al dueño actual
+    current_user.organizations.append(org)
+    db.commit()
+    db.refresh(org)
+    
+    log_activity(
+        db, current_user,
+        action="create", entity_type="organization", entity_id=org.id,
+        description=f"Creó nuevo restaurante: {org.name}"
+    )
+    return org
+
 @router.post("/api-key/rotate")
+# ... (rest of the file)
 @limiter.limit("10/hour")
 def rotate_api_key(
     request: Request,

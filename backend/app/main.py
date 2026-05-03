@@ -33,6 +33,7 @@ def run_migrations():
     models.Base.metadata.create_all(bind=engine)
 
     migrations = [
+        "CREATE TABLE IF NOT EXISTS user_organization_link (user_id INTEGER REFERENCES users(id), organization_id INTEGER REFERENCES organizations(id), PRIMARY KEY (user_id, organization_id))",
         "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE kitchens ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
@@ -89,7 +90,12 @@ def init_db_data():
             organization_id=org_id
         )
         db.add(admin)
+        db.flush()
         logger.info("Auto-Seed: Usuario '%s' creado.", admin_email)
+    
+    # 2b. Vincular admin a la organización (Many-to-Many)
+    if org not in admin.organizations:
+        admin.organizations.append(org)
     
     db.commit()
 

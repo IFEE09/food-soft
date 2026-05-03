@@ -1,7 +1,15 @@
-from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey, JSON
+from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey, JSON, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.session import Base
+
+# Association table for Many-to-Many relationship
+user_organization_link = Table(
+    "user_organization_link",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("organization_id", Integer, ForeignKey("organizations.id"), primary_key=True),
+)
 
 class Organization(Base):
     __tablename__ = "organizations"
@@ -14,6 +22,8 @@ class Organization(Base):
     whatsapp_phone_number_id = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    users = relationship("User", secondary=user_organization_link, back_populates="organizations")
+
 class User(Base):
     __tablename__ = "users"
 
@@ -25,8 +35,10 @@ class User(Base):
     role = Column(String, default="cook", nullable=False)
     is_active = Column(Boolean(), default=True)
     
+    # organization_id holds the "active" or "primary" organization
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    organization = relationship("Organization")
+    
+    organizations = relationship("Organization", secondary=user_organization_link, back_populates="users")
 
 class Supply(Base):
     __tablename__ = "supplies"

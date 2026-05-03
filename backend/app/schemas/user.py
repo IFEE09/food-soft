@@ -64,9 +64,16 @@ class UserInDBBase(UserBase):
     class Config:
         from_attributes = True
 
+class OrganizationBase(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+
 # Additional properties to return via API
 class User(UserInDBBase):
     organization_id: Optional[int] = None
+    organizations: Optional[list[OrganizationBase]] = []
 
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
