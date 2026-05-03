@@ -78,10 +78,20 @@ def login_access_token(
     OAuth2 compatible token login, retrieve an access token for future requests
     """
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not security.verify_password(form_data.password, user.hashed_password):
+    if not user:
+        logger.warning("Login fallido: Usuario no encontrado -> %s", form_data.username)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Usuario o contraseña incorrectos",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not security.verify_password(form_data.password, user.hashed_password):
+        logger.warning("Login fallido: Contraseña incorrecta para -> %s", form_data.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email o contraseña incorrectos",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     elif not user.is_active:
         raise HTTPException(

@@ -86,15 +86,22 @@ class Settings(BaseSettings):
         raw = (self.ALLOWED_ORIGINS or "").strip()
         if raw:
             return [o.strip() for o in raw.split(",") if o.strip()]
-        # Sin ALLOWED_ORIGINS: en dev orígenes locales explícitos (evita * + credentials).
-        if self.ENV != "production":
-            return [
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-            ]
-        return []
+        
+        # En producción (Railway/Vercel), si no hay ALLOWED_ORIGINS, intentamos ser razonables
+        # pero seguros. Permitir localhost y el propio dominio de railway si podemos inferirlo.
+        origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+        
+        # Si estamos en producción y no hay orígenes, añadimos un wildcard seguro para railway
+        if self.ENV == "production":
+            logger.warning("ALLOWED_ORIGINS no definido en producción. Usando defaults limitados.")
+            origins.append("https://*.railway.app")
+        
+        return origins
 
     def get_database_url(self) -> str:
         # Prioritize DATABASE_URL
