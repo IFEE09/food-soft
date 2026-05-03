@@ -57,11 +57,26 @@ class Kitchen(Base):
     __tablename__ = "kitchens"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)
+    name = Column(String, index=True, nullable=False) # e.g., "Sucursal Polanco"
+    address = Column(String, nullable=True)
     is_active = Column(Boolean(), default=True)
+    
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     
-    orders = relationship("Order", back_populates="kitchen")
+    stations = relationship("Station", back_populates="kitchen")
+
+class Station(Base):
+    __tablename__ = "stations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False) # e.g., "Hornos", "Fríos", "Empaque"
+    is_active = Column(Boolean(), default=True)
+    
+    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    
+    kitchen = relationship("Kitchen", back_populates="stations")
+    orders = relationship("Order", back_populates="station")
 
 class Order(Base):
     __tablename__ = "orders"
@@ -71,7 +86,7 @@ class Order(Base):
     total = Column(Float, default=0.0)
     status = Column(String, default="pending") # pending, ready, delivered
     
-    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
+    station_id = Column(Integer, ForeignKey("stations.id"), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -79,7 +94,7 @@ class Order(Base):
     delivered_at = Column(DateTime(timezone=True), nullable=True)
     
     items = relationship("OrderItem", back_populates="order")
-    kitchen = relationship("Kitchen", back_populates="orders")
+    station = relationship("Station", back_populates="orders")
 
 class OrderItem(Base):
     __tablename__ = "order_items"

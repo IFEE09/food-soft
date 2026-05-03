@@ -1,20 +1,20 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
-class KitchenBase(BaseModel):
+class StationBase(BaseModel):
     name: str
-    address: Optional[str] = None
     is_active: bool = True
+    kitchen_id: Optional[int] = None
 
-class KitchenCreate(KitchenBase):
+class StationCreate(StationBase):
     pass
 
-class KitchenUpdate(BaseModel):
+class StationUpdate(BaseModel):
     name: Optional[str] = None
-    address: Optional[str] = None
     is_active: Optional[bool] = None
+    kitchen_id: Optional[int] = None
 
-class Kitchen(KitchenBase):
+class Station(StationBase):
     id: int
 
     class Config:

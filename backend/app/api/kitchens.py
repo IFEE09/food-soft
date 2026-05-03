@@ -21,13 +21,13 @@ def read_kitchens(
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
-    """ Get all kitchens for current organization. """
+    """ Get all physical kitchens (locations) for current organization. """
     return db.query(models.Kitchen)\
              .filter(models.Kitchen.organization_id == current_user.organization_id)\
              .offset(skip).limit(limit).all()
 
 @router.post("/", response_model=kitchen_schema.Kitchen)
-@limiter.limit("120/minute")
+@limiter.limit("60/minute")
 def create_kitchen(
     request: Request,
     *,
@@ -35,9 +35,10 @@ def create_kitchen(
     current_user: models.User = Depends(require_owner),
     kitchen_in: kitchen_schema.KitchenCreate,
 ) -> Any:
-    """ Add new kitchen station for organization. """
+    """ Add new physical kitchen site. """
     kitchen = models.Kitchen(
-        name=kitchen_in.name, 
+        name=kitchen_in.name,
+        address=kitchen_in.address,
         is_active=kitchen_in.is_active,
         organization_id=current_user.organization_id
     )
@@ -47,12 +48,12 @@ def create_kitchen(
     log_activity(
         db, current_user,
         action="create", entity_type="kitchen", entity_id=kitchen.id,
-        description=f"Creó cocina '{kitchen.name}'"
+        description=f"Registró nueva ubicación física: {kitchen.name}"
     )
     return kitchen
 
 @router.put("/{id}", response_model=kitchen_schema.Kitchen)
-@limiter.limit("120/minute")
+@limiter.limit("60/minute")
 def update_kitchen(
     request: Request,
     *,
@@ -61,7 +62,7 @@ def update_kitchen(
     id: int,
     kitchen_in: kitchen_schema.KitchenUpdate,
 ) -> Any:
-    """ Update kitchen station. """
+    """ Update physical kitchen details. """
     kitchen = get_owned_or_404(db, models.Kitchen, id, current_user, "Kitchen not found")
 
     update_data = kitchen_in.model_dump(exclude_unset=True)
@@ -71,32 +72,9 @@ def update_kitchen(
     db.add(kitchen)
     db.commit()
     db.refresh(kitchen)
-    changed = ", ".join(update_data.keys()) if update_data else "sin cambios"
     log_activity(
         db, current_user,
         action="update", entity_type="kitchen", entity_id=kitchen.id,
-        description=f"Actualizó cocina '{kitchen.name}' (campos: {changed})"
-    )
-    return kitchen
-
-@router.delete("/{id}", response_model=kitchen_schema.Kitchen)
-@limiter.limit("60/minute")
-def delete_kitchen(
-    request: Request,
-    *,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_owner),
-    id: int,
-) -> Any:
-    """ Delete a kitchen (station). """
-    kitchen = get_owned_or_404(db, models.Kitchen, id, current_user, "Kitchen not found")
-    deleted_name = kitchen.name
-    deleted_id = kitchen.id
-    db.delete(kitchen)
-    db.commit()
-    log_activity(
-        db, current_user,
-        action="delete", entity_type="kitchen", entity_id=deleted_id,
-        description=f"Eliminó cocina '{deleted_name}'"
+        description=f"Actualizó ubicación: {kitchen.name}"
     )
     return kitchen

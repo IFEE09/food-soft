@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 from app.db.session import SessionLocal, engine, get_db
 from app.db import models
-from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs, bot, organizations
+from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs, bot, organizations, stations
 from app.core.notifier import manager, set_main_loop
 from app.core import security
 from app.core.rate_limit import limiter
@@ -34,10 +34,13 @@ def run_migrations():
 
     migrations = [
         "CREATE TABLE IF NOT EXISTS user_organization_link (user_id INTEGER REFERENCES users(id), organization_id INTEGER REFERENCES organizations(id), PRIMARY KEY (user_id, organization_id))",
+        "CREATE TABLE IF NOT EXISTS stations (id SERIAL PRIMARY KEY, name VARCHAR NOT NULL, is_active BOOLEAN DEFAULT TRUE, kitchen_id INTEGER REFERENCES kitchens(id), organization_id INTEGER REFERENCES organizations(id))",
+        "ALTER TABLE kitchens ADD COLUMN address VARCHAR",
         "ALTER TABLE users ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE kitchens ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE orders ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE orders ADD COLUMN station_id INTEGER REFERENCES stations(id)",
         "ALTER TABLE menu_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0",
         "ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE",
@@ -173,6 +176,7 @@ app.include_router(orders.router, prefix=f"{settings.API_V1_STR}/orders", tags=[
 app.include_router(menu.router, prefix=f"{settings.API_V1_STR}/menu", tags=["menu"])
 app.include_router(integrations.router, prefix=f"{settings.API_V1_STR}/integrations", tags=["integrations"])
 app.include_router(kitchens.router, prefix=f"{settings.API_V1_STR}/kitchens", tags=["kitchens"])
+app.include_router(stations.router, prefix=f"{settings.API_V1_STR}/stations", tags=["stations"])
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(activity_logs.router, prefix=f"{settings.API_V1_STR}/activity-logs", tags=["activity-logs"])
 app.include_router(bot.router, prefix=f"{settings.API_V1_STR}/bot", tags=["bot"])
