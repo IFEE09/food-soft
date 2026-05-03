@@ -58,8 +58,8 @@ export default function KitchenDashboard() {
     localStorage.setItem('kitchenName', kitchen.name);
 
     try {
-      const sRes = await apiClient.get('/stations/');
-      setStations(sRes.data.filter(s => s.kitchen_id === kitchen.id));
+      const sRes = await apiClient.get(`/stations/?kitchen_id=${kitchen.id}`);
+      setStations(sRes.data);
       
       if (shouldReload) {
         window.location.reload();
@@ -239,6 +239,20 @@ export default function KitchenDashboard() {
         <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
           <ChefHat size={40} className="animate-pulse" style={{ marginBottom: '1rem', opacity: 0.3 }} />
           <p>Sincronizando estaciones de {selectedKitchen.name}...</p>
+        </div>
+      ) : stations.length === 0 ? (
+        <div style={{ padding: '8rem 2rem', textAlign: 'center', backgroundColor: 'var(--surface-color)', border: '1px dashed var(--primary-color)', borderRadius: '12px' }}>
+          <Activity size={48} style={{ color: 'var(--primary-color)', marginBottom: '1.5rem', opacity: 0.4 }} />
+          <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Configuración Inicial Requerida</h3>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '450px', margin: '0 auto 2rem' }}>
+            Esta ubicación aún no tiene estaciones de trabajo registradas. Para empezar a recibir y monitorear pedidos, debes crear al menos una estación.
+          </p>
+          <button 
+            onClick={() => { setModalType('station'); setIsModalOpen(true); }}
+            className="btn-primary" style={{ gap: '0.5rem' }}
+          >
+            <Plus size={18} /> Crear Primera Estación
+          </button>
         </div>
       ) : filteredOrders.length === 0 ? (
         <div style={{ padding: '8rem 2rem', textAlign: 'center', backgroundColor: 'var(--surface-color)', border: '1px dashed var(--surface-border)', borderRadius: '12px' }}>

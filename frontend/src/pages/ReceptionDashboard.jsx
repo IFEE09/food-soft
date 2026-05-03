@@ -19,6 +19,8 @@ export default function ReceptionDashboard() {
   const { showAlert, showConfirm } = useNotification();
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const currentKitchenId = localStorage.getItem('kitchenId');
   const currentKitchenName = localStorage.getItem('kitchenName');
 
@@ -33,10 +35,10 @@ export default function ReceptionDashboard() {
       const [oRes, mRes, sRes] = await Promise.all([
         apiClient.get('/orders/'),
         apiClient.get('/menu/'),
-        apiClient.get('/stations/')
+        apiClient.get(`/stations/?kitchen_id=${currentKitchenId}`)
       ]);
-      // Filter orders by selected kitchen's stations
-      const myStations = sRes.data.filter(s => String(s.kitchen_id) === String(currentKitchenId));
+      
+      const myStations = sRes.data;
       const myStationIds = myStations.map(s => s.id);
       
       setOrders(oRes.data.filter(o => myStationIds.includes(o.station_id)));
@@ -48,6 +50,27 @@ export default function ReceptionDashboard() {
       setIsLoading(false);
     }
   };
+
+  if (!currentKitchenId) {
+    // ... selection prompt already exists
+  }
+
+  if (!isLoading && stations.length === 0) {
+    return (
+      <div className="glass-panel" style={{ padding: '5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ padding: '1.5rem', background: 'rgba(255,204,0,0.1)', borderRadius: '50%', color: 'var(--warning-color)' }}>
+          <Plus size={48} />
+        </div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Sin Estaciones de Destino</h2>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0' }}>
+          No puedes recibir órdenes porque esta cocina no tiene estaciones configuradas (ej. Cocina Caliente, Fríos).
+        </p>
+        <button onClick={() => navigate('/dashboard/kitchen')} className="btn-primary">
+          Configurar Estaciones
+        </button>
+      </div>
+    );
+  }
 
   if (!currentKitchenId) {
     return (

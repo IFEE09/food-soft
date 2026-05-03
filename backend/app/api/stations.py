@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
@@ -18,13 +18,17 @@ def read_stations(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
+    kitchen_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
-    """ Get all stations for current organization. """
-    return db.query(models.Station)\
-             .filter(models.Station.organization_id == current_user.organization_id)\
-             .offset(skip).limit(limit).all()
+    """ Get stations for current organization. Optional filter by kitchen. """
+    query = db.query(models.Station).filter(
+        models.Station.organization_id == current_user.organization_id
+    )
+    if kitchen_id:
+        query = query.filter(models.Station.kitchen_id == kitchen_id)
+    return query.offset(skip).limit(limit).all()
 
 @router.post("/", response_model=station_schema.Station)
 @limiter.limit("120/minute")
