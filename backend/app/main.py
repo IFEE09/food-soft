@@ -99,7 +99,32 @@ def init_db_data():
     
     db.commit()
 
-    # 3. Reparación de usuarios antiguos si los hubiera
+    # 3. Asegurar Menú Inicial (27 items)
+    menu_count = db.query(models.MenuItem).filter(models.MenuItem.organization_id == org_id).count()
+    if menu_count == 0:
+        logger.info("Auto-Seed: Cargando menú inicial de 27 items para '%s'...", org_name)
+        menu_items = [
+            ("Peperoni Bites", 79, "Entradas"), ("Pan con Ajo y Queso", 125, "Entradas"),
+            ("Cheese Bread", 125, "Entradas"), ("Calzone", 149, "Entradas"),
+            ("Dip de Espinaca y Tocino", 149, "Entradas"), ("Doble Queso Grande", 149, "Pizzas Tradicionales"),
+            ("Doble Queso Familiar", 169, "Pizzas Tradicionales"), ("Peperoni Grande", 149, "Pizzas Tradicionales"),
+            ("Peperoni Familiar", 169, "Pizzas Tradicionales"), ("Italiana Grande", 189, "Pizzas Tradicionales"),
+            ("Italiana Familiar", 219, "Pizzas Tradicionales"), ("Ohana Hawaiana Grande", 189, "Pizzas Tradicionales"),
+            ("Ohana Hawaiana Familiar", 219, "Pizzas Tradicionales"), ("Mama Meat Grande", 189, "Pizzas Tradicionales"),
+            ("Mama Meat Familiar", 219, "Pizzas Tradicionales"), ("Molson Pizza Grande", 189, "Pizzas Tradicionales"),
+            ("Molson Pizza Familiar", 219, "Pizzas Tradicionales"), ("Cuatro Quesos Grande", 249, "Pizzas Especiales"),
+            ("Cuatro Quesos Familiar", 289, "Pizzas Especiales"), ("Bacon Special Grande", 249, "Pizzas Especiales"),
+            ("Bacon Special Familiar", 289, "Pizzas Especiales"), ("Suprema 74 Grande", 289, "Pizzas Especiales"),
+            ("Suprema 74 Familiar", 319, "Pizzas Especiales"), ("Peperoni Extreme Grande", 219, "Pizzas Especiales"),
+            ("Peperoni Extreme Familiar", 289, "Pizzas Especiales"), ("Canadian BBQ Grande", 289, "Pizzas Especiales"),
+            ("Canadian BBQ Familiar", 319, "Pizzas Especiales"),
+        ]
+        for name, price, cat in menu_items:
+            db.add(models.MenuItem(name=name, price=price, category=cat, organization_id=org_id))
+        db.commit()
+        logger.info("Auto-Seed: Menú cargado correctamente.")
+
+    # 4. Reparación de usuarios antiguos si los hubiera
     legacy_users = db.query(models.User).filter(models.User.organization_id.is_(None)).all()
     for lu in legacy_users:
         lu.organization_id = org_id
