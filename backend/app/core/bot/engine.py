@@ -8,39 +8,53 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from sqlalchemy.exc import IntegrityError
+# ... (rest of imports)
+
 class BotEngine:
     @staticmethod
     def get_or_create_session(db: Session, org_id: int, channel: str, sender_id: str):
-        customer = (
-            db.query(models.BotCustomer)
-            .filter_by(
-                organization_id=org_id,
-                channel_user_id=sender_id,
-                channel=channel,
-            )
-            .first()
-        )
+        # 1. Try to find customer
+        customer = db.query(models.BotCustomer).filter_by(
+            organization_id=org_id,
+            channel_user_id=sender_id,
+            channel=channel,
+        ).first()
         
         if not customer:
-            customer = models.BotCustomer(
-                organization_id=org_id,
-                channel=channel,
-                channel_user_id=sender_id,
-                name="Invitado"
-            )
-            db.add(customer)
-            db.flush()
+            try:
+                customer = models.BotCustomer(
+                    organization_id=org_id,
+                    channel=channel,
+                    channel_user_id=sender_id,
+                    name="Invitado"
+                )
+                db.add(customer)
+                db.commit() # Atomic commit to lock the record
+            except IntegrityError:
+                db.rollback()
+                # If someone else created it in the meantime, fetch it
+                customer = db.query(models.BotCustomer).filter_by(
+                    organization_id=org_id,
+                    channel_user_id=sender_id,
+                    channel=channel,
+                ).first()
 
+        # 2. Try to find or create session
         session = db.query(models.BotSession).filter_by(customer_id=customer.id).first()
         if not session:
-            session = models.BotSession(
-                organization_id=org_id,
-                customer_id=customer.id,
-                state="NUEVO_USUARIO",
-                cart_data={"items": [], "total": 0.0}
-            )
-            db.add(session)
-            db.flush()
+            try:
+                session = models.BotSession(
+                    organization_id=org_id,
+                    customer_id=customer.id,
+                    state="NUEVO_USUARIO",
+                    cart_data={"items": [], "total": 0.0}
+                )
+                db.add(session)
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                session = db.query(models.BotSession).filter_by(customer_id=customer.id).first()
 
         return customer, session
 

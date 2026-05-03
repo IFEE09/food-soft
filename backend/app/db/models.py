@@ -166,6 +166,10 @@ class BotCustomer(Base):
 
     sessions = relationship("BotSession", back_populates="customer")
 
+    __table_args__ = (
+        UniqueConstraint("organization_id", "channel", "channel_user_id", name="uq_bot_customer_identity"),
+    )
+
 
 class BotSession(Base):
     """State machine tracker for order flows"""
@@ -173,7 +177,7 @@ class BotSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    customer_id = Column(Integer, ForeignKey("bot_customers.id"), nullable=False)
+    customer_id = Column(Integer, ForeignKey("bot_customers.id"), nullable=False, unique=True)
     
     # State machine status: START, VIEWING_MENU, BUILDING_CART, CONFIRMING_ORDER, FINISHED
     state = Column(String, default="START", index=True, nullable=False)
