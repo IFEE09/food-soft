@@ -504,8 +504,9 @@ class BotEngine:
         org = db.query(models.Organization).filter_by(id=organization_id).first()
         org_name = org.name if org else "Horno 74"
 
-        # Cargar menú completo del sistema, carrito e historial
+        # Cargar menú completo del sistema, carrito, historial y promociones activas
         menu_items = db.query(models.MenuItem).filter_by(organization_id=organization_id).limit(50).all()
+        promotions = db.query(models.Promotion).filter_by(organization_id=organization_id, is_active=True).all()
         cart = dict(session.cart_data) if isinstance(session.cart_data, dict) else {"items": [], "total": 0.0, "history": []}
         history = list(cart.get("history", []))
         state = session.state or "ACTIVO"
@@ -610,6 +611,7 @@ class BotEngine:
             cart=cart,
             state=state,
             org_name=org_name,
+            promotions=promotions,
         )
 
         action = ai_response.get("action", "CHAT")

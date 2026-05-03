@@ -193,3 +193,18 @@ class BotSession(Base):
     last_interaction_at = Column(DateTime(timezone=True), server_default=func.now())
 
     customer = relationship("BotCustomer", back_populates="sessions")
+
+
+class Promotion(Base):
+    """Promociones activas por restaurante, visibles en el bot"""
+    __tablename__ = "promotions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
+    title = Column(String(120), nullable=False)
+    description = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    organization = relationship("Organization")
