@@ -47,6 +47,9 @@ async def create_order(
 ) -> Any:
     """ Create new order for organization. """
     assert_kitchen_in_organization(db, order_in.kitchen_id, current_user.organization_id)
+    
+    if not order_in.items:
+        raise HTTPException(status_code=400, detail="La orden debe contener al menos un platillo.")
 
     order = models.Order(
         client_name=order_in.client_name,
