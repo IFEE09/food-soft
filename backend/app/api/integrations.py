@@ -1,7 +1,6 @@
-import secrets
 from typing import Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, HTTPException, Request, Security
 from fastapi.security.api_key import APIKeyHeader
 from sqlalchemy.orm import Session
 
@@ -13,6 +12,7 @@ from app.db import models
 from app.schemas import order as order_schema
 from app.core.notifier import manager
 from app.core.tenant import assert_kitchen_in_organization
+from app.core.rate_limit import limiter
 
 router = APIRouter()
 
@@ -40,20 +40,20 @@ async def get_organization_by_key(
     if org:
         return org
 
-    legacy = (
+    # Una sola consulta indexada por valor legacy (evita cargar todas las orgs)
+    legacy_org = (
         db.query(models.Organization)
-        .filter(models.Organization.api_key.isnot(None))
-        .all()
+        .filter(models.Organization.api_key == stripped)
+        .first()
     )
-    for row in legacy:
-        if row.api_key and secrets.compare_digest(stripped, row.api_key):
-            plain = row.api_key
-            row.api_key_hash = hash_api_key(plain)
-            row.api_key = None
-            db.add(row)
-            db.commit()
-            db.refresh(row)
-            return row
+    if legacy_org and legacy_org.api_key:
+        plain = legacy_org.api_key
+        legacy_org.api_key_hash = hash_api_key(plain)
+        legacy_org.api_key = None
+        db.add(legacy_org)
+        db.commit()
+        db.refresh(legacy_org)
+        return legacy_org
 
     raise HTTPException(
         status_code=403,
@@ -61,7 +61,9 @@ async def get_organization_by_key(
     )
 
 @router.post("/orders", response_model=order_schema.Order)
+@limiter.limit("120/minute")
 async def create_external_order(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     org: models.Organization = Depends(get_organization_by_key),

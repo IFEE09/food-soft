@@ -1,6 +1,8 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.db import models
 from app.schemas import menu as menu_schemas
@@ -11,7 +13,9 @@ from app.core.tenant import assert_supply_in_organization, get_owned_or_404
 router = APIRouter()
 
 @router.get("/", response_model=List[menu_schemas.MenuItem])
+@limiter.limit("180/minute")
 def read_menu_items(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ) -> Any:
@@ -23,7 +27,9 @@ def read_menu_items(
              .all()
 
 @router.post("/", response_model=menu_schemas.MenuItem)
+@limiter.limit("120/minute")
 def create_menu_item(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -64,7 +70,9 @@ def create_menu_item(
     return new_item
 
 @router.put("/{item_id}", response_model=menu_schemas.MenuItem)
+@limiter.limit("120/minute")
 def update_menu_item(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -105,7 +113,9 @@ def update_menu_item(
     return db_item
 
 @router.delete("/{item_id}", response_model=menu_schemas.MenuItem)
+@limiter.limit("60/minute")
 def delete_menu_item(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),

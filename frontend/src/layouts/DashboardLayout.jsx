@@ -36,8 +36,10 @@ export default function DashboardLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('role');
     localStorage.removeItem('userName');
+    localStorage.removeItem('organizationId');
     navigate('/login');
   };
 

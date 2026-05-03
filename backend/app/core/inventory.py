@@ -1,6 +1,7 @@
 """Descuenta insumos según recetas del menú al crear líneas de pedido."""
 from typing import Iterable, Tuple
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.db import models
@@ -43,15 +44,16 @@ def deduct_supplies_for_line_items(
             .all()
         )
         for rec in recipes:
-            supply = (
-                db.query(models.Supply)
-                .filter(
+            delta = float(rec.quantity) * float(qty)
+            if delta <= 0:
+                continue
+            res = db.execute(
+                update(models.Supply)
+                .where(
                     models.Supply.id == rec.supply_id,
                     models.Supply.organization_id == organization_id,
                 )
-                .first()
+                .values(quantity=models.Supply.quantity - delta)
             )
-            if not supply:
+            if res.rowcount == 0:
                 continue
-            supply.quantity -= float(rec.quantity) * float(qty)
-            db.add(supply)

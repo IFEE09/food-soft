@@ -1,7 +1,8 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.db import models
 from app.schemas import user as user_schema
@@ -12,7 +13,9 @@ from app.core.activity import log_activity
 router = APIRouter()
 
 @router.get("/team", response_model=List[user_schema.User])
+@limiter.limit("120/minute")
 def list_team_members(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
 ) -> Any:
@@ -23,7 +26,9 @@ def list_team_members(
     return users
 
 @router.post("/team", response_model=user_schema.User)
+@limiter.limit("60/minute")
 def create_team_member(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -56,7 +61,9 @@ def create_team_member(
     return new_user
 
 @router.delete("/team/{user_id}")
+@limiter.limit("60/minute")
 def delete_team_member(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -84,17 +91,21 @@ def delete_team_member(
     return {"message": f"Usuario '{deleted_name}' eliminado correctamente."}
 
 @router.get("/me", response_model=user_schema.User)
+@limiter.limit("120/minute")
 def read_user_me(
+    request: Request,
     current_user: models.User = Depends(get_current_user),
 ) -> Any:
     """ Get current user. """
     return current_user
 
 @router.put("/me", response_model=user_schema.User)
+@limiter.limit("60/minute")
 def update_user_me(
+    request: Request,
     *,
     db: Session = Depends(get_db),
-    user_in: user_schema.UserUpdate,
+    user_in: user_schema.UserSelfUpdate,
     current_user: models.User = Depends(get_current_user),
 ) -> Any:
     """ Update own profile. """
@@ -103,9 +114,8 @@ def update_user_me(
         hashed_password = security.get_password_hash(update_data["password"])
         del update_data["password"]
         current_user.hashed_password = hashed_password
-    
-    for field in update_data:
-        setattr(current_user, field, update_data[field])
+    if "full_name" in update_data:
+        current_user.full_name = update_data["full_name"]
     
     db.add(current_user)
     db.commit()
@@ -119,7 +129,9 @@ def update_user_me(
     return current_user
 
 @router.post("/me/change-password")
+@limiter.limit("20/minute")
 def change_password(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     password_in: user_schema.ChangePassword,

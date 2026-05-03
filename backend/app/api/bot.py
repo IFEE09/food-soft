@@ -8,12 +8,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Dict, Optional
 
-from sqlalchemy.orm import Session
-
 from app.db.session import get_db
 from app.db import models
 from app.core.bot.engine import BotEngine
 from app.core.config import settings
+from app.core.rate_limit import limiter
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -27,7 +26,12 @@ class MockMetaPayload(BaseModel):
     org_id: int = 1
 
 @router.post("/mock")
-def mock_webhook_receive(payload: MockMetaPayload, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")
+def mock_webhook_receive(
+    request: Request,
+    payload: MockMetaPayload,
+    db: Session = Depends(get_db),
+):
     """
     Simulates receiving a payload from Meta APIs without needing ngrok or internet connection.
     """
@@ -65,12 +69,14 @@ def verify_meta_webhook(
     raise HTTPException(status_code=403, detail="Verification token mismatch")
 
 @router.post("/webhook")
+@limiter.limit("300/minute")
 async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
     """
     Receives real events from Meta (WhatsApp, IG, Messenger).
     Extracts data and processes it asynchronously after validating signature.
     """
-    if settings.ENV == "production" and not (settings.META_APP_SECRET or "").strip():
+    # Misma política en todos los entornos: URL expuesta sin secreto = POST anónimo.
+    if not (settings.META_APP_SECRET or "").strip():
         raise HTTPException(
             status_code=503,
             detail="META_APP_SECRET no configurado; webhook deshabilitado.",
@@ -78,19 +84,18 @@ async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
 
     body_bytes = await request.body()
 
-    if settings.META_APP_SECRET:
-        signature = request.headers.get("X-Hub-Signature-256")
-        if not signature:
-            raise HTTPException(status_code=403, detail="Missing signature header")
+    signature = request.headers.get("X-Hub-Signature-256")
+    if not signature:
+        raise HTTPException(status_code=403, detail="Missing signature header")
 
-        expected_sig = hmac.new(
-            settings.META_APP_SECRET.encode(),
-            body_bytes,
-            hashlib.sha256,
-        ).hexdigest()
-        sig_hex = signature.replace("sha256=", "").strip()
-        if not hmac.compare_digest(sig_hex, expected_sig):
-            raise HTTPException(status_code=403, detail="Invalid signature")
+    expected_sig = hmac.new(
+        settings.META_APP_SECRET.encode(),
+        body_bytes,
+        hashlib.sha256,
+    ).hexdigest()
+    sig_hex = signature.replace("sha256=", "").strip()
+    if not hmac.compare_digest(sig_hex, expected_sig):
+        raise HTTPException(status_code=403, detail="Invalid signature")
 
     try:
         body = json.loads(body_bytes.decode("utf-8"))
@@ -103,32 +108,30 @@ async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
     return {"status": "EVENT_RECEIVED"}
 
 
-def _resolve_whatsapp_organization_id(db: Session, metadata: Optional[Dict]) -> int:
+def _resolve_whatsapp_organization_id(db: Session, metadata: Optional[Dict]) -> Optional[int]:
     """Multitenancy: metadata.phone_number_id → Organization.whatsapp_phone_number_id."""
     meta = metadata or {}
     pn = meta.get("phone_number_id")
-    if pn:
-        pn_str = str(pn).strip()
-        org = (
-            db.query(models.Organization)
-            .filter(models.Organization.whatsapp_phone_number_id == pn_str)
-            .first()
-        )
-        if org:
-            return org.id
+    if not pn:
         logger.warning(
-            "WhatsApp phone_number_id=%s sin organización vinculada; usar PATCH "
-            "/organizations/me/whatsapp. DEFAULT_BOT_ORGANIZATION_ID=%s.",
-            pn_str,
-            settings.DEFAULT_BOT_ORGANIZATION_ID,
+            "Webhook WhatsApp sin metadata.phone_number_id; evento omitido "
+            "(vincular en PATCH /organizations/me/whatsapp)."
         )
-    else:
-        logger.warning(
-            "Webhook WhatsApp sin metadata.phone_number_id; usando "
-            "DEFAULT_BOT_ORGANIZATION_ID=%s.",
-            settings.DEFAULT_BOT_ORGANIZATION_ID,
-        )
-    return settings.DEFAULT_BOT_ORGANIZATION_ID
+        return None
+    pn_str = str(pn).strip()
+    org = (
+        db.query(models.Organization)
+        .filter(models.Organization.whatsapp_phone_number_id == pn_str)
+        .first()
+    )
+    if org:
+        return org.id
+    logger.warning(
+        "WhatsApp phone_number_id=%s sin organización vinculada; evento omitido. "
+        "PATCH /organizations/me/whatsapp con ese id.",
+        pn_str,
+    )
+    return None
 
 
 def process_meta_payload(body: dict):
@@ -147,6 +150,8 @@ def process_meta_payload(body: dict):
                     value = change.get("value", {})
                     metadata = value.get("metadata") or {}
                     org_id = _resolve_whatsapp_organization_id(db, metadata)
+                    if org_id is None:
+                        continue
                     for message in value.get("messages", []):
                         sender_id = message.get("from")
                         text = message.get("text", {}).get("body", "")
@@ -168,21 +173,12 @@ def process_meta_payload(body: dict):
                             interactive_id=interactive_id
                         )
 
-        # 2. Messenger / Instagram Parser
+        # 2. Messenger / Instagram — sin mapeo page_id→org (evitar fallback multi-tenant incorrecto).
         elif body.get("object") == "page" or body.get("object") == "instagram":
-             for entry in body.get("entry", []):
-                for messaging in entry.get("messaging", []):
-                    sender_id = messaging.get("sender", {}).get("id")
-                    message = messaging.get("message", {})
-                    text = message.get("text", "")
-                    
-                    BotEngine.process_message(
-                        db=db,
-                        organization_id=settings.DEFAULT_BOT_ORGANIZATION_ID,
-                        channel="messenger" if body.get("object") == "page" else "instagram",
-                        sender_id=sender_id,
-                        text=text
-                    )
+            logger.warning(
+                "Webhook Messenger/Instagram recibido; procesamiento omitido hasta "
+                "implementar mapeo page_id → organization_id."
+            )
     except Exception:
         logger.exception("Error parsing Meta payload")
     finally:

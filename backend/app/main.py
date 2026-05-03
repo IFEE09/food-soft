@@ -1,7 +1,10 @@
 import asyncio
+import json
 import logging
 import secrets
 from contextlib import asynccontextmanager
+
+from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -98,7 +101,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-_docs = settings.ENV != "production"
+_docs = settings.EXPOSE_OPENAPI and settings.ENV != "production"
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="Backend API for Smart POS System",
@@ -144,12 +147,34 @@ def root():
 async def websocket_endpoint(
     websocket: WebSocket,
     org_id: int,
-    token: str = Query(..., description="JWT Bearer del mismo usuario que la cocina"),
+    token: Optional[str] = Query(
+        None,
+        description="Opcional (legacy). Preferir mensaje inicial JSON auth.",
+    ),
 ):
+    """
+    Auth: (1) query ?token= (legacy, puede loguearse en proxies) o
+    (2) primer mensaje texto: {"type":"auth","token":"<jwt>"}.
+    """
+    await websocket.accept()
+    auth_token = token
+    if not auth_token:
+        try:
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=20.0)
+            payload = json.loads(raw)
+            if isinstance(payload, dict) and payload.get("type") == "auth":
+                auth_token = payload.get("token")
+        except (asyncio.TimeoutError, json.JSONDecodeError, TypeError, ValueError):
+            await websocket.close(code=4401)
+            return
+    if not auth_token:
+        await websocket.close(code=4401)
+        return
+
     db = SessionLocal()
     try:
         try:
-            uid = security.decode_access_token_subject(token)
+            uid = security.decode_access_token_subject(auth_token)
         except security.InvalidAccessToken:
             await websocket.close(code=4401)
             return
@@ -174,9 +199,7 @@ async def websocket_endpoint(
 def health_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
-        if settings.ENV == "production":
-            return {"status": "ok"}
-        return {"status": "ok", "env": settings.ENV}
+        return {"status": "ok"}
     except Exception:
         logger.exception("Health check failed")
         raise HTTPException(status_code=503, detail="Database unavailable")

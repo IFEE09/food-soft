@@ -1,8 +1,9 @@
 from typing import Annotated, Any, List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.db import models
 from app.api.auth import require_owner
@@ -11,11 +12,13 @@ from app.schemas import activity as activity_schema
 router = APIRouter()
 
 @router.get("/", response_model=List[activity_schema.ActivityLog])
+@limiter.limit("90/minute")
 def read_activity_logs(
+    request: Request,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[models.User, Depends(require_owner)],
     skip: int = 0,
-    limit: Annotated[int, Query(le=500)] = 200,
+    limit: Annotated[int, Query(le=200)] = 100,
     entity_type: Optional[str] = None,
     action: Optional[str] = None,
     user_id: Optional[int] = None,

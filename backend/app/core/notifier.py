@@ -27,7 +27,7 @@ class ConnectionManager:
         self.active_connections: Dict[int, List[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, org_id: int):
-        await websocket.accept()
+        # El caller debe hacer websocket.accept() antes (p. ej. auth por primer mensaje).
         if org_id not in self.active_connections:
             self.active_connections[org_id] = []
         self.active_connections[org_id].append(websocket)

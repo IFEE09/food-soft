@@ -63,6 +63,14 @@ export default function Settings() {
         setMsg({ text: 'Las contraseñas no coinciden.', type: 'error' });
         return;
     }
+    if (passData.new_password.length < 10) {
+        setMsg({ text: 'La nueva contraseña debe tener al menos 10 caracteres.', type: 'error' });
+        return;
+    }
+    if (!/[A-Za-z]/.test(passData.new_password) || !/\d/.test(passData.new_password)) {
+        setMsg({ text: 'Incluye al menos una letra y un número.', type: 'error' });
+        return;
+    }
     setIsUpdating(true);
     try {
       await apiClient.post('/users/me/change-password', {

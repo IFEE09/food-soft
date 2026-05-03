@@ -37,9 +37,18 @@ export default function Login() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      const { access_token, role, full_name, organization_id } = response.data;
+      const {
+        access_token,
+        refresh_token,
+        role,
+        full_name,
+        organization_id,
+      } = response.data;
 
       localStorage.setItem('token', access_token);
+      if (refresh_token) {
+        localStorage.setItem('refresh_token', refresh_token);
+      }
       localStorage.setItem('role', role);
       localStorage.setItem('userName', full_name);
       if (organization_id != null) {

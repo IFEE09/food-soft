@@ -2,6 +2,8 @@ import logging
 import secrets
 from datetime import timedelta
 from typing import Any
+
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
@@ -29,8 +31,9 @@ def get_current_user(
         user_id = security.decode_access_token_subject(token)
     except security.InvalidAccessToken:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
@@ -58,6 +61,11 @@ def require_owner(current_user: models.User = Depends(get_current_user)) -> mode
     return current_user
 
 router = APIRouter()
+
+
+class RefreshTokenIn(BaseModel):
+    refresh_token: str
+
 
 @router.post("/login")
 @limiter.limit("30/minute")
@@ -91,14 +99,51 @@ def login_access_token(
         "access_token": security.create_access_token(
             user.id, expires_delta=access_token_expires
         ),
+        "refresh_token": security.create_refresh_token(user.id),
         "token_type": "bearer",
         "role": user.role,
         "full_name": user.full_name,
         "organization_id": user.organization_id,
     }
 
+
+@router.post("/refresh")
+@limiter.limit("60/minute")
+def refresh_access_token(
+    request: Request,
+    body: RefreshTokenIn,
+    db: Session = Depends(get_db),
+) -> Any:
+    try:
+        uid = security.decode_refresh_token_subject(body.refresh_token)
+    except security.InvalidAccessToken:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token inválido o expirado",
+        )
+    user = db.query(models.User).filter(models.User.id == uid).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no válido o inactivo",
+        )
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    return {
+        "access_token": security.create_access_token(
+            user.id, expires_delta=access_token_expires
+        ),
+        "refresh_token": security.create_refresh_token(user.id),
+        "token_type": "bearer",
+        "role": user.role,
+        "full_name": user.full_name,
+        "organization_id": user.organization_id,
+    }
+
+
 @router.post("/register", response_model=UserSchema)
+@limiter.limit("10/hour")
 def register_user(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     user_in: UserCreate,

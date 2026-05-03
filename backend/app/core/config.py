@@ -21,27 +21,27 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: Optional[str] = None
     
-    # Fallback (Local Dev Only)
+    # Fallback (Local Dev Only) — contraseña solo en .env, no en código.
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "178601"
+    POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = "foodsoftdb"
     POSTGRES_PORT: str = "5432"
     
     # Auth (no usar el valor por defecto en producción)
     SECRET_KEY: str = _DEFAULT_SECRET
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     # False en producción salvo que quieras registro abierto (definir True solo en dev si hace falta)
     PUBLIC_REGISTRATION_ENABLED: bool = False
+    # OpenAPI /docs: nunca en ENV=production; en dev desactivar con EXPOSE_OPENAPI=false
+    EXPOSE_OPENAPI: bool = True
 
-    # Meta Platform (Bot)
-    META_VERIFY_TOKEN: str = "omnikook_secret_verify_token"
+    # Meta Platform (Bot) — definir en .env (verify token del webhook Meta).
+    META_VERIFY_TOKEN: str = ""
     META_ACCESS_TOKEN: Optional[str] = None
     META_APP_SECRET: Optional[str] = None
-
-    # WhatsApp/Meta bot → internal orders (until mapped per phone_number_id)
-    DEFAULT_BOT_ORGANIZATION_ID: int = 1
 
     # Si True, permite POST /bot/mock fuera de producción (en prod siempre denegado)
     ENABLE_BOT_MOCK_ENDPOINT: bool = True
@@ -66,7 +66,11 @@ class Settings(BaseSettings):
                 )
             if not (self.META_APP_SECRET or "").strip():
                 logger.warning(
-                    "META_APP_SECRET vacío en producción: el POST /bot/webhook no validará firmas."
+                    "META_APP_SECRET vacío: POST /bot/webhook responde 503 hasta configurarlo."
+                )
+            if not (self.META_VERIFY_TOKEN or "").strip():
+                logger.warning(
+                    "META_VERIFY_TOKEN vacío: GET /bot/webhook (handshake Meta) fallará."
                 )
         return self
 
@@ -82,7 +86,15 @@ class Settings(BaseSettings):
         raw = (self.ALLOWED_ORIGINS or "").strip()
         if raw:
             return [o.strip() for o in raw.split(",") if o.strip()]
-        return ["*"]
+        # Sin ALLOWED_ORIGINS: en dev orígenes locales explícitos (evita * + credentials).
+        if self.ENV != "production":
+            return [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ]
+        return []
 
     def get_database_url(self) -> str:
         # Prioritize DATABASE_URL

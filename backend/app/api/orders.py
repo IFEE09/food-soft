@@ -1,8 +1,9 @@
 from typing import Any, List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.db import models
 from app.schemas import order as order_schema
@@ -14,7 +15,9 @@ from app.core.tenant import assert_kitchen_in_organization
 router = APIRouter()
 
 @router.get("/", response_model=List[order_schema.Order])
+@limiter.limit("180/minute")
 def read_orders(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
     skip: int = 0,
@@ -34,7 +37,9 @@ def read_orders(
     return orders
 
 @router.post("/", response_model=order_schema.Order)
+@limiter.limit("120/minute")
 async def create_order(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -75,7 +80,9 @@ async def create_order(
     return order
 
 @router.put("/{id}", response_model=order_schema.Order)
+@limiter.limit("120/minute")
 def update_order(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -115,7 +122,9 @@ def update_order(
     return order
 
 @router.delete("/{id}", response_model=order_schema.Order)
+@limiter.limit("60/minute")
 def delete_order(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),

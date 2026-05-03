@@ -1,7 +1,8 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.db import models
 from app.schemas import kitchen as kitchen_schema
@@ -12,7 +13,9 @@ from app.core.tenant import get_owned_or_404
 router = APIRouter()
 
 @router.get("/", response_model=List[kitchen_schema.Kitchen])
+@limiter.limit("180/minute")
 def read_kitchens(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
     skip: int = 0,
@@ -24,7 +27,9 @@ def read_kitchens(
              .offset(skip).limit(limit).all()
 
 @router.post("/", response_model=kitchen_schema.Kitchen)
+@limiter.limit("120/minute")
 def create_kitchen(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -47,7 +52,9 @@ def create_kitchen(
     return kitchen
 
 @router.put("/{id}", response_model=kitchen_schema.Kitchen)
+@limiter.limit("120/minute")
 def update_kitchen(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -73,7 +80,9 @@ def update_kitchen(
     return kitchen
 
 @router.delete("/{id}", response_model=kitchen_schema.Kitchen)
+@limiter.limit("60/minute")
 def delete_kitchen(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),

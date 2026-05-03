@@ -31,6 +31,14 @@ export default function Register() {
       setErrorMsg("Las contraseñas no coinciden. Por favor, verifica.");
       return;
     }
+    if (password.length < 10) {
+      setErrorMsg("La contraseña debe tener al menos 10 caracteres.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      setErrorMsg("La contraseña debe incluir al menos una letra y un número.");
+      return;
+    }
 
     setIsLoading(true);
     setErrorMsg(null);

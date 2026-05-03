@@ -49,6 +49,15 @@ export default function TeamManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const pw = formData.password;
+    if (pw.length < 10) {
+      showAlert('Error', 'La contraseña debe tener al menos 10 caracteres.', 'error');
+      return;
+    }
+    if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) {
+      showAlert('Error', 'La contraseña debe incluir al menos una letra y un número.', 'error');
+      return;
+    }
     try {
       await apiClient.post('/users/team', formData);
       showAlert('Miembro Creado', `Se ha registrado a "${formData.full_name}" como ${ROLE_CONFIG[formData.role]?.label}.`, 'success');

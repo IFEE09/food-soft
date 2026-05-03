@@ -1,8 +1,9 @@
 from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 import logging
 
+from app.core.rate_limit import limiter
 from app.db.session import get_db
 from app.db import models
 from app.schemas import supply as supply_schema
@@ -14,7 +15,9 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.get("/", response_model=List[supply_schema.Supply])
+@limiter.limit("180/minute")
 def read_supplies(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
     skip: int = 0,
@@ -26,7 +29,9 @@ def read_supplies(
              .offset(skip).limit(limit).all()
 
 @router.post("/", response_model=supply_schema.Supply)
+@limiter.limit("120/minute")
 def create_supply(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -61,7 +66,9 @@ def create_supply(
         raise HTTPException(status_code=500, detail="Error interno del servidor al guardar el insumo.")
 
 @router.put("/{id}", response_model=supply_schema.Supply)
+@limiter.limit("120/minute")
 def update_supply(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
@@ -87,7 +94,9 @@ def update_supply(
     return supply
 
 @router.delete("/{id}", response_model=supply_schema.Supply)
+@limiter.limit("60/minute")
 def delete_supply(
+    request: Request,
     *,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),

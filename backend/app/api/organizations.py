@@ -1,7 +1,7 @@
 import secrets
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,8 @@ from app.db import models
 from app.api.auth import require_owner
 from app.core.activity import log_activity
 from app.core.api_keys import hash_api_key
+from app.schemas import organization as organization_schema
+from app.core.rate_limit import limiter
 
 router = APIRouter()
 
@@ -22,14 +24,21 @@ class WhatsAppPhoneBinding(BaseModel):
     )
 
 
-@router.get("/me")
+@router.get("/me", response_model=organization_schema.OrganizationPublic)
+@limiter.limit("120/minute")
 def get_my_organization(
+    request: Request,
     current_user: models.User = Depends(require_owner),
 ) -> Any:
-    return current_user.organization
+    org = current_user.organization
+    if not org:
+        raise HTTPException(status_code=404, detail="Organización no encontrada.")
+    return org
 
 @router.post("/api-key/rotate")
+@limiter.limit("10/hour")
 def rotate_api_key(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
 ) -> Any:
@@ -55,7 +64,9 @@ def rotate_api_key(
 
 
 @router.patch("/me/whatsapp")
+@limiter.limit("30/minute")
 def bind_whatsapp_phone_number_id(
+    request: Request,
     body: WhatsAppPhoneBinding,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),

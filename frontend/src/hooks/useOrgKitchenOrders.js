@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../api/client';
 
-/** WebSocket URL (JWT obligatorio en query; mismo origen que la API). */
+/** WebSocket URL (sin JWT en query; auth vía primer mensaje JSON en onopen). */
 export function buildKitchenWsUrl(orgId) {
   const token = localStorage.getItem('token');
   if (!token) return null;
@@ -10,8 +10,7 @@ export function buildKitchenWsUrl(orgId) {
   const wsBase = base.startsWith('https')
     ? base.replace(/^https/, 'wss')
     : base.replace(/^http/, 'ws');
-  const q = new URLSearchParams({ token });
-  return `${wsBase}/ws/${orgId}?${q.toString()}`;
+  return `${wsBase}/ws/${orgId}`;
 }
 
 /**
@@ -61,6 +60,10 @@ export function useOrgKitchenOrders() {
     if (!Number.isNaN(orgId) && orgId > 0 && wsUrl) {
       try {
         ws = new WebSocket(wsUrl);
+        ws.onopen = () => {
+          const t = localStorage.getItem('token');
+          if (t) ws.send(JSON.stringify({ type: 'auth', token: t }));
+        };
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
