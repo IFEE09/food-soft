@@ -24,6 +24,16 @@ class WhatsAppAdapter:
         }
 
     @staticmethod
+    def format_image(to: str, image_url: str, caption: str = "") -> dict:
+        return {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": to,
+            "type": "image",
+            "image": {"link": image_url, "caption": caption},
+        }
+
+    @staticmethod
     def format_list(
         to: str,
         header_text: str,
@@ -81,6 +91,19 @@ class MessengerAdapter:
         }
 
     @staticmethod
+    def format_image(to: str, image_url: str) -> dict:
+        return {
+            "messaging_type": "RESPONSE",
+            "recipient": {"id": to},
+            "message": {
+                "attachment": {
+                    "type": "image",
+                    "payload": {"url": image_url, "is_reusable": True},
+                }
+            },
+        }
+
+    @staticmethod
     def format_quick_replies(to: str, text: str, buttons: List[dict]) -> dict:
         quick_replies = [
             {
@@ -124,6 +147,18 @@ class InstagramAdapter:
         return {
             "recipient": {"id": to},
             "message": {"text": text},
+        }
+
+    @staticmethod
+    def format_image(to: str, image_url: str) -> dict:
+        return {
+            "recipient": {"id": to},
+            "message": {
+                "attachment": {
+                    "type": "image",
+                    "payload": {"url": image_url, "is_reusable": True},
+                }
+            },
         }
 
     @staticmethod

@@ -26,6 +26,11 @@ from app.core.bot.adapters import WhatsAppAdapter, MessengerAdapter, InstagramAd
 from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
 
+# URLs públicas de las imágenes del menú de Horno 74
+MENU_IMG_PARA_COMENZAR = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/QdrcigjkETcmnaog.jpg"
+MENU_IMG_TRADICIONALES = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/tWAWZQLDXZyWAOcg.jpg"
+MENU_IMG_ESPECIALES = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/ARkxrVWJRlBxsqse.jpg"
+
 logger = logging.getLogger(__name__)
 
 _MAX_ADDRESS_LEN = 200
@@ -39,6 +44,14 @@ def _round_price(value: float) -> float:
 class BotEngine:
 
     # ── Helpers de formato ────────────────────────────────────────────────────
+
+    @staticmethod
+    def _image(channel: str, to: str, image_url: str) -> dict:
+        if channel == "whatsapp":
+            return WhatsAppAdapter.format_image(to, image_url)
+        if channel == "messenger":
+            return MessengerAdapter.format_image(to, image_url)
+        return InstagramAdapter.format_image(to, image_url)
 
     @staticmethod
     def _text(channel: str, to: str, text: str) -> dict:
@@ -190,13 +203,20 @@ class BotEngine:
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int
     ) -> list:
-        items = db.query(models.MenuItem).filter_by(organization_id=organization_id).limit(10).all()
+        items = db.query(models.MenuItem).filter_by(organization_id=organization_id).limit(20).all()
         if not items:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
                 "Por el momento no tenemos productos disponibles. ¡Vuelve pronto!"
             )}]
-        return [{"action": "SEND_MENU", "payload": BotEngine._menu(channel, sender_id, items)}]
+        # Enviar las 3 imágenes del menú + lista interactiva de productos
+        out = [
+            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_PARA_COMENZAR)},
+            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_TRADICIONALES)},
+            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_ESPECIALES)},
+            {"action": "SEND_MENU",  "payload": BotEngine._menu(channel, sender_id, items)},
+        ]
+        return out
 
     @staticmethod
     def _execute_add_to_cart(
@@ -384,10 +404,12 @@ class BotEngine:
                 user_message = interactive_id
 
         if not user_message:
+            # Primer contacto sin texto: enviar saludo + menú completo con imágenes
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "¡Hola! Escríbeme o escribe 'menu' para ver nuestros productos. 😊"
+                "¡Hola! Bienvenido a Horno 74 🍕🔥 Soy Kook, tu asistente de pedidos. Aquí te muestro nuestro menú:"
             )})
+            out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
             return out
 
         # ── Llamar a DeepSeek ─────────────────────────────────────────────────
