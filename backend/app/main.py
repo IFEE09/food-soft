@@ -49,6 +49,8 @@ def run_migrations():
         "ALTER TABLE organizations ADD COLUMN api_key_hash VARCHAR UNIQUE",
         "ALTER TABLE users ADD COLUMN kitchen_id INTEGER REFERENCES kitchens(id)",
         "ALTER TABLE organizations ADD COLUMN whatsapp_phone_number_id VARCHAR UNIQUE",
+        "ALTER TABLE organizations ADD COLUMN facebook_page_id VARCHAR UNIQUE",
+        "ALTER TABLE organizations ADD COLUMN instagram_page_id VARCHAR UNIQUE",
     ]
 
     for query in migrations:
