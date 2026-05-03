@@ -17,20 +17,26 @@ class OrderService:
         if not items:
             return False
 
-        # Build order internally
-        # We need a kitchen to assign. Just grab the first active one for simplicity.
-        kitchen = db.query(models.Kitchen).filter(
-            models.Kitchen.is_active.is_(True),
-            models.Kitchen.organization_id == session.organization_id,
+        # Get the first active Station for this organization
+        station = db.query(models.Station).filter(
+            models.Station.is_active.is_(True),
+            models.Station.organization_id == session.organization_id,
         ).first()
-        kitchen_id = kitchen.id if kitchen else None
+        station_id = station.id if station else None
+
+        # Build the client name including the bot customer name if available
+        client_name = cart.get("customer_name") or customer.name or None
+        if client_name:
+            display_name = client_name
+        else:
+            display_name = f"Bot ({customer.channel_user_id})"
 
         new_order = models.Order(
-            client_name=f"{customer.name or 'Bot User'} ({customer.channel_user_id})",
+            client_name=display_name,
             status="pending",
             total=cart.get("total", 0.0),
-            kitchen_id=kitchen_id,
-            organization_id=session.organization_id
+            station_id=station_id,
+            organization_id=session.organization_id,
         )
         db.add(new_order)
         db.flush()
@@ -50,7 +56,11 @@ class OrderService:
             )
             lines.append((name, qty))
 
-        deduct_supplies_for_line_items(db, session.organization_id, lines)
+        try:
+            deduct_supplies_for_line_items(db, session.organization_id, lines)
+        except Exception:
+            pass  # Don't block order creation if inventory deduction fails
+
         db.commit()
         db.refresh(new_order)
 
@@ -60,7 +70,7 @@ class OrderService:
             action="create",
             entity_type="order",
             entity_id=new_order.id,
-            description=f"Pedido WhatsApp/bot #{new_order.id} para '{new_order.client_name}' (${new_order.total})",
+            description=f"Pedido bot #{new_order.id} para '{new_order.client_name}' (${new_order.total})",
             organization_id=session.organization_id,
         )
 

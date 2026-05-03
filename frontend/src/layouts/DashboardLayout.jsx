@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   HeadphonesIcon,
   Building2,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import { apiClient } from '../api/client';
@@ -113,6 +114,7 @@ export default function DashboardLayout() {
           <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, padding: '0.5rem 0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>RESTAURANT_HOLDING</div>
           <NavItem path="/dashboard/owner" icon={LayoutDashboard} label="Dashboard General" />
           <NavItem path="/dashboard/kitchen" icon={Building2} label="Panel Cocinas" />
+          <NavItem path="/dashboard/order-history" icon={FileText} label="Historial Pedidos" />
           <NavItem path="/dashboard/activity-logs" icon={Activity} label="Historial Global" />
           <NavItem path="/dashboard/settings" icon={SettingsIcon} label="Configuración" />
 
@@ -166,6 +168,7 @@ export default function DashboardLayout() {
     if (isActive('/dashboard/menu')) return { title: 'Menú', sub: `Catálogo de ${currentKitchenName}` };
     if (isActive('/dashboard/supplies')) return { title: 'Inventario', sub: `Stock físico en ${currentKitchenName}` };
     if (isActive('/dashboard/team')) return { title: 'Equipo', sub: `Colaboradores de ${currentKitchenName}` };
+    if (isActive('/dashboard/order-history')) return { title: 'Historial de Pedidos', sub: 'Pedidos por fecha con exportación CSV' };
     if (isActive('/dashboard/activity-logs')) return { title: 'Historial', sub: 'Auditoría completa del sistema' };
     if (isActive('/dashboard/settings')) return { title: 'Configuración', sub: 'Ajustes de cuenta y perfil' };
     if (isActive('/dashboard/cook')) return { title: 'Monitor de Estaciones', sub: currentKitchenName };

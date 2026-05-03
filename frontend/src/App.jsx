@@ -12,6 +12,7 @@ import Menu from './pages/Menu';
 import ActivityLogs from './pages/ActivityLogs';
 import ReceptionDashboard from './pages/ReceptionDashboard';
 import TeamManagement from './pages/TeamManagement';
+import OrderHistory from './pages/OrderHistory';
 
 import { NotificationProvider } from './components/NotificationProvider';
 import { ThemeProvider } from './components/ThemeContext';
@@ -71,6 +72,9 @@ function App() {
               } />
               <Route path="reception" element={
                 <RoleRoute allowed={['owner', 'receptionist']}><ReceptionDashboard /></RoleRoute>
+              } />
+              <Route path="order-history" element={
+                <RoleRoute allowed={['owner']}><OrderHistory /></RoleRoute>
               } />
               <Route path="team" element={
                 <RoleRoute allowed={['owner']}><TeamManagement /></RoleRoute>

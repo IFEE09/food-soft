@@ -1,6 +1,9 @@
 from typing import Any, List, Optional
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
+import csv
+import io
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import limiter
@@ -24,17 +27,69 @@ def read_orders(
     limit: int = 100,
     status: Optional[str] = None,
     kitchen_id: Optional[int] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
 ) -> Any:
-    """ Retrieve orders for organization. """
+    """ Retrieve orders for organization with optional date filters. """
     query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
     if status:
         query = query.filter(models.Order.status == status)
     if kitchen_id is not None:
         query = query.filter(models.Order.kitchen_id == kitchen_id)
+    if date_from:
+        query = query.filter(models.Order.created_at >= datetime.combine(date_from, datetime.min.time()))
+    if date_to:
+        query = query.filter(models.Order.created_at <= datetime.combine(date_to, datetime.max.time()))
 
-    # Sorting by creation date descendently
     orders = query.order_by(models.Order.created_at.desc()).offset(skip).limit(limit).all()
     return orders
+
+
+@router.get("/export/csv")
+@limiter.limit("30/minute")
+def export_orders_csv(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    status: Optional[str] = None,
+) -> Any:
+    """ Export orders as CSV with optional date and status filters. """
+    query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
+    if status:
+        query = query.filter(models.Order.status == status)
+    if date_from:
+        query = query.filter(models.Order.created_at >= datetime.combine(date_from, datetime.min.time()))
+    if date_to:
+        query = query.filter(models.Order.created_at <= datetime.combine(date_to, datetime.max.time()))
+    orders = query.order_by(models.Order.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["# Pedido", "Nombre", "Productos", "Nota", "Total", "Estatus", "Fecha", "Hora"])
+    for o in orders:
+        productos = " | ".join(f"{it.product_name} x{it.quantity}" for it in o.items)
+        fecha = o.created_at.strftime("%Y-%m-%d") if o.created_at else ""
+        hora = o.created_at.strftime("%H:%M") if o.created_at else ""
+        writer.writerow([
+            f"#{str(o.id).zfill(4)}",
+            o.client_name or "",
+            productos,
+            getattr(o, 'notes', '') or "",
+            f"${o.total:.2f}",
+            o.status,
+            fecha,
+            hora,
+        ])
+
+    output.seek(0)
+    filename = f"pedidos_{date_from or 'todos'}_{date_to or ''}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @router.post("/", response_model=order_schema.Order)
 @limiter.limit("120/minute")
