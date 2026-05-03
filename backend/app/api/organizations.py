@@ -141,3 +141,95 @@ def bind_whatsapp_phone_number_id(
         description="Actualizó vinculación WhatsApp (phone_number_id)",
     )
     return {"whatsapp_phone_number_id": org.whatsapp_phone_number_id}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Vinculación de canales: Facebook Messenger e Instagram DM
+# ─────────────────────────────────────────────────────────────────────────────
+
+class FacebookPageBinding(BaseModel):
+    facebook_page_id: Optional[str] = Field(default=None, description="Cadena vacía o null desvincula.")
+
+
+class InstagramPageBinding(BaseModel):
+    instagram_page_id: Optional[str] = Field(default=None, description="Cadena vacía o null desvincula.")
+
+
+@router.patch("/me/facebook")
+@limiter.limit("30/minute")
+def bind_facebook_page_id(
+    request: Request,
+    body: FacebookPageBinding,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_owner),
+):
+    """Vincula el page_id de Facebook Messenger a esta organización."""
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organización no encontrada.")
+
+    raw = (body.facebook_page_id or "").strip()
+    if raw:
+        taken = (
+            db.query(models.Organization)
+            .filter(
+                models.Organization.facebook_page_id == raw,
+                models.Organization.id != org.id,
+            )
+            .first()
+        )
+        if taken:
+            raise HTTPException(status_code=400, detail="Este facebook_page_id ya está vinculado a otra organización.")
+        org.facebook_page_id = raw
+    else:
+        org.facebook_page_id = None
+
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    log_activity(
+        db, current_user,
+        action="update", entity_type="organization", entity_id=org.id,
+        description="Actualizó vinculación Facebook Messenger (page_id)",
+    )
+    return {"facebook_page_id": org.facebook_page_id}
+
+
+@router.patch("/me/instagram")
+@limiter.limit("30/minute")
+def bind_instagram_page_id(
+    request: Request,
+    body: InstagramPageBinding,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_owner),
+):
+    """Vincula el ig_id de Instagram DM a esta organización."""
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organización no encontrada.")
+
+    raw = (body.instagram_page_id or "").strip()
+    if raw:
+        taken = (
+            db.query(models.Organization)
+            .filter(
+                models.Organization.instagram_page_id == raw,
+                models.Organization.id != org.id,
+            )
+            .first()
+        )
+        if taken:
+            raise HTTPException(status_code=400, detail="Este instagram_page_id ya está vinculado a otra organización.")
+        org.instagram_page_id = raw
+    else:
+        org.instagram_page_id = None
+
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    log_activity(
+        db, current_user,
+        action="update", entity_type="organization", entity_id=org.id,
+        description="Actualizó vinculación Instagram DM (ig_id)",
+    )
+    return {"instagram_page_id": org.instagram_page_id}
