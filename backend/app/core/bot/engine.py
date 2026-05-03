@@ -533,6 +533,15 @@ class BotEngine:
                 order_id = OrderService.send_to_internal_software(db, customer, session)
                 success = bool(order_id)
                 cart = dict(session.cart_data)
+
+                # ── Guardar nombre y dirección en BotCustomer para futuros pedidos ────────────
+                confirmed_name    = cart.get("customer_name", "").strip()
+                confirmed_address = cart.get("address", "").strip()
+                if confirmed_name:
+                    customer.saved_name = confirmed_name
+                if confirmed_address:
+                    customer.saved_address = confirmed_address
+
                 cart["items"] = []
                 cart["total"] = 0.0
                 if order_id and order_id is not True:
@@ -565,24 +574,40 @@ class BotEngine:
             session.cart_data = cart
             session.state = "PIDIENDO_NOMBRE"
             db.commit()
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
-            )})
+            # Si el cliente ya tiene nombre guardado, preguntar si sigue siendo el mismo
+            if customer.saved_name:
+                msg = f"¿Seguimos con el nombre {customer.saved_name}? Responde *sí* o escribe tu nombre 😊"
+            else:
+                msg = "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
             return out
 
         # ── Estado especial: esperando nombre (sin IA) ───────────────────────────────────────
         if state == "PIDIENDO_NOMBRE":
             if user_text and len(user_text.strip()) >= 2:
+                # Verificar si el cliente confirmó su nombre guardado
+                CONFIRM_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "ese mismo"}
+                if customer.saved_name and user_text.strip().lower() in CONFIRM_WORDS:
+                    confirmed_name = customer.saved_name
+                else:
+                    confirmed_name = user_text.strip()[:80]
+
                 cart = dict(session.cart_data)
-                cart["customer_name"] = user_text.strip()[:80]
+                cart["customer_name"] = confirmed_name
                 session.cart_data = cart
                 session.state = "PIDIENDO_DIRECCION"
                 db.commit()
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                    channel, sender_id,
-                    f"Gracias, {user_text.strip().split()[0].capitalize()} 😊 ¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
-                )})
+
+                first = confirmed_name.split()[0].capitalize()
+                # Si tiene dirección guardada, preguntar si la usa de nuevo
+                if customer.saved_address:
+                    msg = (
+                        f"Gracias, {first} 😊 ¿Enviamos de nuevo a *{customer.saved_address}*? "
+                        f"Responde *sí* o escribe una nueva dirección 📍"
+                    )
+                else:
+                    msg = f"Gracias, {first} 😊 ¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                 return out
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
@@ -592,6 +617,12 @@ class BotEngine:
 
         # ── Estado especial: esperando dirección (sin IA) ───────────────────────────────────
         if state == "PIDIENDO_DIRECCION":
+            CONFIRM_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "esa misma", "la misma"}
+            # Si el cliente confirmó la dirección guardada
+            if customer.saved_address and user_text.strip().lower() in CONFIRM_WORDS:
+                return BotEngine._execute_confirm_order(
+                    db, channel, sender_id, session, customer, customer.saved_address
+                )
             if user_text and len(user_text.strip()) > 5:
                 return BotEngine._execute_confirm_order(db, channel, sender_id, session, customer, user_text.strip())
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
@@ -614,120 +645,127 @@ class BotEngine:
             promotions=promotions,
         )
 
-        action = ai_response.get("action", "CHAT")
-        logger.info("DeepSeek action=%s sender=%s channel=%s", action, sender_id, channel)
+        # ai_response es una LISTA de acciones (puede contener múltiples ADD_TO_CART, etc.)
+        actions_list = ai_response if isinstance(ai_response, list) else [ai_response]
+        logger.info("DeepSeek actions=%s sender=%s channel=%s", actions_list, sender_id, channel)
 
-        # ── Ejecutar la acción devuelta por DeepSeek ──────────────────────────
-        if action == "SHOW_MENU":
-            result = BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id)
-            out.extend(result)
-            ai_reply = "Mostrando menú."
+        ai_reply_parts = []
 
-        elif action == "ADD_TO_CART":
-            item_id = ai_response.get("item_id")
-            if item_id is None:
-                msg = ai_response.get("message", "No encontré ese producto. ¿Puedes decirme exactamente cuál quieres?")
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-                ai_reply = msg
-            else:
-                result = BotEngine._execute_add_to_cart(
-                    db, channel, sender_id, session, organization_id, int(item_id)
-                )
+        # ── Ejecutar cada acción de la lista devuelta por DeepSeek ──────────────────────
+        for ai_action in actions_list:
+            action = ai_action.get("action", "CHAT")
+
+            if action == "SHOW_MENU":
+                result = BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id)
                 out.extend(result)
-                # Obtener el nombre real del producto para el historial
-                menu_item = db.query(models.MenuItem).filter(
-                    models.MenuItem.id == int(item_id),
-                    models.MenuItem.organization_id == organization_id
-                ).first()
-                product_name = menu_item.name if menu_item else f"Producto {item_id}"
-                ai_reply = f"{product_name} agregado a tu pedido."
+                ai_reply_parts.append("Mostrando menú.")
 
-        elif action == "VIEW_CART":
-            result = BotEngine._execute_view_cart(channel, sender_id, session)
-            out.extend(result)
-            ai_reply = "Mostrando pedido."
+            elif action == "ADD_TO_CART":
+                item_id = ai_action.get("item_id")
+                if item_id is None:
+                    msg = ai_action.get("message", "No encontré ese producto. ¿Puedes decirme exactamente cuál quieres?")
+                    out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                    ai_reply_parts.append(msg)
+                else:
+                    result = BotEngine._execute_add_to_cart(
+                        db, channel, sender_id, session, organization_id, int(item_id)
+                    )
+                    out.extend(result)
+                    menu_item = db.query(models.MenuItem).filter(
+                        models.MenuItem.id == int(item_id),
+                        models.MenuItem.organization_id == organization_id
+                    ).first()
+                    product_name = menu_item.name if menu_item else f"Producto {item_id}"
+                    ai_reply_parts.append(f"{product_name} agregado a tu pedido.")
 
-        elif action == "UPDATE_QUANTITY":
-            item_id = ai_response.get("item_id")
-            quantity = ai_response.get("quantity")
-            if item_id is None or quantity is None:
-                msg = ai_response.get("message", "¿Cuál producto quieres cambiar y a cuántas unidades?")
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-                ai_reply = msg
-            else:
-                result = BotEngine._execute_update_quantity(
-                    db, channel, sender_id, session, int(item_id), int(quantity)
-                )
+            elif action == "VIEW_CART":
+                result = BotEngine._execute_view_cart(channel, sender_id, session)
                 out.extend(result)
-                menu_item_upd = db.query(models.MenuItem).filter(
-                    models.MenuItem.id == int(item_id),
-                    models.MenuItem.organization_id == organization_id
-                ).first()
-                product_name_upd = menu_item_upd.name if menu_item_upd else f"Producto {item_id}"
-                ai_reply = f"Cantidad de {product_name_upd} actualizada a {quantity}."
+                ai_reply_parts.append("Mostrando pedido.")
 
-        elif action == "REMOVE_FROM_CART":
-            item_id = ai_response.get("item_id")
-            if item_id is None:
-                msg = ai_response.get("message", "No identifiqué cuál producto quieres quitar. ¿Puedes decirme el nombre exacto?")
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-                ai_reply = msg
-            else:
-                result = BotEngine._execute_remove_from_cart(
-                    db, channel, sender_id, session, int(item_id)
-                )
-                out.extend(result)
-                menu_item_rm = db.query(models.MenuItem).filter(
-                    models.MenuItem.id == int(item_id),
-                    models.MenuItem.organization_id == organization_id
-                ).first()
-                product_name_rm = menu_item_rm.name if menu_item_rm else f"Producto {item_id}"
-                ai_reply = f"{product_name_rm} eliminado de tu pedido."
+            elif action == "UPDATE_QUANTITY":
+                item_id = ai_action.get("item_id")
+                quantity = ai_action.get("quantity")
+                if item_id is None or quantity is None:
+                    msg = ai_action.get("message", "¿Cuál producto quieres cambiar y a cuántas unidades?")
+                    out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                    ai_reply_parts.append(msg)
+                else:
+                    result = BotEngine._execute_update_quantity(
+                        db, channel, sender_id, session, int(item_id), int(quantity)
+                    )
+                    out.extend(result)
+                    menu_item_upd = db.query(models.MenuItem).filter(
+                        models.MenuItem.id == int(item_id),
+                        models.MenuItem.organization_id == organization_id
+                    ).first()
+                    product_name_upd = menu_item_upd.name if menu_item_upd else f"Producto {item_id}"
+                    ai_reply_parts.append(f"Cantidad de {product_name_upd} actualizada a {quantity}.")
 
-        elif action == "ASK_ADDRESS":
-            result = BotEngine._execute_ask_address(channel, sender_id, session, db)
-            out.extend(result)
-            ai_reply = "Solicitando dirección de entrega."
+            elif action == "REMOVE_FROM_CART":
+                item_id = ai_action.get("item_id")
+                if item_id is None:
+                    msg = ai_action.get("message", "No identifiqué cuál producto quieres quitar. ¿Puedes decirme el nombre exacto?")
+                    out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                    ai_reply_parts.append(msg)
+                else:
+                    result = BotEngine._execute_remove_from_cart(
+                        db, channel, sender_id, session, int(item_id)
+                    )
+                    out.extend(result)
+                    menu_item_rm = db.query(models.MenuItem).filter(
+                        models.MenuItem.id == int(item_id),
+                        models.MenuItem.organization_id == organization_id
+                    ).first()
+                    product_name_rm = menu_item_rm.name if menu_item_rm else f"Producto {item_id}"
+                    ai_reply_parts.append(f"{product_name_rm} eliminado de tu pedido.")
 
-        elif action == "CONFIRM_ORDER":
-            address = (ai_response.get("address") or "").strip()
-            if address:
-                result = BotEngine._execute_confirm_order(db, channel, sender_id, session, customer, address)
-                out.extend(result)
-                ai_reply = f"Confirmando pedido a: {address}"
-            else:
+            elif action == "ASK_ADDRESS":
                 result = BotEngine._execute_ask_address(channel, sender_id, session, db)
                 out.extend(result)
-                ai_reply = "Solicitando dirección."
+                ai_reply_parts.append("Solicitando dirección de entrega.")
 
-        elif action == "CANCEL_ORDER":
-            result = BotEngine._execute_cancel_order(db, channel, sender_id, session)
-            out.extend(result)
-            ai_reply = "Pedido cancelado."
+            elif action == "CONFIRM_ORDER":
+                address = (ai_action.get("address") or "").strip()
+                if address:
+                    result = BotEngine._execute_confirm_order(db, channel, sender_id, session, customer, address)
+                    out.extend(result)
+                    ai_reply_parts.append(f"Confirmando pedido a: {address}")
+                else:
+                    result = BotEngine._execute_ask_address(channel, sender_id, session, db)
+                    out.extend(result)
+                    ai_reply_parts.append("Solicitando dirección.")
 
-        elif action == "CHECK_ORDER_STATUS":
-            result = BotEngine._execute_check_order_status(db, channel, sender_id, session, organization_id)
-            out.extend(result)
-            ai_reply = "Consultando estado del pedido."
+            elif action == "CANCEL_ORDER":
+                result = BotEngine._execute_cancel_order(db, channel, sender_id, session)
+                out.extend(result)
+                ai_reply_parts.append("Pedido cancelado.")
 
-        elif action == "RATE_ORDER":
-            rating = ai_response.get("rating")
-            result = BotEngine._execute_rate_order(db, channel, sender_id, session, organization_id, rating)
-            out.extend(result)
-            ai_reply = f"Calificación {rating} registrada."
+            elif action == "CHECK_ORDER_STATUS":
+                result = BotEngine._execute_check_order_status(db, channel, sender_id, session, organization_id)
+                out.extend(result)
+                ai_reply_parts.append("Consultando estado del pedido.")
 
-        elif action == "COMPLAINT":
-            complaint_text = ai_response.get("message", "")
-            result = BotEngine._execute_complaint(db, channel, sender_id, session, organization_id, customer, complaint_text)
-            out.extend(result)
-            ai_reply = f"Queja registrada: {complaint_text}"
+            elif action == "RATE_ORDER":
+                rating = ai_action.get("rating")
+                result = BotEngine._execute_rate_order(db, channel, sender_id, session, organization_id, rating)
+                out.extend(result)
+                ai_reply_parts.append(f"Calificación {rating} registrada.")
 
-        else:  # CHAT
-            message_text = ai_response.get("message", "¿En qué más puedo ayudarte?")
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
-            ai_reply = message_text
+            elif action == "COMPLAINT":
+                complaint_text = ai_action.get("message", "")
+                result = BotEngine._execute_complaint(db, channel, sender_id, session, organization_id, customer, complaint_text)
+                out.extend(result)
+                ai_reply_parts.append(f"Queja registrada: {complaint_text}")
 
-        # ── Guardar historial ─────────────────────────────────────────────────
+            else:  # CHAT
+                message_text = ai_action.get("message", "¿En qué más puedo ayudarte?")
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
+                ai_reply_parts.append(message_text)
+
+        ai_reply = " | ".join(ai_reply_parts) if ai_reply_parts else "OK"
+
+        # ── Guardar historial ─────────────────────────────────────────────────────────────────────────
         BotEngine._append_history(session, "user", user_text)
         BotEngine._append_history(session, "assistant", ai_reply)
         db.commit()

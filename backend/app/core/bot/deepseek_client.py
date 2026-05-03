@@ -119,9 +119,23 @@ ESTADO ACTUAL DE LA CONVERSACIÓN: {state}
 ════════════════════════════════════════════════════════
 
 ════════════════════════════════════════════════════════
+FORMATO DE RESPUESTA — MUY IMPORTANTE
+════════════════════════════════════════════════════════
+Responde ÚNICAMENTE con un array JSON válido. Sin texto antes ni después.
+Siempre es un array, incluso si solo hay una acción.
+
+Ejemplo de una acción:
+[{{"action": "SHOW_MENU"}}]
+
+Ejemplo de múltiples acciones (cliente pide dos productos sin ambigüedad):
+[{{"action": "ADD_TO_CART", "item_id": 5}}, {{"action": "ADD_TO_CART", "item_id": 12}}]
+
+Ejemplo con mensaje al final:
+[{{"action": "ADD_TO_CART", "item_id": 5}}, {{"action": "CHAT", "message": "¿La pizza la quieres Grande ($149) o Familiar ($169)?"}}]
+
+════════════════════════════════════════════════════════
 ACCIONES DISPONIBLES
 ════════════════════════════════════════════════════════
-Responde ÚNICAMENTE con un JSON válido. Sin texto antes ni después del JSON.
 
 {{"action": "SHOW_MENU"}}
 {{"action": "ADD_TO_CART", "item_id": <ID_EXACTO_DE_LA_LISTA>}}
@@ -145,6 +159,8 @@ ADD_TO_CART → Cuando el cliente pide un producto específico con nombre Y tama
   - Si el cliente dice "Cuatro Quesos familiar" → busca el ID del producto "Cuatro Quesos Familiar".
   - Si hay ambigüedad de tamaño → usa CHAT para preguntar antes de agregar.
   - Si el producto no existe en la lista → usa CHAT para informar que no está disponible.
+  - Si el cliente pide múltiples productos sin ambigüedad → devuelve múltiples ADD_TO_CART en el array.
+  - Si hay ambigüedad en alguno → agrega los que están claros y usa CHAT para preguntar por el ambiguo.
 
 REMOVE_FROM_CART → Cuando el cliente quiere QUITAR un producto del pedido.
   NUNCA uses CANCEL_ORDER para quitar un solo producto.
@@ -166,8 +182,6 @@ COMPLAINT → Cuando el cliente se queja de algo (producto, servicio, entrega, t
 
 CHAT → Para todo lo demás: preguntas sobre ingredientes, recomendaciones, saludos, notas especiales,
   aclaraciones, o cuando necesites preguntar algo antes de ejecutar una acción.
-  También cuando el cliente pida múltiples productos: agrega el primero con ADD_TO_CART,
-  luego usa CHAT para confirmar y preguntar por el siguiente.
 """
 
 
@@ -181,16 +195,16 @@ def ask_deepseek(
     promotions: list = None,
 ) -> dict:
     """
-    Envía el mensaje del cliente a DeepSeek y retorna una acción estructurada.
+    Envía el mensaje del cliente a DeepSeek y retorna una lista de acciones estructuradas.
 
-    Retorna un dict con al menos la clave "action". Ejemplos:
-      {"action": "SHOW_MENU"}
-      {"action": "ADD_TO_CART", "item_id": 3}
-      {"action": "CHAT", "message": "¿Lo quieres Grande o Familiar?"}
+    Retorna una lista de dicts. Ejemplos:
+      [{"action": "SHOW_MENU"}]
+      [{"action": "ADD_TO_CART", "item_id": 3}, {"action": "ADD_TO_CART", "item_id": 7}]
+      [{"action": "CHAT", "message": "¿Lo quieres Grande o Familiar?"}]
     """
     if not DEEPSEEK_API_KEY:
         logger.warning("DEEPSEEK_API_KEY no configurada. Usando fallback.")
-        return {"action": "CHAT", "message": "El servicio de IA no está disponible. Escribe 'menu' para ver nuestros productos."}
+        return [{"action": "CHAT", "message": "El servicio de IA no está disponible. Escribe 'menu' para ver nuestros productos."}]
 
     system_prompt = _build_system_prompt(menu_items, cart, state, org_name, promotions or [])
 
@@ -212,7 +226,19 @@ def ask_deepseek(
         raw = response.choices[0].message.content.strip()
         logger.info("DeepSeek raw response: %s", raw)
 
-        # Extraer JSON aunque venga con texto alrededor
+        # Extraer array JSON aunque venga con texto alrededor
+        json_start = raw.find("[")
+        json_end = raw.rfind("]") + 1
+        if json_start != -1 and json_end > json_start:
+            json_str = raw[json_start:json_end]
+            try:
+                result = json.loads(json_str)
+                if isinstance(result, list) and len(result) > 0 and "action" in result[0]:
+                    return result
+            except json.JSONDecodeError:
+                pass
+
+        # Intentar también objeto JSON simple (compatibilidad)
         json_start = raw.find("{")
         json_end = raw.rfind("}") + 1
         if json_start != -1 and json_end > json_start:
@@ -220,13 +246,13 @@ def ask_deepseek(
             try:
                 result = json.loads(json_str)
                 if "action" in result:
-                    return result
+                    return [result]  # Envolver en lista
             except json.JSONDecodeError:
                 pass
 
         # Si no es JSON válido, tratar como respuesta de chat
-        return {"action": "CHAT", "message": raw}
+        return [{"action": "CHAT", "message": raw}]
 
     except Exception as e:
         logger.error("Error llamando a DeepSeek: %s", e)
-        return {"action": "CHAT", "message": "Tuve un problema técnico. Por favor escribe 'menu' para continuar."}
+        return [{"action": "CHAT", "message": "Tuve un problema técnico. Por favor escribe 'menu' para continuar."}]

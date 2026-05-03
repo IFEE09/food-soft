@@ -164,7 +164,11 @@ class BotCustomer(Base):
     
     name = Column(String, nullable=True)
     phone = Column(String, nullable=True) # Usually same as channel_user_id for WA
-    
+
+    # Memoria persistente entre pedidos
+    saved_name    = Column(String, nullable=True)  # Último nombre confirmado
+    saved_address = Column(String, nullable=True)  # Última dirección usada
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
