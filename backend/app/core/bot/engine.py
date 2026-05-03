@@ -507,7 +507,7 @@ class BotEngine:
         # Normalizar el texto entrante
         user_text = (text or "").strip()
 
-        # ── Palabras clave que reinician el flujo ─────────────────────────────
+        # ── Palabras clave que reinician el flujo ─────────────────────────────────────────────────
         RESET_KEYWORDS = {"hola", "menu", "menú", "inicio", "start", "reiniciar", "hi", "buenas", "buenos"}
         if user_text.lower() in RESET_KEYWORDS:
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
@@ -517,7 +517,12 @@ class BotEngine:
             out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
             return out
 
-        # ── Estado especial: confirmación final (sin IA) ──────────────────────
+        # ── Palabras clave para cerrar pedido (sin pasar por DeepSeek) ──────────────────
+        CLOSE_KEYWORDS = {"cerrar pedido", "cerrar mi pedido", "terminar pedido", "terminar mi pedido", "finalizar pedido"}
+        if user_text.lower() in CLOSE_KEYWORDS:
+            return BotEngine._execute_ask_address(channel, sender_id, session, db)
+
+        # ── Estado especial: confirmación final (sin IA) ───────────────────────────────────
         if state == "CONFIRMANDO_PEDIDO":
             confirmaciones = {"sí", "si", "confirmar", "confirmo", "yes", "dale", "ok", "va", "claro"}
             cancelaciones  = {"no", "cancelar", "cancel", "nope"}
