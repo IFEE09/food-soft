@@ -11,6 +11,8 @@ def migrate():
                 id SERIAL PRIMARY KEY,
                 name VARCHAR NOT NULL,
                 api_key VARCHAR UNIQUE,
+                api_key_hash VARCHAR UNIQUE,
+                whatsapp_phone_number_id VARCHAR UNIQUE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         """))
@@ -23,16 +25,22 @@ def migrate():
                 print(f"Añadiendo organization_id a {table}...")
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN organization_id INTEGER REFERENCES organizations(id)"))
             except Exception as e:
-                print(f"Aviso: La columna en {table} probablemente ya existe. Saltando... ({e})")
+                pass
         
-        # 3. Añadir api_key a organizations si no existe (por si acaso)
-        try:
-            conn.execute(text("ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE"))
-        except:
-            pass
+        # 3. Añadir nuevas columnas a organizations por si la tabla ya existía
+        columns = [
+            "ALTER TABLE organizations ADD COLUMN api_key_hash VARCHAR UNIQUE",
+            "ALTER TABLE organizations ADD COLUMN whatsapp_phone_number_id VARCHAR UNIQUE"
+        ]
+        for col in columns:
+            try:
+                conn.execute(text(col))
+            except:
+                pass
 
         conn.commit()
         print("¡Migración completada con éxito!")
 
 if __name__ == "__main__":
     migrate()
+
