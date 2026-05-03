@@ -516,10 +516,6 @@ class BotEngine:
         # ── Palabras clave que reinician el flujo ─────────────────────────────────────────────────
         RESET_KEYWORDS = {"hola", "menu", "menú", "inicio", "start", "reiniciar", "hi", "buenas", "buenos"}
         if user_text.lower() in RESET_KEYWORDS:
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "¡Hola! Bienvenido a Horno 74 🍕🔥 Soy Kook, tu asistente de pedidos. Aquí te muestro nuestro menú:"
-            )})
             out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
             return out
 
@@ -602,15 +598,10 @@ class BotEngine:
                 "Por favor escribe tu dirección de entrega completa para continuar 📍"
             )})
             return out
-        # ── Sin mensaje (primer contacto) ─────────────────────────────────────
+        # ── Sin mensaje (primer contacto) ─────────────────────────────────────────────────────
         if not user_text:
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "¡Hola! Bienvenido a Horno 74 🍕🔥 Soy Kook, tu asistente de pedidos. Aquí te muestro nuestro menú:"
-            )})
             out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
             return out
-
         # ── Llamar a DeepSeek con los productos reales del sistema ────────────
         ai_response = ask_deepseek(
             message=user_text,

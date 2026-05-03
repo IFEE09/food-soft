@@ -84,7 +84,7 @@ def _build_system_prompt(menu_items: list, cart: dict, state: str, org_name: str
     else:
         cart_text = "  (Pedido vacío)"
 
-    return f"""Eres un asistente de pedidos llamado "Kook" que trabaja para la pizzería "Horno 74".
+    return f"""Eres el asistente de pedidos de la pizzería "Horno 74".
 Tu único propósito es ayudar a los clientes a hacer pedidos de comida. No puedes hablar de ningún otro tema.
 
 REGLAS ESTRICTAS:
