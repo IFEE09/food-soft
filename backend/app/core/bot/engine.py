@@ -124,7 +124,9 @@ class BotEngine:
                 if menu_item:
                     cart = dict(session.cart_data) if session.cart_data else {"items": [], "total": 0.0}
                     cart["items"].append({"id": menu_item.id, "name": menu_item.name, "qty": 1, "price": menu_item.price})
-                    cart["total"] += menu_item.price
+                    
+                    # Fix float precision issues by rounding to 2 decimals
+                    cart["total"] = round(cart["total"] + menu_item.price, 2)
                     
                     session.cart_data = cart
                     session.state = "PIDIENDO_DIRECCION"
@@ -148,7 +150,9 @@ class BotEngine:
             session.state = "CONFIRMANDO_PEDIDO"
             db.commit()
 
-            msg_body = f"Resumen: ${cart.get('total', 0)}\nEnvío a: {text}\n¿Confirmar pedido?"
+            # Format total to 2 decimals for professional display
+            formatted_total = f"{cart.get('total', 0):.2f}"
+            msg_body = f"Resumen: ${formatted_total}\nEnvío a: {text}\n¿Confirmar pedido?"
             buttons = [
                 {"id": "btn_confirm_order", "title": "Sí, confirmar"},
                 {"id": "btn_cancel_order", "title": "Cancelar"}
