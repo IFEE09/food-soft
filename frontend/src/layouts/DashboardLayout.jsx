@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -12,9 +13,12 @@ import {
   ShoppingBag,
   Users,
   ShieldCheck,
-  HeadphonesIcon
+  HeadphonesIcon,
+  Building2,
+  ChevronDown
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import { apiClient } from '../api/client';
 
 const ROLE_LABEL = {
   owner: 'Dueño',
@@ -33,6 +37,36 @@ export default function DashboardLayout() {
   const location = useLocation();
   const role = localStorage.getItem('role') || 'cook';
   const userName = localStorage.getItem('userName') || 'Usuario';
+  const currentOrgId = localStorage.getItem('organizationId');
+
+  const [organizations, setOrganizations] = useState([]);
+  const [activeOrg, setActiveOrg] = useState(null);
+  const [showOrgSelector, setShowOrgSelector] = useState(false);
+
+  useEffect(() => {
+    if (role === 'owner') {
+      fetchOrganizations();
+    }
+  }, []);
+
+  const fetchOrganizations = async () => {
+    try {
+      const { data } = await apiClient.get('/users/me/organizations');
+      setOrganizations(data);
+      const active = data.find(o => String(o.id) === String(currentOrgId));
+      setActiveOrg(active || data[0]);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
+
+  const switchOrganization = (org) => {
+    localStorage.setItem('organizationId', org.id);
+    setActiveOrg(org);
+    setShowOrgSelector(false);
+    // Reload to refresh all context with the new X-Organization-ID
+    window.location.reload();
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -175,6 +209,61 @@ export default function DashboardLayout() {
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {/* Selector de Restaurante para Propietarios */}
+                {role === 'owner' && (
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      onClick={() => setShowOrgSelector(!showOrgSelector)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                        background: 'var(--surface-color)', border: '1px solid var(--surface-border)',
+                        color: 'var(--text-primary)', padding: '0.5rem 0.85rem', borderRadius: '2px',
+                        cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600
+                      }}
+                    >
+                      <Building2 size={16} color="var(--success-color)" />
+                      {activeOrg?.name || 'Cargando...'}
+                      <ChevronDown size={14} />
+                    </button>
+
+                    {showOrgSelector && (
+                      <div style={{
+                        position: 'absolute', top: '110%', left: 0, width: '220px',
+                        background: 'var(--surface-color)', border: '1px solid var(--surface-border)',
+                        boxShadow: 'var(--shadow-lg)', borderRadius: '2px', zIndex: 100,
+                        padding: '0.5rem'
+                      }}>
+                        <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.4rem 0.6rem' }}>Mis Restaurantes</p>
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                          {organizations.map(org => (
+                            <div 
+                              key={org.id}
+                              onClick={() => switchOrganization(org)}
+                              style={{
+                                padding: '0.6rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer',
+                                borderRadius: '2px', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                color: org.id === activeOrg?.id ? 'var(--success-color)' : 'var(--text-primary)',
+                                background: org.id === activeOrg?.id ? 'var(--success-bg)' : 'transparent'
+                              }}
+                            >
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: org.id === activeOrg?.id ? 'var(--success-color)' : 'var(--surface-border)' }} />
+                              {org.name}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ borderTop: '1px solid var(--surface-border)', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
+                          <button 
+                            onClick={() => navigate('/dashboard/settings')} // O un modal de crear
+                            style={{ width: '100%', padding: '0.5rem', fontSize: '0.75rem', background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', textAlign: 'left', fontWeight: 600 }}
+                          >
+                            + Añadir Restaurante
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <ThemeToggle />
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.5rem 0.75rem 0.5rem 1rem', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
