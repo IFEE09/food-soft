@@ -9,6 +9,7 @@ class SupplyBase(BaseModel):
     cost: Optional[float] = 0.0
     min_quantity: Optional[float] = 5.0
     category: Optional[str] = None
+    kitchen_id: Optional[int] = None
 
 # Properties to receive via API on creation
 class SupplyCreate(SupplyBase):

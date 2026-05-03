@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../components/NotificationProvider';
 import { apiClient } from '../api/client';
 import { 
@@ -9,43 +10,59 @@ import {
   Trash2, 
   ShoppingBag,
   Send,
-  X
+  X,
+  Building2
 } from 'lucide-react';
 
 export default function ReceptionDashboard() {
+  const navigate = useNavigate();
   const { showAlert, showConfirm } = useNotification();
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
-  const [kitchens, setKitchens] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // New order form
-  const [clientName, setClientName] = useState('');
-  const [selectedKitchen, setSelectedKitchen] = useState('');
-  const [orderItems, setOrderItems] = useState([]);
-  const [activeTab, setActiveTab] = useState('pending'); // pending, ready, delivered
+  const currentKitchenId = localStorage.getItem('kitchenId');
+  const currentKitchenName = localStorage.getItem('kitchenName');
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (currentKitchenId) {
+      fetchData();
+    }
+  }, [currentKitchenId]);
 
   const fetchData = async () => {
     try {
-      const [oRes, mRes, kRes] = await Promise.all([
+      const [oRes, mRes, sRes] = await Promise.all([
         apiClient.get('/orders/'),
         apiClient.get('/menu/'),
-        apiClient.get('/kitchens/')
+        apiClient.get('/stations/')
       ]);
-      setOrders(oRes.data);
+      // Filter orders by selected kitchen's stations
+      const myStations = sRes.data.filter(s => String(s.kitchen_id) === String(currentKitchenId));
+      const myStationIds = myStations.map(s => s.id);
+      
+      setOrders(oRes.data.filter(o => myStationIds.includes(o.station_id)));
       setMenuItems(mRes.data);
-      setKitchens(kRes.data);
+      setStations(myStations);
     } catch (err) {
       console.error("Error fetching reception data:", err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!currentKitchenId) {
+    return (
+      <div className="glass-panel" style={{ padding: '5rem', textAlign: 'center' }}>
+        <Building2 size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', opacity: 0.3 }} />
+        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Selecciona una Cocina</h2>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto 2rem' }}>
+          Para gestionar la recepción, primero debes elegir una sucursal operativa desde el Panel de Cocinas.
+        </p>
+        <button onClick={() => navigate('/dashboard/kitchen')} className="btn-primary">
+          Ir al Panel de Cocinas
+        </button>
+      </div>
+    );
+  }
 
   const addItemToOrder = (menuItem) => {
     const existing = orderItems.find(i => i.product_name === menuItem.name);
@@ -90,7 +107,7 @@ export default function ReceptionDashboard() {
         client_name: clientName || 'Sin nombre',
         total: orderTotal,
         status: 'pending',
-        kitchen_id: selectedKitchen ? parseInt(selectedKitchen) : null,
+        station_id: selectedStation ? parseInt(selectedStation) : null,
         items: orderItems.map(i => ({ product_name: i.product_name, quantity: i.quantity }))
       });
       showAlert('Orden Enviada', `Orden de "${clientName || 'Sin nombre'}" enviada a cocina.`, 'success');
@@ -131,7 +148,7 @@ export default function ReceptionDashboard() {
 
   const resetOrderForm = () => {
     setClientName('');
-    setSelectedKitchen('');
+    setSelectedStation('');
     setOrderItems([]);
   };
 
@@ -297,11 +314,11 @@ export default function ReceptionDashboard() {
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Enviar a Cocina</label>
-                  <select value={selectedKitchen} onChange={(e) => setSelectedKitchen(e.target.value)}>
-                    <option value="">Automático</option>
-                    {kitchens.filter(k => k.is_active).map(k => (
-                      <option key={k.id} value={k.id}>{k.name}</option>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Enviar a Estación</label>
+                  <select value={selectedStation} onChange={(e) => setSelectedStation(e.target.value)}>
+                    <option value="">Ruteo Automático</option>
+                    {stations.filter(s => s.is_active).map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                 </div>

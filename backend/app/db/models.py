@@ -37,8 +37,10 @@ class User(Base):
     
     # organization_id holds the "active" or "primary" organization
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
     
     organizations = relationship("Organization", secondary=user_organization_link, back_populates="users")
+    kitchen = relationship("Kitchen")
 
 class Supply(Base):
     __tablename__ = "supplies"
@@ -52,6 +54,7 @@ class Supply(Base):
     category = Column(String, index=True, nullable=True) # Proteins, Veggies, etc.
     
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
 
 class Kitchen(Base):
     __tablename__ = "kitchens"

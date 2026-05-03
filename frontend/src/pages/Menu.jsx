@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../components/NotificationProvider';
 import { apiClient } from '../api/client';
 import { 
@@ -13,12 +14,54 @@ import {
 } from 'lucide-react';
 
 export default function Menu() {
+  const navigate = useNavigate();
   const { showAlert, showConfirm } = useNotification();
   const [menuItems, setMenuItems] = useState([]);
   const [supplies, setSupplies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const currentKitchenId = localStorage.getItem('kitchenId');
+  const currentKitchenName = localStorage.getItem('kitchenName');
+
+  useEffect(() => {
+    if (currentKitchenId) {
+      fetchData();
+    }
+  }, [currentKitchenId]);
+
+  const fetchData = async () => {
+    try {
+      const [mRes, sRes] = await Promise.all([
+        apiClient.get('/menu/'),
+        apiClient.get(`/supplies/?kitchen_id=${currentKitchenId}`)
+      ]);
+      setMenuItems(mRes.data);
+      setSupplies(sRes.data);
+    } catch (err) {
+      console.error("Error fetching menu data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!currentKitchenId) {
+    return (
+      <div className="glass-panel" style={{ padding: '5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ padding: '1.5rem', background: 'rgba(0,68,255,0.05)', borderRadius: '50%', color: 'var(--primary-color)' }}>
+          <Utensils size={48} />
+        </div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Gestión de Menú Bloqueada</h2>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0' }}>
+          Para configurar platillos y recetas, primero debes seleccionar una <b>sucursal activa</b> en el panel de cocinas.
+        </p>
+        <button onClick={() => navigate('/dashboard/kitchen')} className="btn-primary" style={{ marginTop: '1rem' }}>
+          Ir al Panel de Cocinas
+        </button>
+      </div>
+    );
+  }
   
   // Form State - Using empty strings to show placeholders
   const [formData, setFormData] = useState({
@@ -29,24 +72,6 @@ export default function Menu() {
     recipe_items: [] 
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [mRes, sRes] = await Promise.all([
-        apiClient.get('/menu/'),
-        apiClient.get('/supplies/')
-      ]);
-      setMenuItems(mRes.data);
-      setSupplies(sRes.data);
-    } catch (err) {
-      console.error("Error fetching menu data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const addRecipeRow = () => {
     setFormData({

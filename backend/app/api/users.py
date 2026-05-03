@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
@@ -18,12 +18,15 @@ def list_team_members(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
+    kitchen_id: Optional[int] = None,
 ) -> Any:
-    """ List all users in the current user's organization. """
-    users = db.query(models.User).filter(
+    """ List users in organization. Optional filter by kitchen. """
+    query = db.query(models.User).filter(
         models.User.organization_id == current_user.organization_id
-    ).all()
-    return users
+    )
+    if kitchen_id:
+        query = query.filter(models.User.kitchen_id == kitchen_id)
+    return query.all()
 
 @router.post("/team", response_model=user_schema.User)
 @limiter.limit("60/minute")
@@ -34,7 +37,7 @@ def create_team_member(
     current_user: models.User = Depends(require_owner),
     user_in: user_schema.UserCreate,
 ) -> Any:
-    """ Owner creates a team member (receptionist or cook) in their organization. """
+    """ Owner creates a team member in their organization. """
     if user_in.role == "owner":
         raise HTTPException(status_code=400, detail="No puedes crear otro propietario.")
     
@@ -48,7 +51,8 @@ def create_team_member(
         hashed_password=security.get_password_hash(user_in.password),
         role=user_in.role,
         is_active=True,
-        organization_id=current_user.organization_id
+        organization_id=current_user.organization_id,
+        kitchen_id=user_in.kitchen_id
     )
     db.add(new_user)
     db.commit()

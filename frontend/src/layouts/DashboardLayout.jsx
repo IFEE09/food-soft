@@ -79,47 +79,80 @@ export default function DashboardLayout() {
 
   const isActive = (path) => location.pathname === path;
 
-  const NavItem = ({ path, icon: Icon, label }) => (
+  const currentKitchenId = localStorage.getItem('kitchenId');
+  const currentKitchenName = localStorage.getItem('kitchenName');
+
+  const clearKitchenContext = () => {
+    localStorage.removeItem('kitchenId');
+    localStorage.removeItem('kitchenName');
+    navigate('/dashboard/kitchen');
+    window.location.reload();
+  };
+
+  const NavItem = ({ path, icon: Icon, label, color }) => (
     <div 
       className={`sidebar-link ${isActive(path) ? 'active' : ''}`} 
       onClick={() => navigate(path)}
-      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+      style={{ 
+        display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer',
+        color: isActive(path) ? (color || 'var(--success-color)') : 'inherit'
+      }}
     >
       <Icon size={18} />
       <span>{label}</span>
     </div>
   );
 
-  // Build navigation items based on role
+  // Build navigation items based on role AND kitchen context
   const getNavItems = () => {
+    const isKitchenSelected = !!currentKitchenId;
+
     if (role === 'owner') {
       return (
         <>
+          <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, padding: '0.5rem 0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>RESTAURANT_HOLDING</div>
           <NavItem path="/dashboard/owner" icon={LayoutDashboard} label="Dashboard General" />
-          <NavItem path="/dashboard/reception" icon={ShoppingBag} label="Recepción" />
-          <NavItem path="/dashboard/kitchen" icon={ChefHat} label="Panel Cocinas" />
-          <NavItem path="/dashboard/menu" icon={Utensils} label="Menú Platillos" />
-          <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
-          <NavItem path="/dashboard/team" icon={Users} label="Equipo" />
-          <NavItem path="/dashboard/activity-logs" icon={Activity} label="Historial" />
+          <NavItem path="/dashboard/kitchen" icon={Building2} label="Panel Cocinas" />
+          <NavItem path="/dashboard/activity-logs" icon={Activity} label="Historial Global" />
           <NavItem path="/dashboard/settings" icon={SettingsIcon} label="Configuración" />
+
+          {isKitchenSelected && (
+            <>
+              <div style={{ 
+                marginTop: '1.5rem', marginBottom: '0.5rem', padding: '0.75rem', 
+                background: 'rgba(204,255,0,0.05)', border: '1px solid var(--success-border)', 
+                borderRadius: '2px', display: 'flex', flexDirection: 'column', gap: '0.25rem' 
+              }}>
+                <div style={{ fontSize: '0.6rem', color: 'var(--success-color)', fontWeight: 800, textTransform: 'uppercase' }}>CONTEXT::ACTIVE_SITE</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{currentKitchenName}</div>
+                <button 
+                  onClick={clearKitchenContext}
+                  style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.65rem', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  CAMBIAR SUCURSAL
+                </button>
+              </div>
+              
+              <NavItem path="/dashboard/reception" icon={ShoppingBag} label="Recepción" />
+              <NavItem path="/dashboard/menu" icon={Utensils} label="Menú Platillos" />
+              <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
+              <NavItem path="/dashboard/team" icon={Users} label="Equipo" />
+            </>
+          )}
         </>
       );
     }
-    if (role === 'receptionist') {
-      return (
-        <>
-          <NavItem path="/dashboard/reception" icon={ShoppingBag} label="Recepción" />
-          <NavItem path="/dashboard/menu" icon={Utensils} label="Menú" />
-          <NavItem path="/dashboard/settings" icon={SettingsIcon} label="Mi Perfil" />
-        </>
-      );
-    }
-    // cook
+    
+    // Default or simplified for other roles
     return (
       <>
-        <NavItem path="/dashboard/kitchen" icon={ChefHat} label="Panel Cocinas" />
-        <NavItem path="/dashboard/cook" icon={ClipboardList} label="Mis Órdenes" />
+        <NavItem path="/dashboard/kitchen" icon={Building2} label="Panel Cocinas" />
+        {isKitchenSelected && (
+          <>
+            <NavItem path="/dashboard/reception" icon={ShoppingBag} label="Recepción" />
+            <NavItem path="/dashboard/cook" icon={ClipboardList} label="Monitor Cocina" />
+          </>
+        )}
         <NavItem path="/dashboard/settings" icon={SettingsIcon} label="Mi Perfil" />
       </>
     );
@@ -127,15 +160,15 @@ export default function DashboardLayout() {
 
   // Dynamic page title
   const getPageTitle = () => {
-    if (isActive('/dashboard/owner')) return { title: 'Dashboard General', sub: 'Métricas clave de operación hoy' };
-    if (isActive('/dashboard/reception')) return { title: 'Recepción de Pedidos', sub: 'Crea y gestiona las órdenes de clientes' };
-    if (isActive('/dashboard/kitchen')) return { title: 'Dashboard de Cocinas', sub: 'Monitor de flujo de pedidos para Dark Kitchens' };
-    if (isActive('/dashboard/menu')) return { title: 'Catálogo de Menú', sub: 'Gestiona tus platos y recetas conectadas a insumos' };
-    if (isActive('/dashboard/supplies')) return { title: 'Inventario de Insumos', sub: 'Control detallado de stock y reposición' };
-    if (isActive('/dashboard/team')) return { title: 'Gestión de Equipo', sub: 'Administra recepcionistas, cocineros y accesos' };
-    if (isActive('/dashboard/activity-logs')) return { title: 'Historial de Actividad', sub: 'Registro completo de movimientos de todos los usuarios' };
-    if (isActive('/dashboard/settings')) return { title: 'Configuración de Sistema', sub: 'Gestiona tu perfil corporativo y seguridad de cuenta' };
-    if (isActive('/dashboard/cook')) return { title: 'Mis Órdenes', sub: 'Órdenes asignadas a tu estación' };
+    if (isActive('/dashboard/owner')) return { title: 'Holding Dashboard', sub: 'Métricas agregadas de todas tus marcas' };
+    if (isActive('/dashboard/reception')) return { title: 'Recepción', sub: currentKitchenName || 'Gestión de pedidos' };
+    if (isActive('/dashboard/kitchen')) return { title: 'Panel de Cocinas', sub: 'Selecciona una sucursal para operar' };
+    if (isActive('/dashboard/menu')) return { title: 'Menú', sub: `Catálogo de ${currentKitchenName}` };
+    if (isActive('/dashboard/supplies')) return { title: 'Inventario', sub: `Stock físico en ${currentKitchenName}` };
+    if (isActive('/dashboard/team')) return { title: 'Equipo', sub: `Colaboradores de ${currentKitchenName}` };
+    if (isActive('/dashboard/activity-logs')) return { title: 'Historial', sub: 'Auditoría completa del sistema' };
+    if (isActive('/dashboard/settings')) return { title: 'Configuración', sub: 'Ajustes de cuenta y perfil' };
+    if (isActive('/dashboard/cook')) return { title: 'Monitor de Estaciones', sub: currentKitchenName };
     return { title: 'OMNIKOOK', sub: 'Dark Kitchen OS' };
   };
 

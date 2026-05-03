@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 import logging
@@ -20,13 +20,15 @@ def read_supplies(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
+    kitchen_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
-    """ Retrieve supplies for the user's organization. """
-    return db.query(models.Supply)\
-             .filter(models.Supply.organization_id == current_user.organization_id)\
-             .offset(skip).limit(limit).all()
+    """ Retrieve supplies for the user's organization. Optional filter by kitchen. """
+    query = db.query(models.Supply).filter(models.Supply.organization_id == current_user.organization_id)
+    if kitchen_id:
+        query = query.filter(models.Supply.kitchen_id == kitchen_id)
+    return query.offset(skip).limit(limit).all()
 
 @router.post("/", response_model=supply_schema.Supply)
 @limiter.limit("120/minute")
@@ -49,6 +51,7 @@ def create_supply(
             cost=supply_in.cost,
             min_quantity=supply_in.min_quantity,
             category=supply_in.category,
+            kitchen_id=supply_in.kitchen_id,
             organization_id=current_user.organization_id
         )
         db.add(supply)

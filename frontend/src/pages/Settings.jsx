@@ -22,6 +22,7 @@ export default function Settings() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [kitchens, setKitchens] = useState([]);
+  const [stations, setStations] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [newOrgName, setNewOrgName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -33,12 +34,14 @@ export default function Settings() {
 
   const fetchData = async () => {
     try {
-      const [uRes, kRes] = await Promise.all([
+      const [uRes, kRes, sRes] = await Promise.all([
         apiClient.get('/users/me'),
-        apiClient.get('/kitchens/')
+        apiClient.get('/kitchens/'),
+        apiClient.get('/stations/')
       ]);
       setProfileData({ full_name: uRes.data.full_name, email: uRes.data.email });
       setKitchens(kRes.data);
+      setStations(sRes.data);
       
       if (localStorage.getItem('role') === 'owner') {
         const oRes = await apiClient.get('/users/me/organizations');
@@ -281,43 +284,72 @@ export default function Settings() {
         )}
 
         {activeTab === 'stations' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Gestión de Líneas de Producción</h3>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Configura aquí tus estaciones del monitor de cocina.</p>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Infraestructura de Producción</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sucursales y sus monitores operativos.</p>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-              {kitchens.map(k => (
-                <div key={k.id} style={{ 
-                    padding: '1.25rem', border: '1px solid var(--surface-border)', borderRadius: '2px', background: 'var(--surface-color)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
-                   <div>
-                     <div className="mono" style={{ fontWeight: 800, fontSize: '0.85rem', color: k.is_active ? 'var(--text-primary)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>{k.name}</div>
-                     <span className="mono" style={{ fontSize: '0.65rem', fontWeight: 700, color: k.is_active ? 'var(--success-color)' : 'var(--danger-color)', textTransform: 'uppercase' }}>
-                         {k.is_active ? 'STATE::LINKED' : 'STATE::OFFLINE'}
-                     </span>
-                   </div>
-                   <div style={{ display: 'flex', gap: '0.75rem' }}>
-                     <button 
-                        onClick={() => toggleKitchen(k.id, k.is_active)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                        title="REBOOT"
-                     >
-                        <Activity size={16} />
-                     </button>
-                     <button 
-                        onClick={() => deleteKitchen(k.id)}
-                        style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}
-                        title="TERMINATE"
-                     >
-                        <Trash2 size={16} />
-                     </button>
-                   </div>
+            {kitchens.map(k => (
+              <div key={k.id} className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--surface-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px dashed var(--surface-border)' }}>
+                  <div>
+                    <h4 className="mono" style={{ margin: 0, fontSize: '0.9rem', color: 'var(--success-color)' }}>SITE::{k.name}</h4>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{k.address || 'Sin dirección registrada'}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => toggleKitchen(k.id, k.is_active)} style={{ padding: '0.4rem', background: 'none', border: '1px solid var(--surface-border)', color: k.is_active ? 'var(--success-color)' : 'var(--text-secondary)', cursor: 'pointer' }}>
+                      {k.is_active ? 'ACTIVE' : 'INACTIVE'}
+                    </button>
+                    <button onClick={() => deleteKitchen(k.id)} style={{ padding: '0.4rem', background: 'none', border: '1px solid var(--danger-border)', color: 'var(--danger-color)', cursor: 'pointer' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                  {stations.filter(s => s.kitchen_id === k.id).map(s => (
+                    <div key={s.id} style={{ padding: '0.75rem', border: '1px solid var(--surface-border)', borderRadius: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="mono" style={{ fontSize: '0.75rem' }}>{s.name}</span>
+                      <button onClick={() => toggleStation(s.id, s.is_active)} style={{ background: 'none', border: 'none', color: s.is_active ? 'var(--success-color)' : 'var(--text-secondary)', cursor: 'pointer', opacity: 0.8 }}>
+                        <Activity size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={async () => {
+                      const name = prompt('Nombre de la nueva estación:');
+                      if (name) {
+                        await apiClient.post('/stations/', { name, kitchen_id: k.id });
+                        fetchData();
+                      }
+                    }}
+                    style={{ padding: '0.75rem', border: '1px dashed var(--success-color)', background: 'transparent', color: 'var(--success-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                  >
+                    + AGREGAR MONITOR
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {kitchens.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
+                <p>No has registrado ninguna cocina física todavía.</p>
+              </div>
+            )}
+            
+            <button 
+              onClick={async () => {
+                const name = prompt('Nombre de la sucursal/cocina:');
+                if (name) {
+                  await apiClient.post('/kitchens/', { name });
+                  fetchData();
+                }
+              }}
+              className="btn-primary" style={{ width: 'fit-content' }}
+            >
+              + REGISTRAR SUCURSAL
+            </button>
           </div>
         )}
         {activeTab === 'restaurants' && (

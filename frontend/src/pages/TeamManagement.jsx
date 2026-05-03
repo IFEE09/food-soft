@@ -32,13 +32,18 @@ export default function TeamManagement() {
     role: 'receptionist'
   });
 
+  const currentKitchenId = localStorage.getItem('kitchenId');
+  const currentKitchenName = localStorage.getItem('kitchenName');
+
   useEffect(() => {
-    fetchTeam();
-  }, []);
+    if (currentKitchenId) {
+      fetchTeam();
+    }
+  }, [currentKitchenId]);
 
   const fetchTeam = async () => {
     try {
-      const res = await apiClient.get('/users/team');
+      const res = await apiClient.get(`/users/team?kitchen_id=${currentKitchenId}`);
       setTeam(res.data);
     } catch (err) {
       console.error("Error fetching team:", err);
@@ -59,7 +64,7 @@ export default function TeamManagement() {
       return;
     }
     try {
-      await apiClient.post('/users/team', formData);
+      await apiClient.post('/users/team', { ...formData, kitchen_id: currentKitchenId });
       showAlert('Miembro Creado', `Se ha registrado a "${formData.full_name}" como ${ROLE_CONFIG[formData.role]?.label}.`, 'success');
       fetchTeam();
       setIsModalOpen(false);

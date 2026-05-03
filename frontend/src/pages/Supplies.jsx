@@ -43,8 +43,9 @@ export default function Supplies() {
   }, [searchTerm, supplies]);
 
   const fetchSupplies = async () => {
+    const kitchenId = localStorage.getItem('kitchenId');
     try {
-      const res = await apiClient.get('/supplies/');
+      const res = await apiClient.get(`/supplies/?kitchen_id=${kitchenId}`);
       setSupplies(res.data);
       setFilteredSupplies(res.data);
     } catch (err) {
@@ -60,7 +61,8 @@ export default function Supplies() {
         ...formData,
         quantity: parseFloat(formData.quantity) || 0,
         cost: parseFloat(formData.cost) || 0,
-        min_quantity: parseFloat(formData.min_quantity) || 0
+        min_quantity: parseFloat(formData.min_quantity) || 0,
+        kitchen_id: localStorage.getItem('kitchenId')
     };
 
     try {

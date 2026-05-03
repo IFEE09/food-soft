@@ -42,9 +42,12 @@ def run_migrations():
         "ALTER TABLE orders ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE orders ADD COLUMN station_id INTEGER REFERENCES stations(id)",
         "ALTER TABLE menu_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE supplies ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+        "ALTER TABLE supplies ADD COLUMN kitchen_id INTEGER REFERENCES kitchens(id)",
         "ALTER TABLE supplies ADD COLUMN cost FLOAT DEFAULT 0.0",
         "ALTER TABLE organizations ADD COLUMN api_key VARCHAR UNIQUE",
         "ALTER TABLE organizations ADD COLUMN api_key_hash VARCHAR UNIQUE",
+        "ALTER TABLE users ADD COLUMN kitchen_id INTEGER REFERENCES kitchens(id)",
         "ALTER TABLE organizations ADD COLUMN whatsapp_phone_number_id VARCHAR UNIQUE",
     ]
 

@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     role: Optional[VALID_ROLES] = "cook"
     is_active: Optional[bool] = True
+    kitchen_id: Optional[int] = None
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
