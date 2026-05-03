@@ -57,38 +57,48 @@ def run_migrations():
 
 # Create/Fix users and organizations
 def init_db_data():
+    from app.core import security
+    from app.core.api_keys import hash_api_key
     db = next(get_db())
     
-    # 1. FIX: Assign default organization to users that don't have one (legacy users)
-    legacy_users = db.query(models.User).filter(models.User.organization_id.is_(None)).all()
-    for lu in legacy_users:
-        raw_k = secrets.token_urlsafe(32)
-        new_org = models.Organization(
-            name=f"Kitchen of {lu.full_name}",
-            api_key_hash=hash_api_key(raw_k),
+    # 1. Asegurar Organización Horno 74
+    org_name = "Horno 74"
+    org = db.query(models.Organization).filter(models.Organization.name == org_name).first()
+    if not org:
+        raw_key = secrets.token_urlsafe(32)
+        org = models.Organization(
+            name=org_name,
+            api_key_hash=hash_api_key(raw_key),
         )
-        db.add(new_org)
+        db.add(org)
         db.flush()
-        lu.organization_id = new_org.id
-        logger.info("Reparación: Organización asignada al usuario %s", lu.email)
+        logger.info("Auto-Seed: Organización '%s' creada.", org_name)
+    
+    org_id = org.id
+
+    # 2. Asegurar Usuario Administrador
+    admin_email = "admin@horno74.com"
+    admin = db.query(models.User).filter(models.User.email == admin_email).first()
+    if not admin:
+        admin = models.User(
+            email=admin_email,
+            full_name="Admin Horno 74",
+            hashed_password=security.get_password_hash("Horno74Secure123"),
+            role="owner",
+            is_active=True,
+            organization_id=org_id
+        )
+        db.add(admin)
+        logger.info("Auto-Seed: Usuario '%s' creado.", admin_email)
+    
     db.commit()
 
-    # 1b. API keys: rellenar hash desde texto plano y borrar plano
-    orgs_plain = db.query(models.Organization).filter(
-        models.Organization.api_key.isnot(None),
-        models.Organization.api_key_hash.is_(None),
-    ).all()
-    for org in orgs_plain:
-        org.api_key_hash = hash_api_key(org.api_key)
-        org.api_key = None
-        db.add(org)
-    if orgs_plain:
+    # 3. Reparación de usuarios antiguos si los hubiera
+    legacy_users = db.query(models.User).filter(models.User.organization_id.is_(None)).all()
+    for lu in legacy_users:
+        lu.organization_id = org_id
+    if legacy_users:
         db.commit()
-        logger.info("Migración: %s api_key migradas a api_key_hash.", len(orgs_plain))
-
-    # 2. SEED: Create initial Admin/Owner if table is completely empty
-    owner = db.query(models.User).filter(models.User.role == "owner").first()
-    # ... (rest of old code if relevant, but the loop above already handles it)
 
 # Start Sync & Seed
 run_migrations()
