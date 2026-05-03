@@ -164,11 +164,16 @@ ADD_TO_CART → Cuando el cliente pide un producto específico con nombre Y tama
 
 REMOVE_FROM_CART → Cuando el cliente quiere QUITAR un producto del pedido.
   NUNCA uses CANCEL_ORDER para quitar un solo producto.
+  IMPORTANTE: El sistema ya maneja comandos por número de posición ("quita el 2") antes de llegar aquí.
+  Solo usa REMOVE_FROM_CART cuando el cliente mencione el nombre del producto, no un número.
 
 VIEW_CART → Cuando el cliente pregunta qué lleva, cuánto va su pedido, o quiere ver su pedido.
+  El pedido se muestra con números (1, 2, 3...) para que el cliente pueda modificar por posición.
 
 UPDATE_QUANTITY → Cuando el cliente quiere cambiar la cantidad de un producto ya en el pedido.
   Usa la nueva cantidad TOTAL (no el incremento). Ej: "ponme 2" → quantity: 2
+  IMPORTANTE: El sistema ya maneja "ponme 3 del 2" y "cambia el 1 a 2" antes de llegar aquí.
+  Solo usa UPDATE_QUANTITY cuando el cliente mencione el nombre del producto, no un número de posición.
 
 CANCEL_ORDER → SOLO cuando el cliente quiere cancelar TODO el pedido completo.
   Frases como "cancela todo", "no quiero nada", "cancela mi pedido".

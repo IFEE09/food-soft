@@ -42,6 +42,14 @@ def _round_price(value: float) -> float:
     return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
+def _format_cart_summary(items_list: list) -> str:
+    """Formatea el pedido con números de posición (1, 2, 3...)."""
+    return "\n".join(
+        f"{i + 1}. {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
+        for i, it in enumerate(items_list)
+    )
+
+
 class BotEngine:
 
     # ── Helpers de formato ────────────────────────────────────────────────────
@@ -191,16 +199,14 @@ class BotEngine:
         session.cart_data = cart
         db.commit()
 
-        summary = "\n".join(
-            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-            for it in items_list
-        )
+        summary = _format_cart_summary(items_list)
         body = (
             f"✅ Agregado: {menu_item.name}\n\n"
             f"🛒 Tu pedido ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
             f"{summary}\n\n"
             f"💰 Total: ${cart['total']}\n\n"
-            f"¿Deseas agregar algo más o terminamos el pedido?"
+            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
+            f"¿Deseas agregar algo más o cerramos el pedido?"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -216,15 +222,13 @@ class BotEngine:
                 channel, sender_id,
                 "Tu pedido está vacío. ¿Quieres ver el menú para pedir algo? 🍕"
             )}]
-        summary = "\n".join(
-            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-            for it in items_list
-        )
+        summary = _format_cart_summary(items_list)
         body = (
             f"🛒 Tu pedido ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
             f"{summary}\n\n"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"¿Deseas agregar algo más o terminamos el pedido?"
+            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
+            f"¿Deseas agregar algo más o cerramos el pedido?"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -262,15 +266,13 @@ class BotEngine:
                 f"{msg_prefix} Tu pedido está vacío. ¿Quieres pedir algo más?"
             )}]
 
-        summary = "\n".join(
-            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-            for it in items_list
-        )
+        summary = _format_cart_summary(items_list)
         body = (
             f"{msg_prefix}\n\n"
             f"🛒 Tu pedido actualizado:\n{summary}\n\n"
             f"💰 Total: ${cart['total']}\n\n"
-            f"¿Deseas agregar algo más o terminamos el pedido?"
+            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
+            f"¿Deseas agregar algo más o cerramos el pedido?"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -306,15 +308,13 @@ class BotEngine:
                 f"✅ {item_to_remove['name']} eliminado. Tu pedido está vacío. ¿Quieres pedir algo más?"
             )}]
 
-        summary = "\n".join(
-            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-            for it in items_list
-        )
+        summary = _format_cart_summary(items_list)
         body = (
             f"✅ {item_to_remove['name']} eliminado de tu pedido.\n\n"
             f"🛒 Tu pedido actualizado:\n{summary}\n\n"
             f"💰 Total: ${cart['total']}\n\n"
-            f"¿Deseas agregar algo más o terminamos el pedido?"
+            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
+            f"¿Deseas agregar algo más o cerramos el pedido?"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -353,10 +353,7 @@ class BotEngine:
         session.state = "CONFIRMANDO_PEDIDO"
         db.commit()
 
-        summary = "\n".join(
-            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-            for it in items_list
-        )
+        summary = _format_cart_summary(items_list)
         customer_name = cart.get("customer_name", "")
         notes = cart.get("notes", "")
         name_line = f"👤 Nombre: {customer_name}\n" if customer_name else ""
@@ -368,7 +365,7 @@ class BotEngine:
             f"📍 Dirección: {address}\n"
             f"{notes_line}"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"¿Confirmamos? Responde *sí* para confirmar o díme si quieres agregar algo más 😊"
+            f"¿Confirmamos? Responde *sí* para confirmar o díme qué quieres cambiar 😊"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -486,7 +483,81 @@ class BotEngine:
             "Lamentamos mucho lo ocurrido 😟 Hemos notificado a nuestro equipo y nos pondremos en contacto contigo a la brevedad. ¡Gracias por avisarnos!"
         )}]
 
-    # ── Punto de entrada principal ────────────────────────────────────────────────────
+    # ── Resolución de comandos por número de posición ────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _resolve_position_command(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, organization_id: int, user_text: str
+    ):
+        """
+        Detecta comandos por número de posición en el pedido:
+          - "quita el 2" / "quitar 2" / "elimina el 1" / "borra el 3"
+          - "ponme 3 del 2" / "cambia el 1 a 2" / "2 del 1"
+        Retorna lista de mensajes si detectó el comando, o None si no aplica.
+        """
+        import re
+        cart = dict(session.cart_data)
+        items_list = list(cart.get("items", []))
+        if not items_list:
+            return None
+
+        txt = user_text.strip().lower()
+
+        # Patrón: quitar por posición
+        # "quita el 2", "quitar 2", "elimina el 1", "borra el 3"
+        m = re.match(
+            r"^(?:quita(?:r)?|elimina(?:r)?|borra(?:r)?|saca(?:r)?|remueve?)\s+(?:el\s+|la\s+)?(\d+)$",
+            txt
+        )
+        if m:
+            pos = int(m.group(1))
+            if 1 <= pos <= len(items_list):
+                item = items_list[pos - 1]
+                return BotEngine._execute_remove_from_cart(
+                    db, channel, sender_id, session, item["id"]
+                )
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                f"No tengo un producto {pos} en tu pedido. Tienes {len(items_list)} producto{'s' if len(items_list) > 1 else ''}."
+            )}]
+
+        # Patrón: cambiar cantidad por posición
+        # "ponme 3 del 2", "pon 2 del 3", "2 del 1"
+        m = re.match(r"^(?:pon(?:me)?|dame)\s+(\d+)\s+del\s+(\d+)$", txt)
+        if not m:
+            m = re.match(r"^(\d+)\s+del\s+(\d+)$", txt)
+        if m:
+            qty = int(m.group(1))
+            pos = int(m.group(2))
+            if 1 <= pos <= len(items_list):
+                item = items_list[pos - 1]
+                return BotEngine._execute_update_quantity(
+                    db, channel, sender_id, session, item["id"], qty
+                )
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                f"No tengo un producto {pos} en tu pedido. Tienes {len(items_list)} producto{'s' if len(items_list) > 1 else ''}."
+            )}]
+
+        # Patrón: "cambia el 2 a 3"
+        m = re.match(r"^cambia(?:r)?\s+(?:el\s+|la\s+)?(\d+)\s+a\s+(\d+)$", txt)
+        if m:
+            pos = int(m.group(1))
+            qty = int(m.group(2))
+            if 1 <= pos <= len(items_list):
+                item = items_list[pos - 1]
+                return BotEngine._execute_update_quantity(
+                    db, channel, sender_id, session, item["id"], qty
+                )
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                f"No tengo un producto {pos} en tu pedido. Tienes {len(items_list)} producto{'s' if len(items_list) > 1 else ''}."
+            )}]
+
+        return None  # No es un comando por posición
+
+    # ── Punto de entrada principal ─────────────────────────────────────────────────────────────────────────────────
 
     @staticmethod
     def process_message(
@@ -630,11 +701,21 @@ class BotEngine:
                 "Por favor escribe tu dirección de entrega completa para continuar 📍"
             )})
             return out
-        # ── Sin mensaje (primer contacto) ─────────────────────────────────────────────────────
+
+        # ── Sin mensaje (primer contacto) ─────────────────────────────────────────────────────────────────────────
         if not user_text:
             out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
             return out
-        # ── Llamar a DeepSeek con los productos reales del sistema ────────────
+
+        # ── Resolver referencias por número de posición (ej: "quita el 2", "ponme 3 del 1") ───────
+        position_result = BotEngine._resolve_position_command(db, channel, sender_id, session, organization_id, user_text)
+        if position_result is not None:
+            BotEngine._append_history(session, "user", user_text)
+            BotEngine._append_history(session, "assistant", "Pedido actualizado.")
+            db.commit()
+            return position_result
+
+        # ── Llamar a DeepSeek con los productos reales del sistema ────────────────────
         ai_response = ask_deepseek(
             message=user_text,
             chat_history=history,
