@@ -67,7 +67,6 @@ def create_organization(
     return org
 
 @router.post("/api-key/rotate")
-# ... (rest of the file)
 @limiter.limit("10/hour")
 def rotate_api_key(
     request: Request,
@@ -75,7 +74,8 @@ def rotate_api_key(
     current_user: models.User = Depends(require_owner),
 ) -> Any:
     """ Rotates the organization's API key for integrations. """
-    org = current_user.organization
+    # Usamos el ID efectivo
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
     
