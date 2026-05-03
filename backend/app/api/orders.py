@@ -72,7 +72,11 @@ async def create_order(
         )
         lines.append((item_in.product_name, item_in.quantity))
 
-    deduct_supplies_for_line_items(db, current_user.organization_id, lines)
+    try:
+        deduct_supplies_for_line_items(db, current_user.organization_id, lines)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
     db.commit()
     db.refresh(order)
     log_activity(
