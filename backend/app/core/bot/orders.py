@@ -75,4 +75,4 @@ class OrderService:
         db.add(session)
         db.commit()
 
-        return True
+        return new_order.id

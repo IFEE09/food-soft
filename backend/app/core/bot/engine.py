@@ -205,6 +205,76 @@ class BotEngine:
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
     @staticmethod
+    def _execute_view_cart(
+        channel: str, sender_id: str, session: models.BotSession
+    ) -> list:
+        """Muestra el contenido actual del carrito."""
+        cart = dict(session.cart_data)
+        items_list = cart.get("items", [])
+        if not items_list:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Tu carrito está vacío. ¿Quieres ver el menú para pedir algo? 🍕"
+            )}]
+        summary = "\n".join(
+            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
+            for it in items_list
+        )
+        body = (
+            f"🛒 Tu carrito ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
+            f"{summary}\n\n"
+            f"💰 Total: ${cart.get('total', 0.0)}\n\n"
+            f"¿Deseas agregar algo más o terminamos el pedido?"
+        )
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+
+    @staticmethod
+    def _execute_update_quantity(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, item_id: int, quantity: int
+    ) -> list:
+        """Actualiza la cantidad de un producto en el carrito."""
+        cart = dict(session.cart_data)
+        items_list = list(cart.get("items", []))
+
+        item = next((it for it in items_list if it.get("id") == item_id), None)
+        if not item:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Ese producto no está en tu carrito. ¿Quieres agregarlo?"
+            )}]
+
+        if quantity <= 0:
+            items_list = [it for it in items_list if it.get("id") != item_id]
+            msg_prefix = f"✅ {item['name']} eliminado del carrito."
+        else:
+            item["qty"] = quantity
+            msg_prefix = f"✅ {item['name']} actualizado a {quantity} unidad{'es' if quantity > 1 else ''}."
+
+        cart["items"] = items_list
+        cart["total"] = _round_price(sum(it["price"] * it["qty"] for it in items_list))
+        session.cart_data = cart
+        db.commit()
+
+        if not items_list:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                f"{msg_prefix} Tu carrito está vacío. ¿Quieres pedir algo más?"
+            )}]
+
+        summary = "\n".join(
+            f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
+            for it in items_list
+        )
+        body = (
+            f"{msg_prefix}\n\n"
+            f"🛒 Tu pedido actualizado:\n{summary}\n\n"
+            f"💰 Total: ${cart['total']}\n\n"
+            f"¿Deseas agregar algo más o terminamos el pedido?"
+        )
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+
+    @staticmethod
     def _execute_remove_from_cart(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, item_id: int
@@ -311,7 +381,106 @@ class BotEngine:
             "Pedido cancelado. ¡Cuando quieras volver a pedir, aquí estaremos! 😊"
         )}]
 
-    # ── Punto de entrada principal ─────────────────────────────────────────────
+    # ── Estado del pedido, calificación y quejas ─────────────────────────────────
+
+    @staticmethod
+    def _execute_check_order_status(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, organization_id: int
+    ) -> list:
+        """Consulta el estado del último pedido del cliente en la BD."""
+        cart = dict(session.cart_data)
+        last_order_id = cart.get("last_order_id")
+        if not last_order_id:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "No encontré un pedido reciente tuyo. ¿Quieres hacer uno nuevo? 🍕"
+            )}]
+        order = db.query(models.Order).filter(
+            models.Order.id == last_order_id,
+            models.Order.organization_id == organization_id
+        ).first()
+        if not order:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "No pude encontrar tu pedido. ¿Necesitas ayuda con algo más?"
+            )}]
+        status_map = {
+            "pending": "🔄 Tu pedido está en cocina, siendo preparado. Tiempo estimado: 35-45 minutos.",
+            "ready":   "✅ ¡Tu pedido está listo! Ya puede ser entregado.",
+            "delivered": "📦 Tu pedido ya fue entregado. ¡Gracias por tu preferencia!",
+        }
+        msg = status_map.get(order.status, f"Estado de tu pedido: {order.status}")
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
+
+    @staticmethod
+    def _execute_rate_order(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, organization_id: int, rating
+    ) -> list:
+        """Registra la calificación del cliente en el historial de la sesión."""
+        if rating is None:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "¿Cuánto nos calificarías del 1 al 5? ⭐"
+            )}]
+        try:
+            rating_int = int(rating)
+            if rating_int < 1 or rating_int > 5:
+                raise ValueError
+        except (ValueError, TypeError):
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Por favor califícanos con un número del 1 al 5 ⭐"
+            )}]
+        # Guardar calificación en cart_data
+        cart = dict(session.cart_data)
+        cart["last_rating"] = rating_int
+        session.cart_data = cart
+        db.commit()
+        emojis = ["", "😢", "😕", "😐", "😊", "🤩"]
+        responses = [
+            "",
+            "Lo sentimos mucho. Trabajaremos para mejorar. ¿Qué salió mal?",
+            "Gracias por tu honestidad. Tomaremos en cuenta tu opinión.",
+            "Gracias por tu calificación. ¡Seguiremos mejorando!",
+            "¡Gracias! Nos alegra que hayas disfrutado tu pedido 😊",
+            "¡Excelente! ¡Nos encanta saber que todo estuvo perfecto! 🤩🍕",
+        ]
+        msg = f"{emojis[rating_int]} {responses[rating_int]}"
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
+
+    @staticmethod
+    def _execute_complaint(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, organization_id: int,
+        customer: models.BotCustomer, complaint_text: str
+    ) -> list:
+        """Registra la queja del cliente y notifica al administrador."""
+        from app.core.activity import log_activity
+        from app.core.notifier import schedule_notify_organization
+        # Registrar en el log de actividad para que el admin lo vea
+        log_activity(
+            db,
+            None,
+            action="complaint",
+            entity_type="bot_complaint",
+            entity_id=customer.id,
+            description=f"Queja de cliente ({customer.channel}/{customer.channel_user_id}): {complaint_text[:300]}",
+            organization_id=organization_id,
+        )
+        # Notificar en tiempo real al dashboard del restaurante
+        schedule_notify_organization(
+            organization_id,
+            {"type": "complaint", "customer_id": customer.id, "channel": customer.channel, "message": complaint_text[:300]},
+        )
+        db.commit()
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+            channel, sender_id,
+            "Lamentamos mucho lo ocurrido 😟 Hemos notificado a nuestro equipo y nos pondremos en contacto contigo a la brevedad. ¡Gracias por avisarnos!"
+        )}]
+
+    # ── Punto de entrada principal ────────────────────────────────────────────────────
 
     @staticmethod
     def process_message(
@@ -353,15 +522,18 @@ class BotEngine:
             confirmaciones = {"sí", "si", "confirmar", "confirmo", "yes", "dale", "ok", "va", "claro"}
             cancelaciones  = {"no", "cancelar", "cancel", "nope"}
             if user_text.lower() in confirmaciones:
-                success = OrderService.send_to_internal_software(db, customer, session)
+                order_id = OrderService.send_to_internal_software(db, customer, session)
+                success = bool(order_id)
                 cart = dict(session.cart_data)
                 cart["items"] = []
                 cart["total"] = 0.0
+                if order_id and order_id is not True:
+                    cart["last_order_id"] = order_id
                 session.cart_data = cart
                 session.state = "ACTIVO"
                 db.commit()
                 msg = (
-                    "¡Pedido confirmado! 🎉 Tu orden está en camino a la cocina. ¡Gracias por tu pedido en Horno 74!"
+                    "¡Pedido confirmado! 🎉 Tu orden está en camino a la cocina. El tiempo estimado de entrega es de 35 a 45 minutos. ¡Gracias por tu pedido en Horno 74!"
                     if success else
                     "Lo sentimos, tuvimos un problema técnico al procesar tu pedido. Por favor inténtalo de nuevo."
                 )
@@ -423,6 +595,25 @@ class BotEngine:
                 out.extend(result)
                 ai_reply = f"Producto ID:{item_id} agregado al carrito."
 
+        elif action == "VIEW_CART":
+            result = BotEngine._execute_view_cart(channel, sender_id, session)
+            out.extend(result)
+            ai_reply = "Mostrando carrito."
+
+        elif action == "UPDATE_QUANTITY":
+            item_id = ai_response.get("item_id")
+            quantity = ai_response.get("quantity")
+            if item_id is None or quantity is None:
+                msg = ai_response.get("message", "¿Cuál producto quieres cambiar y a cuántas unidades?")
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                ai_reply = msg
+            else:
+                result = BotEngine._execute_update_quantity(
+                    db, channel, sender_id, session, int(item_id), int(quantity)
+                )
+                out.extend(result)
+                ai_reply = f"Cantidad de producto ID:{item_id} actualizada a {quantity}."
+
         elif action == "REMOVE_FROM_CART":
             item_id = ai_response.get("item_id")
             if item_id is None:
@@ -461,6 +652,23 @@ class BotEngine:
             message_text = ai_response.get("message", "¿En qué más puedo ayudarte?")
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
             ai_reply = message_text
+
+        elif action == "CHECK_ORDER_STATUS":
+            result = BotEngine._execute_check_order_status(db, channel, sender_id, session, organization_id)
+            out.extend(result)
+            ai_reply = "Consultando estado del pedido."
+
+        elif action == "RATE_ORDER":
+            rating = ai_response.get("rating")
+            result = BotEngine._execute_rate_order(db, channel, sender_id, session, organization_id, rating)
+            out.extend(result)
+            ai_reply = f"Calificación {rating} registrada."
+
+        elif action == "COMPLAINT":
+            complaint_text = ai_response.get("message", "")
+            result = BotEngine._execute_complaint(db, channel, sender_id, session, organization_id, customer, complaint_text)
+            out.extend(result)
+            ai_reply = f"Queja registrada: {complaint_text}"
 
         # ── Guardar historial ─────────────────────────────────────────────────
         BotEngine._append_history(session, "user", user_text)
