@@ -102,8 +102,11 @@ async def receive_meta_event(request: Request, bg_tasks: BackgroundTasks):
     except (UnicodeDecodeError, json.JSONDecodeError):
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     
-    # Meta expects immediate 200 OK
-    bg_tasks.add_task(process_meta_payload, body)
+    # Meta expects immediate 200 OK. We catch all errors here to avoid 500s that could block the webhook.
+    try:
+        bg_tasks.add_task(process_meta_payload, body)
+    except Exception:
+        logger.exception("Error scheduling background task for Meta")
     
     return {"status": "EVENT_RECEIVED"}
 
@@ -181,6 +184,18 @@ def process_meta_payload(body: dict):
             )
     except Exception:
         logger.exception("Error parsing Meta payload")
+        # Attempt to notify the user if we can identify them
+        try:
+            # Re-parse quickly to find a sender_id if possible
+            for entry in body.get("entry", []):
+                for change in entry.get("changes", []):
+                    for message in change.get("value", {}).get("messages", []):
+                        sender_id = message.get("from")
+                        if sender_id:
+                            from app.core.bot.adapters import WhatsAppAdapter
+                            WhatsAppAdapter.format_text(sender_id, "Lo siento, tuvimos un problema técnico al procesar tu mensaje. Por favor intenta de nuevo en unos minutos.")
+        except Exception:
+            pass # If notifying fails, we've already logged the main error
     finally:
         db.close()
 
