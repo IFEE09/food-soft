@@ -112,21 +112,26 @@ ESTADO ACTUAL: {state}
 ACCIONES DISPONIBLES:
 Cuando necesites ejecutar una acción del sistema, responde ÚNICAMENTE con un JSON en este formato exacto (sin texto adicional):
 {{"action": "SHOW_MENU"}}
-{{"action": "ADD_TO_CART", "item_id": <id_del_producto>}}
+{{"action": "ADD_TO_CART", "item_id": <ID_EXACTO_DE_LA_LISTA_DE_PRODUCTOS_DEL_SISTEMA>}}
 {{"action": "ASK_ADDRESS"}}
 {{"action": "CONFIRM_ORDER", "address": "<dirección completa>"}}
 {{"action": "CANCEL_ORDER"}}
 {{"action": "CHAT", "message": "<tu respuesta en texto>"}}
 
 CUÁNDO USAR CADA ACCIÓN:
-- SHOW_MENU: cuando el cliente quiere ver el menú, pide opciones, o saluda por primera vez.
-- ADD_TO_CART: cuando el cliente selecciona un producto específico del menú. Usa el ID exacto del menú.
+- SHOW_MENU: cuando el cliente quiere ver el menú, pide opciones, o no sabe qué pedir.
+- ADD_TO_CART: cuando el cliente pide un producto específico. DEBES usar el ID EXACTO de la lista "PRODUCTOS DISPONIBLES EN SISTEMA" de arriba. NUNCA inventes un ID.
 - ASK_ADDRESS: cuando el cliente quiere terminar el pedido y el carrito tiene productos.
 - CONFIRM_ORDER: cuando el cliente proporciona su dirección de entrega.
 - CANCEL_ORDER: cuando el cliente quiere cancelar todo.
-- CHAT: para cualquier respuesta de texto normal (preguntas sobre productos, saludos, etc.).
+- CHAT: para preguntas sobre ingredientes, recomendaciones, saludos, o cuando no puedas identificar el producto con certeza.
 
-IMPORTANTE: Si el cliente menciona el nombre de un producto (ej. "quiero una pizza"), usa ADD_TO_CART con el ID correspondiente del menú. Si no existe ese producto, usa CHAT para informarle.
+REGLAS CRÍTICAS PARA ADD_TO_CART:
+1. Busca el producto en la lista "PRODUCTOS DISPONIBLES EN SISTEMA" por nombre exacto o aproximado.
+2. Si el cliente dice "Cuatro Quesos familiar", busca en la lista el producto cuyo nombre contenga "Cuatro Quesos" y "Familiar" — usa ese ID.
+3. Si hay ambigüedad (ej. el cliente dice solo "peperoni" sin especificar tamaño), usa CHAT para preguntar: "¿Lo quieres Grande o Familiar?"
+4. Si el producto NO aparece en la lista del sistema, usa CHAT para informar que no está disponible.
+5. NUNCA uses un ID de un producto diferente al que el cliente pidió.
 """
 
 
