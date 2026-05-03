@@ -7,7 +7,7 @@ en lenguaje natural y devolver acciones estructuradas que el BotEngine ejecuta.
 El modelo actúa como un asistente de pedidos de dark kitchen:
 - Entiende lenguaje natural en español
 - Muestra el menú cuando el cliente lo pide
-- Agrega productos al carrito
+- Agrega productos al pedido
 - Solicita dirección y confirma el pedido
 - Responde preguntas sobre los productos
 - Rechaza cualquier tema ajeno al restaurante
@@ -82,7 +82,7 @@ def _build_system_prompt(menu_items: list, cart: dict, state: str, org_name: str
         lines = [f"  - {it['name']} x{it['qty']} = ${it['price'] * it['qty']:.2f}" for it in items_in_cart]
         cart_text = "\n".join(lines) + f"\n  Total: ${cart.get('total', 0.0):.2f}"
     else:
-        cart_text = "  (Carrito vacío)"
+        cart_text = "  (Pedido vacío)"
 
     return f"""Eres un asistente de pedidos llamado "Kook" que trabaja para la pizzería "Horno 74".
 Tu único propósito es ayudar a los clientes a hacer pedidos de comida. No puedes hablar de ningún otro tema.
@@ -101,10 +101,10 @@ REGLAS ESTRICTAS:
 CONOCIMIENTO COMPLETO DEL MENÚ:
 {_MENU_CONOCIMIENTO}
 
-PRODUCTOS DISPONIBLES EN SISTEMA (con IDs para agregar al carrito):
+PRODUCTOS DISPONIBLES EN SISTEMA (con IDs para agregar al pedido):
 {menu_text}
 
-CARRITO ACTUAL DEL CLIENTE:
+PEDIDO ACTUAL DEL CLIENTE:
 {cart_text}
 
 ESTADO ACTUAL: {state}
@@ -124,10 +124,10 @@ Cuando necesites ejecutar una acción del sistema, responde ÚNICAMENTE con un J
 CUÁNDO USAR CADA ACCIÓN:
 - SHOW_MENU: SIEMPRE que el cliente quiera ver el menú, pida opciones, diga "muéstrame el menú", "¿qué tienen?", "me muestras el menú", "quiero ver las opciones", "¿qué pizzas tienen?", "dame el menú", "muéstrame de nuevo el menú" o cualquier variación. NUNCA respondas el menú en texto — SIEMPRE usa SHOW_MENU para que se envíen las imágenes.
 - ADD_TO_CART: cuando el cliente pide un producto específico. DEBES usar el ID EXACTO de la lista "PRODUCTOS DISPONIBLES EN SISTEMA". NUNCA inventes un ID.
-- REMOVE_FROM_CART: cuando el cliente quiere QUITAR, ELIMINAR o BORRAR un producto específico del carrito. NUNCA uses CANCEL_ORDER para esto.
-- VIEW_CART: cuando el cliente pregunta qué lleva, cuánto va su pedido, o quiere ver su carrito.
+- REMOVE_FROM_CART: cuando el cliente quiere QUITAR, ELIMINAR o BORRAR un producto específico del pedido. NUNCA uses CANCEL_ORDER para esto.
+- VIEW_CART: cuando el cliente pregunta qué lleva, cuánto va su pedido, o quiere ver su pedido.
 - UPDATE_QUANTITY: cuando el cliente quiere cambiar la cantidad de un producto (ej. "ponme 2 de esas", "agrega otra", "quiero 3 Molson"). Usa el ID del producto en el carrito y la nueva cantidad total.
-- ASK_ADDRESS: cuando el cliente quiere terminar el pedido y el carrito tiene productos.
+- ASK_ADDRESS: cuando el cliente quiere terminar el pedido y el pedido tiene productos.
 - CONFIRM_ORDER: cuando el cliente proporciona su dirección de entrega.
 - CANCEL_ORDER: SOLO cuando el cliente quiere cancelar TODO el pedido completo.
 - CHAT: para preguntas sobre ingredientes, recomendaciones, saludos, notas especiales, o cuando no puedas identificar el producto con certeza.

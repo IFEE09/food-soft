@@ -150,7 +150,7 @@ class BotEngine:
             {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_ESPECIALES)},
             {"action": "SEND_TEXT",  "payload": BotEngine._text(
                 channel, sender_id,
-                "Dime qué quieres pedir y con gusto te lo agrego al carrito 😊"
+                "Dime qué quieres pedir y con gusto te lo agrego a tu pedido 😊"
             )},
         ]
         return out
@@ -160,7 +160,7 @@ class BotEngine:
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int, item_id: int
     ) -> list:
-        """Agrega un producto al carrito basándose en el ID real del sistema."""
+        """Agrega un producto al pedido basándose en el ID real del sistema."""
         menu_item = (
             db.query(models.MenuItem)
             .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == organization_id)
@@ -208,20 +208,20 @@ class BotEngine:
     def _execute_view_cart(
         channel: str, sender_id: str, session: models.BotSession
     ) -> list:
-        """Muestra el contenido actual del carrito."""
+        """Muestra el contenido actual del pedido."""
         cart = dict(session.cart_data)
         items_list = cart.get("items", [])
         if not items_list:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "Tu carrito está vacío. ¿Quieres ver el menú para pedir algo? 🍕"
+                "Tu pedido está vacío. ¿Quieres ver el menú para pedir algo? 🍕"
             )}]
         summary = "\n".join(
             f"• {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
             for it in items_list
         )
         body = (
-            f"🛒 Tu carrito ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
+            f"🛒 Tu pedido ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
             f"{summary}\n\n"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
             f"¿Deseas agregar algo más o terminamos el pedido?"
@@ -233,7 +233,7 @@ class BotEngine:
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, item_id: int, quantity: int
     ) -> list:
-        """Actualiza la cantidad de un producto en el carrito."""
+        """Actualiza la cantidad de un producto en el pedido."""
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
 
@@ -241,12 +241,12 @@ class BotEngine:
         if not item:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "Ese producto no está en tu carrito. ¿Quieres agregarlo?"
+                "Ese producto no está en tu pedido. ¿Quieres agregarlo?"
             )}]
 
         if quantity <= 0:
             items_list = [it for it in items_list if it.get("id") != item_id]
-            msg_prefix = f"✅ {item['name']} eliminado del carrito."
+            msg_prefix = f"✅ {item['name']} eliminado de tu pedido."
         else:
             item["qty"] = quantity
             msg_prefix = f"✅ {item['name']} actualizado a {quantity} unidad{'es' if quantity > 1 else ''}."
@@ -259,7 +259,7 @@ class BotEngine:
         if not items_list:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                f"{msg_prefix} Tu carrito está vacío. ¿Quieres pedir algo más?"
+                f"{msg_prefix} Tu pedido está vacío. ¿Quieres pedir algo más?"
             )}]
 
         summary = "\n".join(
@@ -279,7 +279,7 @@ class BotEngine:
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, item_id: int
     ) -> list:
-        """Quita un producto del carrito por ID."""
+        """Quita un producto del pedido por ID."""
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
 
@@ -287,7 +287,7 @@ class BotEngine:
         if not item_to_remove:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "Ese producto no está en tu carrito. ¿Quieres ver lo que tienes?"
+                "Ese producto no está en tu pedido. ¿Quieres ver lo que tienes?"
             )}]
 
         if item_to_remove["qty"] > 1:
@@ -303,7 +303,7 @@ class BotEngine:
         if not items_list:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                f"✅ {item_to_remove['name']} eliminado. Tu carrito está vacío. ¿Quieres pedir algo más?"
+                f"✅ {item_to_remove['name']} eliminado. Tu pedido está vacío. ¿Quieres pedir algo más?"
             )}]
 
         summary = "\n".join(
@@ -311,7 +311,7 @@ class BotEngine:
             for it in items_list
         )
         body = (
-            f"✅ {item_to_remove['name']} eliminado del carrito.\n\n"
+            f"✅ {item_to_remove['name']} eliminado de tu pedido.\n\n"
             f"🛒 Tu pedido actualizado:\n{summary}\n\n"
             f"💰 Total: ${cart['total']}\n\n"
             f"¿Deseas agregar algo más o terminamos el pedido?"
@@ -324,7 +324,7 @@ class BotEngine:
         if not cart.get("items"):
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "Tu carrito está vacío. Primero dime qué quieres pedir 😊"
+                "Tu pedido está vacío. Primero dime qué quieres pedir 😊"
             )}]
         session.state = "PIDIENDO_DIRECCION"
         db.commit()
@@ -345,7 +345,7 @@ class BotEngine:
             db.commit()
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "Tu carrito está vacío. Dime qué quieres pedir."
+                "Tu pedido está vacío. Dime qué quieres pedir."
             )}]
 
         cart["address"] = address[:_MAX_ADDRESS_LEN]
@@ -604,12 +604,12 @@ class BotEngine:
                     models.MenuItem.organization_id == organization_id
                 ).first()
                 product_name = menu_item.name if menu_item else f"Producto {item_id}"
-                ai_reply = f"{product_name} agregado al carrito."
+                ai_reply = f"{product_name} agregado a tu pedido."
 
         elif action == "VIEW_CART":
             result = BotEngine._execute_view_cart(channel, sender_id, session)
             out.extend(result)
-            ai_reply = "Mostrando carrito."
+            ai_reply = "Mostrando pedido."
 
         elif action == "UPDATE_QUANTITY":
             item_id = ai_response.get("item_id")
@@ -646,7 +646,7 @@ class BotEngine:
                     models.MenuItem.organization_id == organization_id
                 ).first()
                 product_name_rm = menu_item_rm.name if menu_item_rm else f"Producto {item_id}"
-                ai_reply = f"{product_name_rm} eliminado del carrito."
+                ai_reply = f"{product_name_rm} eliminado de tu pedido."
 
         elif action == "ASK_ADDRESS":
             result = BotEngine._execute_ask_address(channel, sender_id, session, db)
