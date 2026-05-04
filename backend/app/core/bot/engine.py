@@ -18,6 +18,7 @@ El historial de conversación se guarda en BotSession.cart_data["history"].
 """
 
 import logging
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
@@ -763,7 +764,35 @@ class BotEngine:
             )})
             return out
 
-        # ── Sin mensaje (primer contacto) ─────────────────────────────────────────────────────────────────────────
+        # ── Timeout de inactividad: 20 minutos ─────────────────────────────────────────────────────────────────────────────────────
+        _INACTIVITY_TIMEOUT = timedelta(minutes=20)
+        last_interaction = session.last_interaction_at
+        if last_interaction is not None:
+            # Normalizar a UTC sin zona horaria para comparar
+            if hasattr(last_interaction, 'tzinfo') and last_interaction.tzinfo is not None:
+                last_interaction = last_interaction.replace(tzinfo=None)
+            now_utc = datetime.utcnow()
+            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "ACTIVO"}
+            if (now_utc - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states:
+                # Limpiar carrito y estado, pero conservar saved_name y saved_address en BotCustomer
+                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+                session.cart_data = clean_cart
+                session.state = "ACTIVO"
+                db.commit()
+                cart = clean_cart
+                state = "ACTIVO"
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "Tu sesión anterior expiró por inactividad. ¡No te preocupes, tu pedido fue cancelado automáticamente! 😊 ¿Quieres empezar uno nuevo?"
+                )})
+                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
+                return out
+
+        # Actualizar last_interaction_at en cada mensaje
+        session.last_interaction_at = datetime.utcnow()
+        db.commit()
+
+        # ── Sin mensaje (primer contacto) ─────────────────────────────────────────────────────────────────────────────────────
         if not user_text:
             out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
             return out
@@ -775,6 +804,31 @@ class BotEngine:
             BotEngine._append_history(session, "assistant", "Pedido actualizado.")
             db.commit()
             return position_result
+
+        # ── Resolver variante pendiente (ej: cliente responde "familiar" a ¿Grande o Familiar?) ─────────────────────────────────────────────────────────────────────────────────────
+        # Si el último mensaje del bot fue una pregunta de variante, intentar resolver
+        # buscando en el menú un producto cuyo nombre contenga el texto del cliente
+        # Y que también contenga el nombre base del producto preguntado.
+        pending_item = cart.get("pending_variant_base")  # ej: "Cuatro Quesos"
+        if pending_item and user_text:
+            txt_low = user_text.strip().lower()
+            # Buscar el producto que coincida con base + variante
+            matched_item = None
+            for mi in menu_items:
+                mi_name_low = mi.name.lower()
+                if pending_item.lower() in mi_name_low and txt_low in mi_name_low:
+                    matched_item = mi
+                    break
+            if matched_item:
+                # Limpiar la variante pendiente y agregar al carrito
+                cart.pop("pending_variant_base", None)
+                session.cart_data = cart
+                db.commit()
+                result = BotEngine._execute_add_to_cart(db, channel, sender_id, session, organization_id, matched_item.id)
+                BotEngine._append_history(session, "user", user_text)
+                BotEngine._append_history(session, "assistant", f"{matched_item.name} agregado.")
+                db.commit()
+                return result
 
         # ── Llamar a DeepSeek con los productos reales del sistema ────────────────────
         ai_response = ask_deepseek(
@@ -904,6 +958,37 @@ class BotEngine:
                 message_text = ai_action.get("message", "¿En qué más puedo ayudarte?")
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
                 ai_reply_parts.append(message_text)
+
+                # ── Detectar pregunta de variante y guardar base del producto ─────────────────────────────────────────────────────────────────────────────────────
+                # Si el mensaje contiene "¿Cómo la quieres?" o variantes de tamaño,
+                # buscar qué producto base se está preguntando para resolver en el próximo mensaje
+                msg_lower = message_text.lower()
+                is_variant_question = (
+                    "grande" in msg_lower and "familiar" in msg_lower
+                ) or "cómo la quieres" in msg_lower or "cómo lo quieres" in msg_lower
+                if is_variant_question:
+                    # Buscar en el historial reciente o en el mensaje del usuario el nombre del producto
+                    # Estrategia: buscar qué producto del menú tiene nombre que aparezca en el mensaje de chat
+                    found_base = None
+                    for mi in menu_items:
+                        # Tomar solo la primera parte del nombre (antes de Grande/Familiar)
+                        base_parts = mi.name.lower().replace("grande", "").replace("familiar", "").strip()
+                        if base_parts and base_parts in msg_lower:
+                            # Guardar el nombre base más largo encontrado
+                            if found_base is None or len(base_parts) > len(found_base):
+                                found_base = base_parts
+                    if found_base:
+                        c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
+                        c["pending_variant_base"] = found_base
+                        session.cart_data = c
+                        db.commit()
+                else:
+                    # Si no es pregunta de variante, limpiar el pending_variant_base
+                    c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
+                    if "pending_variant_base" in c:
+                        c.pop("pending_variant_base", None)
+                        session.cart_data = c
+                        db.commit()
 
         ai_reply = " | ".join(ai_reply_parts) if ai_reply_parts else "OK"
 

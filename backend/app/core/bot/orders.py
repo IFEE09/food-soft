@@ -31,12 +31,17 @@ class OrderService:
         else:
             display_name = f"Bot ({customer.channel_user_id})"
 
+        delivery_address = (cart.get("address") or "").strip() or None
+        notes            = (cart.get("notes")   or "").strip() or None
+
         new_order = models.Order(
             client_name=display_name,
             status="pending",
             total=cart.get("total", 0.0),
             station_id=station_id,
             organization_id=session.organization_id,
+            delivery_address=delivery_address,
+            notes=notes,
         )
         db.add(new_order)
         db.flush()

@@ -53,6 +53,8 @@ def run_migrations():
         "ALTER TABLE organizations ADD COLUMN instagram_page_id VARCHAR UNIQUE",
         "ALTER TABLE bot_customers ADD COLUMN saved_name VARCHAR",
         "ALTER TABLE bot_customers ADD COLUMN saved_address VARCHAR",
+        "ALTER TABLE orders ADD COLUMN delivery_address VARCHAR",
+        "ALTER TABLE orders ADD COLUMN notes VARCHAR",
     ]
 
     for query in migrations:

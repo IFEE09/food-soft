@@ -92,7 +92,9 @@ class Order(Base):
     client_name = Column(String, index=True, nullable=True)
     total = Column(Float, default=0.0)
     status = Column(String, default="pending") # pending, ready, delivered
-    
+    delivery_address = Column(String, nullable=True)   # dirección de entrega del bot
+    notes = Column(String, nullable=True)              # notas especiales del pedido
+
     station_id = Column(Integer, ForeignKey("stations.id"), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     

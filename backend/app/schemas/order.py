@@ -38,6 +38,8 @@ class Order(OrderBase):
     created_at: datetime
     ready_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
+    delivery_address: Optional[str] = None
+    notes: Optional[str] = None
     items: List[OrderItem] = []
 
     class Config:
