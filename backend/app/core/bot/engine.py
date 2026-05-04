@@ -588,7 +588,54 @@ class BotEngine:
         # ── Palabras clave que reinician el flujo ─────────────────────────────────────────────────
         RESET_KEYWORDS = {"hola", "menu", "menú", "inicio", "start", "reiniciar", "hi", "buenas", "buenos"}
         if user_text.lower() in RESET_KEYWORDS:
+            # Si tiene carrito activo con productos, preguntar antes de limpiar
+            active_items = cart.get("items", [])
+            if active_items and state not in ("CONFIRMANDO_PEDIDO",):
+                summary = _format_cart_summary(active_items)
+                total   = cart.get("total", 0.0)
+                session.state = "CARRITO_PENDIENTE"
+                db.commit()
+                body = (
+                    f"🛒 Tienes un pedido en curso:\n\n"
+                    f"{summary}\n\n"
+                    f"💰 Total: ${total}\n\n"
+                    f"¿Quieres *continuar* con este pedido o *empezar uno nuevo*?"
+                )
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)})
+                return out
+            # Sin carrito activo → mostrar menú directamente
             out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
+            return out
+
+        # ── Estado especial: carrito pendiente (continuar o nuevo) ────────────────────────────────────
+        if state == "CARRITO_PENDIENTE":
+            CONTINUAR = {"continuar", "seguir", "sí", "si", "yes", "ok", "dale", "claro", "va", "ese mismo", "el mismo"}
+            NUEVO     = {"nuevo", "empezar", "empezar nuevo", "nuevo pedido", "limpiar", "borrar", "eliminar", "no", "nope"}
+            txt_lower = user_text.lower()
+            if txt_lower in CONTINUAR:
+                session.state = "ACTIVO"
+                db.commit()
+                # Mostrar el carrito actual para que siga desde donde estaba
+                return BotEngine._execute_view_cart(channel, sender_id, session)
+            if txt_lower in NUEVO:
+                # Limpiar carrito y mostrar menú
+                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+                session.cart_data = clean_cart
+                session.state = "ACTIVO"
+                db.commit()
+                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
+                return out
+            # Respuesta no reconocida → volver a preguntar
+            active_items = cart.get("items", [])
+            summary = _format_cart_summary(active_items)
+            total   = cart.get("total", 0.0)
+            body = (
+                f"No entendí tu respuesta 😅 Tienes este pedido en curso:\n\n"
+                f"{summary}\n\n"
+                f"💰 Total: ${total}\n\n"
+                f"Responde *continuar* para seguir con él o *nuevo* para empezar desde cero."
+            )
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)})
             return out
 
         # ── Palabras clave para cerrar pedido (sin pasar por DeepSeek) ──────────────────
