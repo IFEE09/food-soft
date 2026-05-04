@@ -380,7 +380,8 @@ class BotEngine:
             f"📍 Dirección: {address}\n"
             f"{notes_line}"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"¿Confirmamos? Responde *sí* para confirmar o díme qué quieres cambiar 😊"
+            f"Para confirmar tu pedido escribe 9️⃣\n"
+            f"O díme qué quieres cambiar 😊"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -660,7 +661,7 @@ class BotEngine:
 
         # ── Estado especial: confirmación final (sin IA) ───────────────────────────────────
         if state == "CONFIRMANDO_PEDIDO":
-            confirmaciones = {"sí", "si", "confirmar", "confirmo", "yes", "dale", "ok", "va", "claro"}
+            confirmaciones = {"9"}
             cancelaciones  = {"no", "cancelar", "cancel", "nope"}
             if user_text.lower() in confirmaciones:
                 order_id = OrderService.send_to_internal_software(db, customer, session)
