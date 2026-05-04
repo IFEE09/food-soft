@@ -29,9 +29,7 @@ from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
 
 # URLs públicas de las imágenes del menú de Horno 74
-MENU_IMG_PARA_COMENZAR = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/QdrcigjkETcmnaog.jpg"
-MENU_IMG_TRADICIONALES = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/tWAWZQLDXZyWAOcg.jpg"
-MENU_IMG_ESPECIALES    = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/ARkxrVWJRlBxsqse.jpg"
+MENU_IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/RmfrxWhJgBqCqpyQ.jpg"
 
 logger = logging.getLogger(__name__)
 
@@ -168,9 +166,7 @@ class BotEngine:
             )}]
         # Solo imágenes visuales — sin botones ni listas interactivas
         out = [
-            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_PARA_COMENZAR)},
-            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_TRADICIONALES)},
-            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG_ESPECIALES)},
+            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG)},
             {"action": "SEND_TEXT",  "payload": BotEngine._text(
                 channel, sender_id,
                 "Dime qué quieres pedir y con gusto te lo agrego a tu pedido 😊"
