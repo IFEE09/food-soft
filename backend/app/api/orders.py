@@ -91,6 +91,52 @@ def export_orders_csv(
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+@router.get("/summary")
+@limiter.limit("60/minute")
+def orders_summary(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    status: Optional[str] = None,
+) -> Any:
+    """ Return daily breakdown of orders for charting. """
+    from sqlalchemy import func as sqlfunc
+    query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
+    if status:
+        query = query.filter(models.Order.status == status)
+    if date_from:
+        query = query.filter(models.Order.created_at >= datetime.combine(date_from, datetime.min.time()))
+    if date_to:
+        query = query.filter(models.Order.created_at <= datetime.combine(date_to, datetime.max.time()))
+    orders = query.order_by(models.Order.created_at.asc()).all()
+
+    # Agrupar por día
+    from collections import defaultdict
+    daily: dict = defaultdict(lambda: {"count": 0, "total": 0.0})
+    for o in orders:
+        day = o.created_at.strftime("%Y-%m-%d") if o.created_at else "unknown"
+        daily[day]["count"] += 1
+        daily[day]["total"] += o.total or 0.0
+
+    total_revenue = sum(o.total or 0.0 for o in orders)
+    avg_ticket = (total_revenue / len(orders)) if orders else 0.0
+
+    return {
+        "total_orders": len(orders),
+        "total_revenue": round(total_revenue, 2),
+        "avg_ticket": round(avg_ticket, 2),
+        "pending": sum(1 for o in orders if o.status == "pending"),
+        "ready": sum(1 for o in orders if o.status == "ready"),
+        "delivered": sum(1 for o in orders if o.status == "delivered"),
+        "daily": [
+            {"date": d, "count": v["count"], "total": round(v["total"], 2)}
+            for d, v in sorted(daily.items())
+        ],
+    }
+
+
 @router.post("/", response_model=order_schema.Order)
 @limiter.limit("120/minute")
 async def create_order(
