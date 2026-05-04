@@ -167,6 +167,10 @@ ADD_TO_CART → Cuando el cliente pide un producto específico con nombre Y tama
   - Si el producto no existe en la lista → usa CHAT para informar que no está disponible.
   - Si el cliente pide múltiples productos sin ambigüedad → devuelve múltiples ADD_TO_CART en el array.
   - Si hay ambigüedad en alguno → agrega los que están claros y usa CHAT para preguntar por el ambiguo.
+  REGLA CRÍTICA: NUNCA uses CHAT para confirmar que agregaste un producto. Si el producto es
+  identificable, usa ADD_TO_CART directamente. El sistema manda la confirmación automáticamente.
+  Ejemplo INCORRECTO: {{"action": "CHAT", "message": "Doble Queso Grande agregado."}}
+  Ejemplo CORRECTO:   {{"action": "ADD_TO_CART", "item_id": 5}}
 
 REMOVE_FROM_CART → Cuando el cliente quiere QUITAR un producto del pedido.
   NUNCA uses CANCEL_ORDER para quitar un solo producto.

@@ -907,7 +907,13 @@ class BotEngine:
 
         ai_reply = " | ".join(ai_reply_parts) if ai_reply_parts else "OK"
 
-        # ── Guardar historial ─────────────────────────────────────────────────────────────────────────
+        # ── Fallback anti-silencio: si no se generó ninguna respuesta, mandar mensaje genérico ──────────
+        if not out:
+            fallback = "¿En qué más puedo ayudarte? 😊"
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, fallback)})
+            ai_reply = fallback
+
+        # ── Guardar historial ──────────────────────────────────────────────────────────────────────────────────────
         BotEngine._append_history(session, "user", user_text)
         BotEngine._append_history(session, "assistant", ai_reply)
         db.commit()
