@@ -50,6 +50,19 @@ def _format_cart_summary(items_list: list) -> str:
     )
 
 
+def _clean_text(channel: str, text: str) -> str:
+    """
+    Limpia el texto según el canal:
+    - WhatsApp: soporta *negrita*, se deja tal cual.
+    - Facebook Messenger / Instagram: no soportan markdown, se eliminan los asteriscos.
+    """
+    if channel in ("messenger", "instagram", "facebook"):
+        import re
+        # Quitar asteriscos de negrita (*texto* o **texto**)
+        text = re.sub(r"\*+(.*?)\*+", r"\1", text)
+    return text
+
+
 class BotEngine:
 
     # ── Helpers de formato ────────────────────────────────────────────────────
@@ -64,6 +77,7 @@ class BotEngine:
 
     @staticmethod
     def _text(channel: str, to: str, text: str) -> dict:
+        text = _clean_text(channel, text)
         if channel == "whatsapp":
             return WhatsAppAdapter.format_text(to, text)
         if channel == "messenger":
