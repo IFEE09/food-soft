@@ -651,6 +651,41 @@ class BotEngine:
             return out
 
         # ── Palabras clave para cerrar pedido (sin pasar por DeepSeek) ──────────────────
+        # ── Timeout de inactividad: 20 minutos (se verifica ANTES de procesar estados) ───────────────
+        _INACTIVITY_TIMEOUT = timedelta(minutes=20)
+        last_interaction = session.last_interaction_at
+        if last_interaction is not None:
+            if hasattr(last_interaction, 'tzinfo') and last_interaction.tzinfo is not None:
+                last_interaction = last_interaction.replace(tzinfo=None)
+            now_utc = datetime.utcnow()
+            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "ACTIVO"}
+            if (now_utc - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states:
+                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+                session.cart_data = clean_cart
+                session.state = "ACTIVO"
+                session.last_interaction_at = datetime.utcnow()
+                db.commit()
+                cart = clean_cart
+                state = "ACTIVO"
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "Tu sesión anterior expiró por inactividad. ¡No te preocupes, tu pedido fue cancelado automáticamente! 😊 ¿Quieres empezar uno nuevo?"
+                )})
+                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
+                return out
+
+        # Actualizar last_interaction_at en TODOS los caminos desde aquí
+        session.last_interaction_at = datetime.utcnow()
+        db.commit()
+
+        # ── Sin mensaje (audio, imagen, sticker, etc.) ────────────────────────────────────────────────
+        if not user_text:
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Disculpa, no te entiendo 😅 ¿Cómo más te puedo ayudar? Escribe *menú* para ver nuestros productos."
+            )})
+            return out
+
         CLOSE_KEYWORDS = {"cerrar pedido", "cerrar mi pedido", "terminar pedido", "terminar mi pedido", "finalizar pedido"}
         if user_text.lower() in CLOSE_KEYWORDS:
             return BotEngine._execute_ask_address(channel, sender_id, session, db)
@@ -761,38 +796,7 @@ class BotEngine:
             )})
             return out
 
-        # ── Timeout de inactividad: 20 minutos ─────────────────────────────────────────────────────────────────────────────────────
-        _INACTIVITY_TIMEOUT = timedelta(minutes=20)
-        last_interaction = session.last_interaction_at
-        if last_interaction is not None:
-            # Normalizar a UTC sin zona horaria para comparar
-            if hasattr(last_interaction, 'tzinfo') and last_interaction.tzinfo is not None:
-                last_interaction = last_interaction.replace(tzinfo=None)
-            now_utc = datetime.utcnow()
-            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "ACTIVO"}
-            if (now_utc - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states:
-                # Limpiar carrito y estado, pero conservar saved_name y saved_address en BotCustomer
-                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
-                session.cart_data = clean_cart
-                session.state = "ACTIVO"
-                db.commit()
-                cart = clean_cart
-                state = "ACTIVO"
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                    channel, sender_id,
-                    "Tu sesión anterior expiró por inactividad. ¡No te preocupes, tu pedido fue cancelado automáticamente! 😊 ¿Quieres empezar uno nuevo?"
-                )})
-                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
-                return out
 
-        # Actualizar last_interaction_at en cada mensaje
-        session.last_interaction_at = datetime.utcnow()
-        db.commit()
-
-        # ── Sin mensaje (primer contacto) ─────────────────────────────────────────────────────────────────────────────────────
-        if not user_text:
-            out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
-            return out
 
         # ── Resolver referencias por número de posición (ej: "quita el 2", "ponme 3 del 1") ───────
         position_result = BotEngine._resolve_position_command(db, channel, sender_id, session, organization_id, user_text)
@@ -806,7 +810,7 @@ class BotEngine:
         # Si el último mensaje del bot fue una pregunta de variante, intentar resolver
         # buscando en el menú un producto cuyo nombre contenga el texto del cliente
         # Y que también contenga el nombre base del producto preguntado.
-        pending_item = cart.get("pending_variant_base")  # ej: "Cuatro Quesos"
+        pending_item = cart.get("pending_variant_base")  # ej: "cuatro quesos"
         if pending_item and user_text:
             txt_low = user_text.strip().lower()
             # Buscar el producto que coincida con base + variante
@@ -818,14 +822,23 @@ class BotEngine:
                     break
             if matched_item:
                 # Limpiar la variante pendiente y agregar al carrito
-                cart.pop("pending_variant_base", None)
-                session.cart_data = cart
+                c = dict(session.cart_data)
+                c.pop("pending_variant_base", None)
+                session.cart_data = c
                 db.commit()
                 result = BotEngine._execute_add_to_cart(db, channel, sender_id, session, organization_id, matched_item.id)
                 BotEngine._append_history(session, "user", user_text)
                 BotEngine._append_history(session, "assistant", f"{matched_item.name} agregado.")
                 db.commit()
                 return result
+            else:
+                # FIX Bug 3: El cliente cambió de tema — limpiar pending_variant_base
+                # para que DeepSeek procese el nuevo mensaje normalmente
+                c = dict(session.cart_data)
+                c.pop("pending_variant_base", None)
+                session.cart_data = c
+                db.commit()
+                cart = dict(session.cart_data)  # Refrescar cart local
 
         # ── Llamar a DeepSeek con los productos reales del sistema ────────────────────
         ai_response = ask_deepseek(
