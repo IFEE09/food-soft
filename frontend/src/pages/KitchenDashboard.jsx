@@ -323,16 +323,22 @@ export default function KitchenDashboard() {
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: 0, padding: 0 }}>
                     {order.items && order.items.map((item, idx) => (
                       <li key={idx} style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '0.6rem 0.75rem',
-                        backgroundColor: 'var(--neutral-bg)',
+                        backgroundColor: item.note ? 'rgba(240,192,64,0.06)' : 'var(--neutral-bg)',
                         borderRadius: '4px',
-                        border: '1px solid var(--surface-border)'
+                        border: item.note ? '1px solid rgba(240,192,64,0.35)' : '1px solid var(--surface-border)'
                       }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{item.product_name}</span>
-                        <span style={{ backgroundColor: 'var(--primary-color)', color: 'white', fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '4px', fontWeight: 800 }}>
-                          x{item.quantity}
-                        </span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.product_name}</span>
+                          <span style={{ backgroundColor: 'var(--primary-color)', color: 'white', fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '4px', fontWeight: 800, flexShrink: 0, marginLeft: '0.5rem' }}>
+                            x{item.quantity}
+                          </span>
+                        </div>
+                        {item.note && (
+                          <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: '#f0c040', fontWeight: 600 }}>
+                            ✎ {item.note}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

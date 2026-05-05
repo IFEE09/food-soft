@@ -55,6 +55,7 @@ def run_migrations():
         "ALTER TABLE bot_customers ADD COLUMN saved_address VARCHAR",
         "ALTER TABLE orders ADD COLUMN delivery_address VARCHAR",
         "ALTER TABLE orders ADD COLUMN notes VARCHAR",
+        "ALTER TABLE order_items ADD COLUMN note VARCHAR",
     ]
 
     for query in migrations:

@@ -112,6 +112,7 @@ class OrderItem(Base):
     order_id = Column(Integer, ForeignKey("orders.id"))
     product_name = Column(String, nullable=False)
     quantity = Column(Integer, default=1)
+    note = Column(String, nullable=True)  # Modificación del cliente (ej: 'sin cebolla')
     
     order = relationship("Order", back_populates="items")
 

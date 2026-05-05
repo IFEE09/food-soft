@@ -153,7 +153,7 @@ ACCIONES DISPONIBLES
 ════════════════════════════════════════════════════════
 
 {{"action": "SHOW_MENU"}}
-{{"action": "ADD_TO_CART", "item_id": <ID_EXACTO_DE_LA_LISTA>}}
+{{"action": "ADD_TO_CART", "item_id": <ID_EXACTO_DE_LA_LISTA>, "item_note": "<nota_opcional>"}}
 {{"action": "REMOVE_FROM_CART", "item_id": <ID_EXACTO_DEL_PRODUCTO_EN_EL_PEDIDO>}}
 {{"action": "VIEW_CART"}}
 {{"action": "UPDATE_QUANTITY", "item_id": <ID_DEL_PRODUCTO>, "quantity": <NUEVA_CANTIDAD_TOTAL>}}
@@ -176,6 +176,18 @@ ADD_TO_CART → Cuando el cliente pide un producto específico con nombre Y tama
   - Si el producto no existe en la lista → usa CHAT para informar que no está disponible.
   - Si el cliente pide múltiples productos sin ambigüedad → devuelve múltiples ADD_TO_CART en el array.
   - Si hay ambigüedad en alguno → agrega los que están claros y usa CHAT para preguntar por el ambiguo.
+  CAMPO item_note (OPCIONAL pero MUY IMPORTANTE):
+  - Si el cliente menciona una modificación o personalización del producto ("sin cebolla", "extra queso",
+    "sin chile", "bien cocida", "sin jitomate", "doble queso", etc.), DEBES incluir ese detalle en
+    el campo "item_note" del ADD_TO_CART correspondiente.
+  - Si no hay modificación, omite el campo item_note (no lo incluyas vacío).
+  - Ejemplos:
+    Cliente: "una cuatro quesos familiar sin cebolla"
+    → {{"action": "ADD_TO_CART", "item_id": 5, "item_note": "sin cebolla"}}
+    Cliente: "quiero una pepperoni grande extra queso"
+    → {{"action": "ADD_TO_CART", "item_id": 3, "item_note": "extra queso"}}
+    Cliente: "una margarita familiar"
+    → {{"action": "ADD_TO_CART", "item_id": 7}}  (sin item_note porque no hay modificación)
   REGLA CRÍTICA 1: NUNCA uses CHAT para confirmar que agregaste un producto. Si el producto es
   identificable, usa ADD_TO_CART directamente. El sistema manda la confirmación automáticamente.
   Ejemplo INCORRECTO: {{"action": "CHAT", "message": "Doble Queso Grande agregado."}}

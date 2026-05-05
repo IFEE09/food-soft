@@ -13,6 +13,7 @@ class OrderItemCreate(OrderItemBase):
 class OrderItem(OrderItemBase):
     id: int
     order_id: int
+    note: Optional[str] = None  # Modificación del cliente (ej: 'sin cebolla')
 
     class Config:
         from_attributes = True

@@ -42,11 +42,14 @@ def _round_price(value: float) -> float:
 
 
 def _format_cart_summary(items_list: list) -> str:
-    """Formatea el pedido con números de posición (1, 2, 3...)."""
-    return "\n".join(
-        f"{i + 1}. {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-        for i, it in enumerate(items_list)
-    )
+    """Formatea el pedido con números de posición (1, 2, 3...). Incluye nota por ítem si existe."""
+    lines = []
+    for i, it in enumerate(items_list):
+        line = f"{i + 1}. {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
+        if it.get('note'):
+            line += f" \u270e {it['note']}"
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _clean_text(channel: str, text: str) -> str:
@@ -177,9 +180,12 @@ class BotEngine:
     @staticmethod
     def _execute_add_to_cart(
         db: Session, channel: str, sender_id: str,
-        session: models.BotSession, organization_id: int, item_id: int
+        session: models.BotSession, organization_id: int, item_id: int,
+        item_note: str = None
     ) -> list:
-        """Agrega un producto al pedido basándose en el ID real del sistema."""
+        """Agrega un producto al pedido basándose en el ID real del sistema.
+        item_note: modificación opcional del cliente (ej: 'sin cebolla', 'extra queso').
+        """
         menu_item = (
             db.query(models.MenuItem)
             .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == organization_id)
@@ -194,25 +200,42 @@ class BotEngine:
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
 
-        existing = next((it for it in items_list if it.get("id") == menu_item.id), None)
+        # Limpiar y limitar la nota
+        clean_note = (item_note or "").strip()[:120] or None
+
+        # Si ya existe el mismo producto SIN nota, incrementar cantidad.
+        # Si tiene nota diferente o es nuevo, agregar como ítem separado.
+        existing = next(
+            (it for it in items_list
+             if it.get("id") == menu_item.id and it.get("note") == clean_note),
+            None
+        )
         if existing:
             existing["qty"] += 1
         else:
-            items_list.append({
+            new_item = {
                 "id": menu_item.id,
                 "name": menu_item.name,
                 "qty": 1,
                 "price": _round_price(menu_item.price),
-            })
+            }
+            if clean_note:
+                new_item["note"] = clean_note
+            items_list.append(new_item)
 
         cart["items"] = items_list
         cart["total"] = _round_price(sum(it["price"] * it["qty"] for it in items_list))
         session.cart_data = cart
         db.commit()
 
+        # Mensaje de confirmación con nota visible si existe
+        nombre_con_nota = menu_item.name
+        if clean_note:
+            nombre_con_nota += f" (✎ {clean_note})"
+
         summary = _format_cart_summary(items_list)
         body = (
-            f"✅ Agregado: {menu_item.name}\n\n"
+            f"✅ Agregado: {nombre_con_nota}\n\n"
             f"🛒 Tu pedido ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
             f"{summary}\n\n"
             f"💰 Total: ${cart['total']}\n\n"
@@ -1001,8 +1024,10 @@ class BotEngine:
                     out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                     ai_reply_parts.append(msg)
                 else:
+                    item_note = ai_action.get("item_note") or None
                     result = BotEngine._execute_add_to_cart(
-                        db, channel, sender_id, session, organization_id, int(item_id)
+                        db, channel, sender_id, session, organization_id, int(item_id),
+                        item_note=item_note
                     )
                     out.extend(result)
                     menu_item = db.query(models.MenuItem).filter(
@@ -1010,7 +1035,8 @@ class BotEngine:
                         models.MenuItem.organization_id == organization_id
                     ).first()
                     product_name = menu_item.name if menu_item else f"Producto {item_id}"
-                    ai_reply_parts.append(f"{product_name} agregado a tu pedido.")
+                    note_suffix = f" (✎ {item_note})" if item_note else ""
+                    ai_reply_parts.append(f"{product_name}{note_suffix} agregado a tu pedido.")
 
             elif action == "VIEW_CART":
                 result = BotEngine._execute_view_cart(channel, sender_id, session)

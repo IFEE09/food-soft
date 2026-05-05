@@ -52,11 +52,13 @@ class OrderService:
             if not name:
                 continue
             qty = int(it.get("qty") or 1)
+            item_note = (it.get("note") or "").strip() or None
             db.add(
                 models.OrderItem(
                     order_id=new_order.id,
                     product_name=name,
                     quantity=qty,
+                    note=item_note,
                 )
             )
             lines.append((name, qty))
