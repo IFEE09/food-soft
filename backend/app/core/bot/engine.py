@@ -1030,6 +1030,22 @@ class BotEngine:
                         if base_parts and base_parts in msg_lower:
                             if found_base is None or len(base_parts) > len(found_base):
                                 found_base = base_parts
+                    # Si no se encontró base por nombre exacto, buscar en el historial reciente
+                    if not found_base:
+                        # Buscar en los últimos 4 mensajes del historial qué producto se mencionó
+                        recent = history[-4:] if len(history) >= 4 else history
+                        for h_msg in reversed(recent):
+                            h_text = h_msg.get("content", "").lower() if isinstance(h_msg, dict) else ""
+                            for mi in menu_items:
+                                base_parts = mi.name.lower()
+                                for v in KNOWN_VARIANTS:
+                                    base_parts = base_parts.replace(v, "").strip()
+                                if base_parts and len(base_parts) > 3 and base_parts in h_text:
+                                    if found_base is None or len(base_parts) > len(found_base):
+                                        found_base = base_parts
+                            if found_base:
+                                break
+
                     if found_base:
                         c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
                         c["pending_variant_base"] = found_base
@@ -1037,6 +1053,7 @@ class BotEngine:
                             c["pending_variant_options"] = detected_opts
                         session.cart_data = c
                         db.commit()
+                        logger.info("pending_variant_base=%s options=%s", found_base, detected_opts)
                 else:
                     # Si no es pregunta de variante, limpiar pending_variant_base y options
                     c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}

@@ -167,10 +167,22 @@ ADD_TO_CART → Cuando el cliente pide un producto específico con nombre Y tama
   - Si el producto no existe en la lista → usa CHAT para informar que no está disponible.
   - Si el cliente pide múltiples productos sin ambigüedad → devuelve múltiples ADD_TO_CART en el array.
   - Si hay ambigüedad en alguno → agrega los que están claros y usa CHAT para preguntar por el ambiguo.
-  REGLA CRÍTICA: NUNCA uses CHAT para confirmar que agregaste un producto. Si el producto es
+  REGLA CRÍTICA 1: NUNCA uses CHAT para confirmar que agregaste un producto. Si el producto es
   identificable, usa ADD_TO_CART directamente. El sistema manda la confirmación automáticamente.
   Ejemplo INCORRECTO: {{"action": "CHAT", "message": "Doble Queso Grande agregado."}}
   Ejemplo CORRECTO:   {{"action": "ADD_TO_CART", "item_id": 5}}
+
+  REGLA CRÍTICA 2: Si el cliente dice algo vago como "dámela", "esa", "dale", "ok" después de que
+  preguntaste el tamaño, NUNCA respondas con CHAT diciendo que lo agregaste. Debes:
+  a) Si el contexto deja claro el tamaño: usa ADD_TO_CART con el item_id correcto.
+  b) Si el tamaño sigue sin estar claro: usa CHAT para volver a preguntar el tamaño.
+  Ejemplo INCORRECTO: {{"action": "CHAT", "message": "Suprema 74 Familiar agregado a tu pedido."}}
+  Ejemplo CORRECTO cuando el tamaño es claro: {{"action": "ADD_TO_CART", "item_id": 12}}
+  Ejemplo CORRECTO cuando el tamaño no está claro: {{"action": "CHAT", "message": "¿Cómo la quieres?\n*Grande ($289)*\n*Familiar ($319)*"}}
+
+  REGLA CRÍTICA 3: Los productos SIN variantes de tamaño (Peperoni Bites, Pan con Ajo y Queso,
+  Cheese Bread, Calzone, Dip de Espinaca) se agregan DIRECTAMENTE sin preguntar tamaño.
+  Todos los demás productos (pizzas) tienen Grande y Familiar — SIEMPRE pregunta si no se especificó.
 
 REMOVE_FROM_CART → Cuando el cliente quiere QUITAR un producto del pedido.
   NUNCA uses CANCEL_ORDER para quitar un solo producto.
