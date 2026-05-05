@@ -495,6 +495,39 @@ class BotEngine:
             "Lamentamos mucho lo ocurrido 😟 Hemos notificado a nuestro equipo y nos pondremos en contacto contigo a la brevedad. ¡Gracias por avisarnos!"
         )}]
 
+    @staticmethod
+    def _finalize_order(
+        db, channel: str, sender_id: str,
+        session, customer
+    ) -> list:
+        """Procesa la confirmación final del pedido: crea en BD, guarda nombre/dirección, limpia carrito."""
+        from app.core.bot.orders import OrderService
+        order_id = OrderService.send_to_internal_software(db, customer, session)
+        success = bool(order_id)
+        cart = dict(session.cart_data)
+
+        # Guardar nombre y dirección en BotCustomer para futuros pedidos
+        confirmed_name    = cart.get("customer_name", "").strip()
+        confirmed_address = cart.get("address", "").strip()
+        if confirmed_name:
+            customer.saved_name = confirmed_name
+        if confirmed_address:
+            customer.saved_address = confirmed_address
+
+        cart["items"] = []
+        cart["total"] = 0.0
+        if order_id and order_id is not True:
+            cart["last_order_id"] = order_id
+        session.cart_data = cart
+        session.state = "ACTIVO"
+        db.commit()
+        msg = (
+            "¡Pedido confirmado! 🎉 Tu orden está en camino a la cocina. El tiempo estimado de entrega es de 35 a 45 minutos. ¡Gracias por tu pedido en Horno 74!"
+            if success else
+            "Lo sentimos, tuvimos un problema técnico al procesar tu pedido. Por favor inténtalo de nuevo."
+        )
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
+
     # ── Resolución de comandos por número de posición ────────────────────────────────────────────────────────
 
     @staticmethod
@@ -692,38 +725,85 @@ class BotEngine:
 
         # ── Estado especial: confirmación final (sin IA) ───────────────────────────────────
         if state == "CONFIRMANDO_PEDIDO":
-            confirmaciones = {"9"}
-            cancelaciones  = {"no", "cancelar", "cancel", "nope"}
-            if user_text.lower() in confirmaciones:
-                order_id = OrderService.send_to_internal_software(db, customer, session)
-                success = bool(order_id)
+            cancelaciones = {"no", "cancelar", "cancel", "nope"}
+            CONFIRM_WORDS = {"si", "sí", "yes", "ok", "dale", "claro", "va", "correcto", "listo",
+                             "perfecto", "sale", "andale", "ándale", "así está bien", "todo bien"}
+            txt_lower = user_text.strip().lower()
+
+            # ── El cliente escribe 9 → mostrar nombre y dirección para confirmación final ────────
+            if txt_lower == "9":
                 cart = dict(session.cart_data)
-
-                # ── Guardar nombre y dirección en BotCustomer para futuros pedidos ────────────
-                confirmed_name    = cart.get("customer_name", "").strip()
-                confirmed_address = cart.get("address", "").strip()
-                if confirmed_name:
-                    customer.saved_name = confirmed_name
-                if confirmed_address:
-                    customer.saved_address = confirmed_address
-
-                cart["items"] = []
-                cart["total"] = 0.0
-                if order_id and order_id is not True:
-                    cart["last_order_id"] = order_id
+                current_name    = cart.get("customer_name", "").strip()
+                current_address = cart.get("address", "").strip()
+                name_line    = f"*{current_name}*" if current_name else "(sin nombre)"
+                address_line = f"*{current_address}*" if current_address else "(sin dirección)"
+                msg = (
+                    f"¿Confirmamos el pedido a nombre de {name_line} "
+                    f"y lo enviamos a {address_line}?\n\n"
+                    f"Responde *sí* para confirmar, o escríbeme el nombre o dirección correctos 😊"
+                )
+                # Guardar que estamos esperando confirmación de datos
+                cart["awaiting_data_confirm"] = True
                 session.cart_data = cart
-                session.state = "ACTIVO"
+                db.commit()
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                return out
+
+            # ── Esperando confirmación de nombre/dirección ───────────────────────────────────────────
+            cart = dict(session.cart_data)
+            if cart.get("awaiting_data_confirm"):
+                cart.pop("awaiting_data_confirm", None)
+
+                if txt_lower in cancelaciones:
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._execute_cancel_order(db, channel, sender_id, session)
+
+                if txt_lower in CONFIRM_WORDS:
+                    # Confirmar con los datos actuales
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+
+                # El cliente escribió algo diferente: puede ser nombre nuevo, dirección nueva, o ambos
+                # Heurística: si contiene números o palabras de calle, es dirección; si no, es nombre
+                import re
+                has_street_keywords = bool(re.search(
+                    r'\b(calle|av|avenida|blvd|boulevard|col|colonia|fracc|fraccionamiento|'
+                    r'num|núm|#|\d{2,}|entre|esquina|interior|int|depto|departamento)\b',
+                    txt_lower
+                ))
+                has_digits = bool(re.search(r'\d', user_text))
+
+                if has_street_keywords or has_digits:
+                    # Es una dirección nueva
+                    cart["address"] = user_text.strip()[:_MAX_ADDRESS_LEN]
+                else:
+                    # Es un nombre nuevo (sin dígitos ni palabras de calle)
+                    cart["customer_name"] = user_text.strip()[:80]
+
+                session.cart_data = cart
+                db.commit()
+
+                # Mostrar resumen actualizado y pedir confirmación de nuevo
+                updated_name    = cart.get("customer_name", "").strip()
+                updated_address = cart.get("address", "").strip()
+                name_line    = f"*{updated_name}*" if updated_name else "(sin nombre)"
+                address_line = f"*{updated_address}*" if updated_address else "(sin dirección)"
+                cart["awaiting_data_confirm"] = True
+                session.cart_data = cart
                 db.commit()
                 msg = (
-                    "¡Pedido confirmado! 🎉 Tu orden está en camino a la cocina. El tiempo estimado de entrega es de 35 a 45 minutos. ¡Gracias por tu pedido en Horno 74!"
-                    if success else
-                    "Lo sentimos, tuvimos un problema técnico al procesar tu pedido. Por favor inténtalo de nuevo."
+                    f"¿Confirmamos el pedido a nombre de {name_line} "
+                    f"y lo enviamos a {address_line}?\n\n"
+                    f"Responde *sí* para confirmar, o escríbeme el nombre o dirección correctos 😊"
                 )
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                 return out
-            if user_text.lower() in cancelaciones:
+
+            if txt_lower in cancelaciones:
                 return BotEngine._execute_cancel_order(db, channel, sender_id, session)
-            # Si escribe otra cosa, volver a ACTIVO para que DeepSeek procese (puede querer agregar más)
+            # Si escribe otra cosa (no 9, no cancelar, no awaiting_data_confirm), volver a ACTIVO
             session.state = "ACTIVO"
             db.commit()
             state = "ACTIVO"
