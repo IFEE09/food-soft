@@ -1202,6 +1202,28 @@ class BotEngine:
                         session.cart_data = c
                         db.commit()
 
+        # ── Si hay items en el carrito pero no se mostraron las opciones, forzarlas ──
+        cart_now = dict(session.cart_data)
+        items_now = cart_now.get("items", [])
+        # Detectar si algún mensaje ya incluye las opciones 1️⃣
+        already_has_options = any(
+            "1️⃣" in str(m.get("payload", {}).get("text", {}).get("body", "") or
+                         m.get("payload", {}).get("message", {}).get("text", ""))
+            for m in out
+        )
+        if items_now and not already_has_options:
+            summary = _format_cart_summary(items_now)
+            cart_body = (
+                f"🛒 Tu pedido ({len(items_now)} producto{'s' if len(items_now) > 1 else ''}):\n"
+                f"{summary}\n\n"
+                f"💰 Total: ${cart_now.get('total', 0.0)}"
+            )
+            cart_now["confirm_step"] = STEP_CART_OPTIONS
+            session.cart_data = cart_now
+            session.state = "CONFIRMANDO_PEDIDO"
+            db.commit()
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._cart_options_msg(channel, sender_id, cart_body)})
+
         # ── Fallback anti-silencio ────────────────────────────────────────────
         if not out:
             fallback = "Disculpa, no entendí tu pedido 😅 ¿Me lo repites?"
