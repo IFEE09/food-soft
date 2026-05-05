@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 import csv
 import io
+import logging
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import limiter
@@ -14,6 +15,11 @@ from app.api.auth import get_current_user
 from app.core.activity import log_activity
 from app.core.inventory import deduct_supplies_for_line_items
 from app.core.tenant import assert_kitchen_in_organization
+
+logger = logging.getLogger(__name__)
+
+# Número fijo del repartidor (tercero que lleva la comida)
+_DELIVERY_PHONE = "9993372150"
 
 router = APIRouter()
 
@@ -228,6 +234,85 @@ def update_order(
         description=f"Actualizó orden #{order.id} (campos: {changed}, estado: {order.status})"
     )
     return order
+
+@router.post("/{id}/mark-ready", response_model=order_schema.Order)
+@limiter.limit("60/minute")
+def mark_order_ready(
+    request: Request,
+    *,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    id: int,
+) -> Any:
+    """
+    Marca el pedido como 'ready' y envía WhatsApp al repartidor
+    con el número de pedido, monto, nombre y dirección.
+    """
+    order = db.query(models.Order)\
+              .filter(models.Order.id == id, models.Order.organization_id == current_user.organization_id)\
+              .first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Actualizar estado
+    order.status = "ready"
+    if not order.ready_at:
+        order.ready_at = datetime.now()
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    # Notificar por WebSocket al dashboard
+    try:
+        from app.core.notifier import schedule_notify_organization
+        schedule_notify_organization(
+            current_user.organization_id,
+            {"type": "order_ready", "order_id": order.id}
+        )
+    except Exception as e:
+        logger.warning("No se pudo notificar por WS: %s", e)
+
+    # Enviar WhatsApp al repartidor
+    try:
+        org = db.query(models.Organization)\
+                .filter(models.Organization.id == current_user.organization_id)\
+                .first()
+        phone_number_id = org.whatsapp_phone_number_id if org else None
+        if phone_number_id:
+            from app.core.bot.meta_client import send_whatsapp_message
+            pedido_num = str(order.id).zfill(4)
+            nombre = order.client_name or "Sin nombre"
+            direccion = getattr(order, 'delivery_address', None) or "Sin dirección"
+            monto = f"${order.total:.2f}" if order.total else "$0.00"
+            msg_text = (
+                f"\U0001f6f5 *Pedido listo para entrega*\n\n"
+                f"\U0001f4cb Pedido #: *{pedido_num}*\n"
+                f"\U0001f464 Cliente: *{nombre}*\n"
+                f"\U0001f4cd Dirección: {direccion}\n"
+                f"\U0001f4b0 Monto: *{monto}*\n\n"
+                f"Por favor recoge el pedido en el restaurante. \U0001f60a"
+            )
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": _DELIVERY_PHONE,
+                "type": "text",
+                "text": {"body": msg_text}
+            }
+            ok = send_whatsapp_message(phone_number_id, payload)
+            if not ok:
+                logger.warning("WhatsApp al repartidor no enviado (order #%s)", order.id)
+        else:
+            logger.warning("No hay whatsapp_phone_number_id configurado para org %s", current_user.organization_id)
+    except Exception as e:
+        logger.error("Error enviando WhatsApp al repartidor: %s", e)
+
+    log_activity(
+        db, current_user,
+        action="update", entity_type="order", entity_id=order.id,
+        description=f"Marcó orden #{order.id} como lista (repartidor notificado por WhatsApp)"
+    )
+    return order
+
 
 @router.delete("/{id}", response_model=order_schema.Order)
 @limiter.limit("60/minute")
