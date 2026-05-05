@@ -698,8 +698,9 @@ class BotEngine:
         if last_interaction is not None:
             if hasattr(last_interaction, "tzinfo") and last_interaction.tzinfo is not None:
                 last_interaction = last_interaction.replace(tzinfo=None)
-            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "ACTIVO", "CARRITO_PENDIENTE"}
-            if (datetime.utcnow() - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states:
+            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "CARRITO_PENDIENTE"}
+            has_items = bool(cart.get("items"))
+            if (datetime.utcnow() - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states and has_items:
                 clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
                 session.cart_data = clean_cart
                 session.state = "ACTIVO"
@@ -709,7 +710,7 @@ class BotEngine:
                 state = "ACTIVO"
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
                     channel, sender_id,
-                    "Tu sesión anterior expiró por inactividad. ¡Tu pedido fue cancelado automáticamente! 😊 ¿Quieres empezar uno nuevo?"
+                    "Tu sesión anterior expiró por inactividad. Tu pedido fue cancelado automáticamente. ¿Quieres empezar uno nuevo?"
                 )})
                 out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
                 return out
