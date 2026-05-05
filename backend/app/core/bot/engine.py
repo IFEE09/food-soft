@@ -376,8 +376,8 @@ class BotEngine:
             f"📍 Dirección: {address}\n"
             f"{notes_line}"
             f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"Para confirmar tu pedido escribe 9️⃣\n"
-            f"O díme qué quieres cambiar 😊"
+            f"Escribe *confirmar* para hacer tu pedido 🎉\n"
+            f"O escribe *agregar* si quieres añadir algo más 😊"
         )
         return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
 
@@ -725,13 +725,17 @@ class BotEngine:
 
         # ── Estado especial: confirmación final (sin IA) ───────────────────────────────────
         if state == "CONFIRMANDO_PEDIDO":
-            cancelaciones = {"no", "cancelar", "cancel", "nope"}
-            CONFIRM_WORDS = {"si", "sí", "yes", "ok", "dale", "claro", "va", "correcto", "listo",
-                             "perfecto", "sale", "andale", "ándale", "así está bien", "todo bien"}
+            # Cancelar oculto: funciona internamente pero no se muestra en el mensaje
+            cancelaciones = {"no", "cancelar", "cancel", "nope", "olvídalo", "olvidalo", "no quiero"}
+            # Palabras que activan la confirmación final
+            CONFIRM_WORDS = {"confirmar", "confirmo", "si", "sí", "yes", "ok", "dale", "claro", "va",
+                             "correcto", "listo", "perfecto", "sale", "andale", "ándale", "así está bien"}
+            # "agregar" regresa al estado ACTIVO para seguir pidiendo
+            AGREGAR_WORDS = {"agregar", "añadir", "agregar más", "añadir más", "quiero más", "agrego"}
             txt_lower = user_text.strip().lower()
 
-            # ── El cliente escribe 9 → mostrar nombre y dirección para confirmación final ────────
-            if txt_lower == "9":
+            # ── El cliente escribe "confirmar" → mostrar nombre y dirección para confirmación final ──
+            if txt_lower in CONFIRM_WORDS and not dict(session.cart_data).get("awaiting_data_confirm"):
                 cart = dict(session.cart_data)
                 current_name    = cart.get("customer_name", "").strip()
                 current_address = cart.get("address", "").strip()
@@ -740,13 +744,22 @@ class BotEngine:
                 msg = (
                     f"¿Confirmamos el pedido a nombre de {name_line} "
                     f"y lo enviamos a {address_line}?\n\n"
-                    f"Responde *sí* para confirmar, o escríbeme el nombre o dirección correctos 😊"
+                    f"Escribe *sí* para confirmar, o corrígeme el nombre o dirección 😊"
                 )
-                # Guardar que estamos esperando confirmación de datos
                 cart["awaiting_data_confirm"] = True
                 session.cart_data = cart
                 db.commit()
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
+                return out
+
+            # ── El cliente escribe "agregar" → regresar a ACTIVO para seguir pidiendo ──────────────
+            if txt_lower in AGREGAR_WORDS:
+                session.state = "ACTIVO"
+                db.commit()
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "¡Claro! ¿Qué más quieres agregar? 😊"
+                )})
                 return out
 
             # ── Esperando confirmación de nombre/dirección ───────────────────────────────────────────
@@ -759,14 +772,13 @@ class BotEngine:
                     db.commit()
                     return BotEngine._execute_cancel_order(db, channel, sender_id, session)
 
-                if txt_lower in CONFIRM_WORDS:
-                    # Confirmar con los datos actuales
+                if txt_lower in {"si", "sí", "yes", "ok", "dale", "claro", "correcto", "listo",
+                                  "perfecto", "sale", "andale", "ándale", "confirmar", "confirmo"}:
                     session.cart_data = cart
                     db.commit()
                     return BotEngine._finalize_order(db, channel, sender_id, session, customer)
 
-                # El cliente escribió algo diferente: puede ser nombre nuevo, dirección nueva, o ambos
-                # Heurística: si contiene números o palabras de calle, es dirección; si no, es nombre
+                # El cliente escribió algo diferente: puede ser nombre nuevo o dirección nueva
                 import re
                 has_street_keywords = bool(re.search(
                     r'\b(calle|av|avenida|blvd|boulevard|col|colonia|fracc|fraccionamiento|'
@@ -776,16 +788,13 @@ class BotEngine:
                 has_digits = bool(re.search(r'\d', user_text))
 
                 if has_street_keywords or has_digits:
-                    # Es una dirección nueva
                     cart["address"] = user_text.strip()[:_MAX_ADDRESS_LEN]
                 else:
-                    # Es un nombre nuevo (sin dígitos ni palabras de calle)
                     cart["customer_name"] = user_text.strip()[:80]
 
                 session.cart_data = cart
                 db.commit()
 
-                # Mostrar resumen actualizado y pedir confirmación de nuevo
                 updated_name    = cart.get("customer_name", "").strip()
                 updated_address = cart.get("address", "").strip()
                 name_line    = f"*{updated_name}*" if updated_name else "(sin nombre)"
@@ -796,14 +805,14 @@ class BotEngine:
                 msg = (
                     f"¿Confirmamos el pedido a nombre de {name_line} "
                     f"y lo enviamos a {address_line}?\n\n"
-                    f"Responde *sí* para confirmar, o escríbeme el nombre o dirección correctos 😊"
+                    f"Escribe *sí* para confirmar, o corrígeme el nombre o dirección 😊"
                 )
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                 return out
 
             if txt_lower in cancelaciones:
                 return BotEngine._execute_cancel_order(db, channel, sender_id, session)
-            # Si escribe otra cosa (no 9, no cancelar, no awaiting_data_confirm), volver a ACTIVO
+            # Si escribe otra cosa, volver a ACTIVO para que DeepSeek procese
             session.state = "ACTIVO"
             db.commit()
             state = "ACTIVO"
