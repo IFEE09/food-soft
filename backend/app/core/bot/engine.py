@@ -1004,7 +1004,11 @@ class BotEngine:
                 ai_reply_parts.append(f"Queja registrada: {complaint_text}")
 
             else:  # CHAT
-                message_text = ai_action.get("message", "¿En qué más puedo ayudarte?")
+                _fallback_not_understood = "No te entendí bien 😅 ¿Me puedes decir qué quieres pedir o en qué te puedo ayudar?"
+                message_text = ai_action.get("message") or _fallback_not_understood
+                # Si el mensaje es muy corto o vacío, usar el fallback
+                if not message_text.strip():
+                    message_text = _fallback_not_understood
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
                 ai_reply_parts.append(message_text)
 
@@ -1070,9 +1074,9 @@ class BotEngine:
 
         ai_reply = " | ".join(ai_reply_parts) if ai_reply_parts else "OK"
 
-        # ── Fallback anti-silencio: si no se generó ninguna respuesta, mandar mensaje genérico ──────────
+        # ── Fallback anti-silencio: si no se generó ninguna respuesta, mandar mensaje de no entendido ──────
         if not out:
-            fallback = "¿En qué más puedo ayudarte? 😊"
+            fallback = "No te entendí bien 😅 ¿Me puedes decir qué quieres pedir o en qué te puedo ayudar?"
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, fallback)})
             ai_reply = fallback
 
