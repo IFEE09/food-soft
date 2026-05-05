@@ -1,24 +1,25 @@
 """
 BotEngine — Motor conversacional con IA (DeepSeek) para el bot omnicanal.
 
-El motor usa DeepSeek para interpretar mensajes en lenguaje natural y
-ejecutar acciones estructuradas sobre el sistema de pedidos.
-
-Acciones que DeepSeek puede devolver:
-  SHOW_MENU        → Mostrar el menú de productos (imágenes + texto)
-  ADD_TO_CART      → Agregar un producto al carrito (basado en IDs del sistema)
-  ASK_ADDRESS      → Pedir dirección de entrega
-  CONFIRM_ORDER    → Confirmar y enviar pedido a cocina
-  CANCEL_ORDER     → Cancelar el pedido actual
-  CHAT             → Respuesta de texto libre (preguntas, saludos, etc.)
-
-El flujo es 100% conversacional: no se usan botones interactivos ni listas.
-DeepSeek interpreta lenguaje natural y actúa sobre los productos reales del sistema.
-El historial de conversación se guarda en BotSession.cart_data["history"].
+FLUJO PRINCIPAL:
+  1. Cliente escribe "hola" / "menu" → saludo personalizado + imagen del menú
+  2. Cliente pide un producto → DeepSeek lo identifica y agrega al carrito
+     - Si DeepSeek no entiende → "Disculpa, no entendí tu pedido, ¿me lo repites?"
+     - Si hay ambigüedad de tamaño → pregunta con opciones
+  3. Después de agregar → 3 botones:
+       ✅ Confirmar pedido
+       ✍️ Agregar instrucciones
+       ➕ Agregar / quitar productos
+  4. Confirmar pedido:
+     - Muestra nombre y dirección guardados con botones Sí / No
+     - Si Sí → envía pedido a cocina + mensaje final con número y tiempo
+     - Si No → pregunta nombre (Confirmar / Cambiar) luego dirección (Confirmar / Cambiar)
+  5. Mensaje final: "Gracias {nombre}, enviaremos tu pedido #{id} a {dirección}. Tiempo estimado: 40-45 min 😊"
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+import re
+from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 from sqlalchemy.exc import IntegrityError
@@ -28,7 +29,7 @@ from app.core.bot.adapters import WhatsAppAdapter, MessengerAdapter, InstagramAd
 from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
 
-# URLs públicas de las imágenes del menú de Horno 74
+# URL pública de la imagen del menú de Horno 74
 MENU_IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/RmfrxWhJgBqCqpyQ.jpg"
 
 logger = logging.getLogger(__name__)
@@ -36,31 +37,36 @@ logger = logging.getLogger(__name__)
 _MAX_ADDRESS_LEN = 200
 _MAX_HISTORY = 20  # Máximo de turnos a conservar en historial
 
+# ── IDs de botones interactivos ───────────────────────────────────────────────
+BTN_CONFIRM      = "btn_confirm"       # ✅ Confirmar pedido
+BTN_ADD_NOTE     = "btn_add_note"      # ✍️ Agregar instrucciones
+BTN_ADD_MORE     = "btn_add_more"      # ➕ Agregar / quitar productos
+BTN_DATA_YES     = "btn_data_yes"      # Sí (nombre/dirección correctos)
+BTN_DATA_NO      = "btn_data_no"       # No (cambiar datos)
+BTN_NAME_OK      = "btn_name_ok"       # Confirmar nombre
+BTN_NAME_CHANGE  = "btn_name_change"   # Cambiar nombre
+BTN_ADDR_OK      = "btn_addr_ok"       # Confirmar dirección
+BTN_ADDR_CHANGE  = "btn_addr_change"   # Cambiar dirección
+
 
 def _round_price(value: float) -> float:
     return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def _format_cart_summary(items_list: list) -> str:
-    """Formatea el pedido con números de posición (1, 2, 3...). Incluye nota por ítem si existe."""
+    """Formatea el pedido con números de posición. Incluye nota por ítem si existe."""
     lines = []
     for i, it in enumerate(items_list):
         line = f"{i + 1}. {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-        if it.get('note'):
-            line += f" \u270e {it['note']}"
+        if it.get("note"):
+            line += f" ✎ {it['note']}"
         lines.append(line)
     return "\n".join(lines)
 
 
 def _clean_text(channel: str, text: str) -> str:
-    """
-    Limpia el texto según el canal:
-    - WhatsApp: soporta *negrita*, se deja tal cual.
-    - Facebook Messenger / Instagram: no soportan markdown, se eliminan los asteriscos.
-    """
+    """Elimina asteriscos de negrita en canales que no los soportan."""
     if channel in ("messenger", "instagram", "facebook"):
-        import re
-        # Quitar asteriscos de negrita (*texto* o **texto**)
         text = re.sub(r"\*+(.*?)\*+", r"\1", text)
     return text
 
@@ -85,6 +91,18 @@ class BotEngine:
         if channel == "messenger":
             return MessengerAdapter.format_text(to, text)
         return InstagramAdapter.format_text(to, text)
+
+    @staticmethod
+    def _buttons(channel: str, to: str, body_text: str, buttons: list) -> dict:
+        """Envía botones interactivos (WhatsApp) o quick-replies (Messenger/Instagram).
+        buttons: [{"id": "btn_id", "title": "Texto"}, ...]  — máx 3 para WhatsApp
+        """
+        body_text = _clean_text(channel, body_text)
+        if channel == "whatsapp":
+            return WhatsAppAdapter.format_buttons(to, body_text, buttons)
+        if channel == "messenger":
+            return MessengerAdapter.format_quick_replies(to, body_text, buttons)
+        return InstagramAdapter.format_quick_replies(to, body_text, buttons)
 
     # ── Gestión de sesión ─────────────────────────────────────────────────────
 
@@ -144,7 +162,6 @@ class BotEngine:
 
     @staticmethod
     def _append_history(session: models.BotSession, role: str, content: str):
-        """Agrega un turno al historial de conversación en cart_data."""
         cart = dict(session.cart_data)
         history = list(cart.get("history", []))
         history.append({"role": role, "content": content})
@@ -153,28 +170,35 @@ class BotEngine:
         cart["history"] = history
         session.cart_data = cart
 
+    # ── Botones de acción post-carrito ────────────────────────────────────────
+
+    @staticmethod
+    def _cart_action_buttons(channel: str, sender_id: str, body_text: str) -> dict:
+        """Retorna el payload de los 3 botones de acción post-agregado."""
+        buttons = [
+            {"id": BTN_CONFIRM,  "title": "✅ Confirmar pedido"},
+            {"id": BTN_ADD_NOTE, "title": "✍️ Agregar instrucciones"},
+            {"id": BTN_ADD_MORE, "title": "➕ Agregar / quitar"},
+        ]
+        return BotEngine._buttons(channel, sender_id, body_text, buttons)
+
     # ── Ejecutores de acciones ────────────────────────────────────────────────
 
     @staticmethod
     def _execute_show_menu(
         db: Session, channel: str, sender_id: str,
-        session: models.BotSession, organization_id: int
+        session: models.BotSession, organization_id: int,
+        greeting: str = None
     ) -> list:
-        """Envía las 3 imágenes del menú + texto con los productos del sistema."""
-        items = db.query(models.MenuItem).filter_by(organization_id=organization_id).limit(50).all()
-        if not items:
-            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "Por el momento no tenemos productos disponibles. ¡Vuelve pronto!"
-            )}]
-        # Solo imágenes visuales — sin botones ni listas interactivas
-        out = [
-            {"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG)},
-            {"action": "SEND_TEXT",  "payload": BotEngine._text(
-                channel, sender_id,
-                "Dime qué quieres pedir y con gusto te lo agrego a tu pedido 😊"
-            )},
-        ]
+        """Envía saludo (opcional) + imagen del menú."""
+        out = []
+        if greeting:
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, greeting)})
+        out.append({"action": "SEND_IMAGE", "payload": BotEngine._image(channel, sender_id, MENU_IMG)})
+        out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+            channel, sender_id,
+            "Dime qué quieres pedir y con gusto te lo agrego 😊"
+        )})
         return out
 
     @staticmethod
@@ -183,9 +207,7 @@ class BotEngine:
         session: models.BotSession, organization_id: int, item_id: int,
         item_note: str = None
     ) -> list:
-        """Agrega un producto al pedido basándose en el ID real del sistema.
-        item_note: modificación opcional del cliente (ej: 'sin cebolla', 'extra queso').
-        """
+        """Agrega un producto al carrito y muestra los 3 botones de acción."""
         menu_item = (
             db.query(models.MenuItem)
             .filter(models.MenuItem.id == item_id, models.MenuItem.organization_id == organization_id)
@@ -200,11 +222,9 @@ class BotEngine:
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
 
-        # Limpiar y limitar la nota
         clean_note = (item_note or "").strip()[:120] or None
 
-        # Si ya existe el mismo producto SIN nota, incrementar cantidad.
-        # Si tiene nota diferente o es nuevo, agregar como ítem separado.
+        # Mismo producto + misma nota → incrementar cantidad; si no → nuevo ítem
         existing = next(
             (it for it in items_list
              if it.get("id") == menu_item.id and it.get("note") == clean_note),
@@ -228,27 +248,24 @@ class BotEngine:
         session.cart_data = cart
         db.commit()
 
-        # Mensaje de confirmación con nota visible si existe
         nombre_con_nota = menu_item.name
         if clean_note:
             nombre_con_nota += f" (✎ {clean_note})"
 
         summary = _format_cart_summary(items_list)
-        body = (
+        body_text = (
             f"✅ Agregado: {nombre_con_nota}\n\n"
             f"🛒 Tu pedido ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
             f"{summary}\n\n"
-            f"💰 Total: ${cart['total']}\n\n"
-            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
-            f"¿Deseas agregar algo más o cerramos el pedido?"
+            f"💰 Total: ${cart['total']}"
         )
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+        return [{"action": "SEND_BUTTONS", "payload": BotEngine._cart_action_buttons(channel, sender_id, body_text)}]
 
     @staticmethod
     def _execute_view_cart(
         channel: str, sender_id: str, session: models.BotSession
     ) -> list:
-        """Muestra el contenido actual del pedido."""
+        """Muestra el carrito con los 3 botones de acción."""
         cart = dict(session.cart_data)
         items_list = cart.get("items", [])
         if not items_list:
@@ -257,21 +274,19 @@ class BotEngine:
                 "Tu pedido está vacío. ¿Quieres ver el menú para pedir algo? 🍕"
             )}]
         summary = _format_cart_summary(items_list)
-        body = (
+        body_text = (
             f"🛒 Tu pedido ({len(items_list)} producto{'s' if len(items_list) > 1 else ''}):\n"
             f"{summary}\n\n"
-            f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
-            f"¿Deseas agregar algo más o cerramos el pedido?"
+            f"💰 Total: ${cart.get('total', 0.0)}\n"
+            f"(Para quitar: escribe 'quita el 1', para cambiar: 'ponme 2 del 3')"
         )
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+        return [{"action": "SEND_BUTTONS", "payload": BotEngine._cart_action_buttons(channel, sender_id, body_text)}]
 
     @staticmethod
     def _execute_update_quantity(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, item_id: int, quantity: int
     ) -> list:
-        """Actualiza la cantidad de un producto en el pedido."""
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
 
@@ -301,21 +316,18 @@ class BotEngine:
             )}]
 
         summary = _format_cart_summary(items_list)
-        body = (
+        body_text = (
             f"{msg_prefix}\n\n"
             f"🛒 Tu pedido actualizado:\n{summary}\n\n"
-            f"💰 Total: ${cart['total']}\n\n"
-            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
-            f"¿Deseas agregar algo más o cerramos el pedido?"
+            f"💰 Total: ${cart['total']}"
         )
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+        return [{"action": "SEND_BUTTONS", "payload": BotEngine._cart_action_buttons(channel, sender_id, body_text)}]
 
     @staticmethod
     def _execute_remove_from_cart(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, item_id: int
     ) -> list:
-        """Quita un producto del pedido por ID."""
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
 
@@ -343,66 +355,12 @@ class BotEngine:
             )}]
 
         summary = _format_cart_summary(items_list)
-        body = (
+        body_text = (
             f"✅ {item_to_remove['name']} eliminado de tu pedido.\n\n"
             f"🛒 Tu pedido actualizado:\n{summary}\n\n"
-            f"💰 Total: ${cart['total']}\n\n"
-            f"Para quitar o cambiar un producto escribe su número (ej: *quita el 1*, *ponme 2 del 3*).\n"
-            f"¿Deseas agregar algo más o cerramos el pedido?"
+            f"💰 Total: ${cart['total']}"
         )
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
-
-    @staticmethod
-    def _execute_ask_address(channel: str, sender_id: str, session: models.BotSession, db: Session) -> list:
-        cart = dict(session.cart_data)
-        if not cart.get("items"):
-            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "Tu pedido está vacío. Primero dime qué quieres pedir 😊"
-            )}]
-        session.state = "PIDIENDO_NOTA"
-        db.commit()
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-            channel, sender_id,
-            "¿Tienes alguna nota especial para tu pedido? (ej: sin cebolla, extra salsa, etc.) Si no tienes ninguna, escribe *no* 😊"
-        )}]
-
-    @staticmethod
-    def _execute_confirm_order(
-        db: Session, channel: str, sender_id: str,
-        session: models.BotSession, customer: models.BotCustomer, address: str
-    ) -> list:
-        cart = dict(session.cart_data)
-        items_list = cart.get("items", [])
-        if not items_list:
-            session.state = "ACTIVO"
-            db.commit()
-            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "Tu pedido está vacío. Dime qué quieres pedir."
-            )}]
-
-        cart["address"] = address[:_MAX_ADDRESS_LEN]
-        session.cart_data = cart
-        session.state = "CONFIRMANDO_PEDIDO"
-        db.commit()
-
-        summary = _format_cart_summary(items_list)
-        customer_name = cart.get("customer_name", "")
-        notes = cart.get("notes", "")
-        name_line = f"👤 Nombre: {customer_name}\n" if customer_name else ""
-        notes_line = f"📝 Nota: {notes}\n" if notes else ""
-        body = (
-            f"📋 Resumen de tu pedido:\n\n"
-            f"{summary}\n\n"
-            f"{name_line}"
-            f"📍 Dirección: {address}\n"
-            f"{notes_line}"
-            f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-            f"Escribe *confirmar* para hacer tu pedido 🎉\n"
-            f"O escribe *agregar* si quieres añadir algo más 😊"
-        )
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)}]
+        return [{"action": "SEND_BUTTONS", "payload": BotEngine._cart_action_buttons(channel, sender_id, body_text)}]
 
     @staticmethod
     def _execute_cancel_order(
@@ -411,6 +369,8 @@ class BotEngine:
         cart = dict(session.cart_data)
         cart["items"] = []
         cart["total"] = 0.0
+        cart.pop("pending_confirm_step", None)
+        cart.pop("awaiting_data_confirm", None)
         session.cart_data = cart
         session.state = "ACTIVO"
         db.commit()
@@ -419,14 +379,146 @@ class BotEngine:
             "Pedido cancelado. ¡Cuando quieras volver a pedir, aquí estaremos! 😊"
         )}]
 
-    # ── Estado del pedido, calificación y quejas ─────────────────────────────────
+    # ── Flujo de confirmación ─────────────────────────────────────────────────
+
+    @staticmethod
+    def _start_confirm_flow(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, customer: models.BotCustomer
+    ) -> list:
+        """
+        Paso 1 del flujo de confirmación:
+        Muestra nombre y dirección guardados con botones Sí / No.
+        """
+        cart = dict(session.cart_data)
+        items_list = cart.get("items", [])
+        if not items_list:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Tu pedido está vacío. Dime qué quieres pedir primero 😊"
+            )}]
+
+        saved_name    = (customer.saved_name or "").strip()
+        saved_address = (customer.saved_address or "").strip()
+
+        summary = _format_cart_summary(items_list)
+
+        if saved_name and saved_address:
+            # Tenemos ambos datos → mostrar y preguntar con Sí / No
+            body_text = (
+                f"📋 Tu pedido:\n{summary}\n\n"
+                f"💰 Total: ${cart.get('total', 0.0)}\n\n"
+                f"¿Lo enviamos a nombre de *{saved_name}* a *{saved_address}*?"
+            )
+            buttons = [
+                {"id": BTN_DATA_YES, "title": "✅ Sí, confirmar"},
+                {"id": BTN_DATA_NO,  "title": "✏️ No, cambiar datos"},
+            ]
+            cart["pending_confirm_step"] = "awaiting_yes_no"
+            session.cart_data = cart
+            session.state = "CONFIRMANDO_PEDIDO"
+            db.commit()
+            return [{"action": "SEND_BUTTONS", "payload": BotEngine._buttons(channel, sender_id, body_text, buttons)}]
+        else:
+            # No hay datos guardados → ir directo a pedir nombre
+            cart["pending_confirm_step"] = "asking_name"
+            session.cart_data = cart
+            session.state = "CONFIRMANDO_PEDIDO"
+            db.commit()
+            return BotEngine._ask_name(channel, sender_id, customer)
+
+    @staticmethod
+    def _ask_name(channel: str, sender_id: str, customer: models.BotCustomer) -> list:
+        """Pregunta el nombre con botones Confirmar / Cambiar si ya hay uno guardado."""
+        saved_name = (customer.saved_name or "").strip()
+        if saved_name:
+            body_text = f"¿Tu nombre sigue siendo *{saved_name}*?"
+            buttons = [
+                {"id": BTN_NAME_OK,     "title": f"✅ Sí, es {saved_name[:15]}"},
+                {"id": BTN_NAME_CHANGE, "title": "✏️ Cambiar nombre"},
+            ]
+            return [{"action": "SEND_BUTTONS", "payload": BotEngine._buttons(channel, sender_id, body_text, buttons)}]
+        else:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
+            )}]
+
+    @staticmethod
+    def _ask_address(channel: str, sender_id: str, customer: models.BotCustomer) -> list:
+        """Pregunta la dirección con botones Confirmar / Cambiar si ya hay una guardada."""
+        saved_address = (customer.saved_address or "").strip()
+        if saved_address:
+            body_text = f"¿Enviamos a *{saved_address}*?"
+            buttons = [
+                {"id": BTN_ADDR_OK,     "title": "✅ Sí, esa dirección"},
+                {"id": BTN_ADDR_CHANGE, "title": "✏️ Cambiar dirección"},
+            ]
+            return [{"action": "SEND_BUTTONS", "payload": BotEngine._buttons(channel, sender_id, body_text, buttons)}]
+        else:
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
+            )}]
+
+    @staticmethod
+    def _finalize_order(
+        db: Session, channel: str, sender_id: str,
+        session: models.BotSession, customer: models.BotCustomer
+    ) -> list:
+        """Crea el pedido en BD, guarda nombre/dirección, limpia carrito y envía mensaje final."""
+        cart = dict(session.cart_data)
+        confirmed_name    = cart.get("customer_name", "").strip() or (customer.saved_name or "").strip()
+        confirmed_address = cart.get("address", "").strip() or (customer.saved_address or "").strip()
+
+        # Asegurar que cart tenga los datos correctos antes de crear el pedido
+        cart["customer_name"] = confirmed_name
+        cart["address"]       = confirmed_address
+        cart.pop("pending_confirm_step", None)
+        cart.pop("awaiting_data_confirm", None)
+        session.cart_data = cart
+        db.commit()
+
+        order_id = OrderService.send_to_internal_software(db, customer, session)
+        success  = bool(order_id)
+
+        # Guardar nombre y dirección en BotCustomer para futuros pedidos
+        if confirmed_name:
+            customer.saved_name = confirmed_name
+        if confirmed_address:
+            customer.saved_address = confirmed_address
+
+        # Limpiar carrito
+        cart["items"] = []
+        cart["total"] = 0.0
+        if order_id and order_id is not True:
+            cart["last_order_id"] = order_id
+        cart.pop("pending_confirm_step", None)
+        session.cart_data = cart
+        session.state = "ACTIVO"
+        db.commit()
+
+        first_name = confirmed_name.split()[0].capitalize() if confirmed_name else "Cliente"
+        order_num  = f"#{order_id}" if (order_id and order_id is not True) else ""
+
+        if success:
+            msg = (
+                f"¡Gracias {first_name}! 😊 Enviaremos tu pedido {order_num} "
+                f"a *{confirmed_address}* en un estimado de 40 a 45 minutos. "
+                f"¡Que lo disfrutes! 🍕"
+            )
+        else:
+            msg = "Lo sentimos, tuvimos un problema técnico al procesar tu pedido. Por favor inténtalo de nuevo."
+
+        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
+
+    # ── Estado del pedido, calificación y quejas ──────────────────────────────
 
     @staticmethod
     def _execute_check_order_status(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int
     ) -> list:
-        """Consulta el estado del último pedido del cliente en la BD."""
         cart = dict(session.cart_data)
         last_order_id = cart.get("last_order_id")
         if not last_order_id:
@@ -444,8 +536,8 @@ class BotEngine:
                 "No pude encontrar tu pedido. ¿Necesitas ayuda con algo más?"
             )}]
         status_map = {
-            "pending": "🔄 Tu pedido está en cocina, siendo preparado. Tiempo estimado: 35-45 minutos.",
-            "ready":   "✅ ¡Tu pedido está listo! Ya puede ser entregado.",
+            "pending":   "🔄 Tu pedido está en cocina, siendo preparado. Tiempo estimado: 40-45 minutos.",
+            "ready":     "✅ ¡Tu pedido está listo! Ya puede ser entregado.",
             "delivered": "📦 Tu pedido ya fue entregado. ¡Gracias por tu preferencia!",
         }
         msg = status_map.get(order.status, f"Estado de tu pedido: {order.status}")
@@ -456,7 +548,6 @@ class BotEngine:
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int, rating
     ) -> list:
-        """Registra la calificación del cliente en el historial de la sesión."""
         if rating is None:
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
@@ -471,12 +562,11 @@ class BotEngine:
                 channel, sender_id,
                 "Por favor califícanos con un número del 1 al 5 ⭐"
             )}]
-        # Guardar calificación en cart_data
         cart = dict(session.cart_data)
         cart["last_rating"] = rating_int
         session.cart_data = cart
         db.commit()
-        emojis = ["", "😢", "😕", "😐", "😊", "🤩"]
+        emojis    = ["", "😢", "😕", "😐", "😊", "🤩"]
         responses = [
             "",
             "Lo sentimos mucho. Trabajaremos para mejorar. ¿Qué salió mal?",
@@ -494,20 +584,16 @@ class BotEngine:
         session: models.BotSession, organization_id: int,
         customer: models.BotCustomer, complaint_text: str
     ) -> list:
-        """Registra la queja del cliente y notifica al administrador."""
         from app.core.activity import log_activity
         from app.core.notifier import schedule_notify_organization
-        # Registrar en el log de actividad para que el admin lo vea
         log_activity(
-            db,
-            None,
+            db, None,
             action="complaint",
             entity_type="bot_complaint",
             entity_id=customer.id,
             description=f"Queja de cliente ({customer.channel}/{customer.channel_user_id}): {complaint_text[:300]}",
             organization_id=organization_id,
         )
-        # Notificar en tiempo real al dashboard del restaurante
         schedule_notify_organization(
             organization_id,
             {"type": "complaint", "customer_id": customer.id, "channel": customer.channel, "message": complaint_text[:300]},
@@ -518,53 +604,14 @@ class BotEngine:
             "Lamentamos mucho lo ocurrido 😟 Hemos notificado a nuestro equipo y nos pondremos en contacto contigo a la brevedad. ¡Gracias por avisarnos!"
         )}]
 
-    @staticmethod
-    def _finalize_order(
-        db, channel: str, sender_id: str,
-        session, customer
-    ) -> list:
-        """Procesa la confirmación final del pedido: crea en BD, guarda nombre/dirección, limpia carrito."""
-        from app.core.bot.orders import OrderService
-        order_id = OrderService.send_to_internal_software(db, customer, session)
-        success = bool(order_id)
-        cart = dict(session.cart_data)
-
-        # Guardar nombre y dirección en BotCustomer para futuros pedidos
-        confirmed_name    = cart.get("customer_name", "").strip()
-        confirmed_address = cart.get("address", "").strip()
-        if confirmed_name:
-            customer.saved_name = confirmed_name
-        if confirmed_address:
-            customer.saved_address = confirmed_address
-
-        cart["items"] = []
-        cart["total"] = 0.0
-        if order_id and order_id is not True:
-            cart["last_order_id"] = order_id
-        session.cart_data = cart
-        session.state = "ACTIVO"
-        db.commit()
-        msg = (
-            "¡Pedido confirmado! 🎉 Tu orden está en camino a la cocina. El tiempo estimado de entrega es de 35 a 45 minutos. ¡Gracias por tu pedido en Horno 74!"
-            if success else
-            "Lo sentimos, tuvimos un problema técnico al procesar tu pedido. Por favor inténtalo de nuevo."
-        )
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
-
-    # ── Resolución de comandos por número de posición ────────────────────────────────────────────────────────
+    # ── Resolución de comandos por número de posición ────────────────────────
 
     @staticmethod
     def _resolve_position_command(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int, user_text: str
     ):
-        """
-        Detecta comandos por número de posición en el pedido:
-          - "quita el 2" / "quitar 2" / "elimina el 1" / "borra el 3"
-          - "ponme 3 del 2" / "cambia el 1 a 2" / "2 del 1"
-        Retorna lista de mensajes si detectó el comando, o None si no aplica.
-        """
-        import re
+        """Detecta comandos como 'quita el 2', 'ponme 3 del 2', 'cambia el 1 a 2'."""
         cart = dict(session.cart_data)
         items_list = list(cart.get("items", []))
         if not items_list:
@@ -572,8 +619,7 @@ class BotEngine:
 
         txt = user_text.strip().lower()
 
-        # Patrón: quitar por posición
-        # "quita el 2", "quitar 2", "elimina el 1", "borra el 3"
+        # quita el 2 / quitar 2 / elimina el 1
         m = re.match(
             r"^(?:quita(?:r)?|elimina(?:r)?|borra(?:r)?|saca(?:r)?|remueve?)\s+(?:el\s+|la\s+)?(\d+)$",
             txt
@@ -581,17 +627,13 @@ class BotEngine:
         if m:
             pos = int(m.group(1))
             if 1 <= pos <= len(items_list):
-                item = items_list[pos - 1]
-                return BotEngine._execute_remove_from_cart(
-                    db, channel, sender_id, session, item["id"]
-                )
+                return BotEngine._execute_remove_from_cart(db, channel, sender_id, session, items_list[pos - 1]["id"])
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
                 f"No tengo un producto {pos} en tu pedido. Tienes {len(items_list)} producto{'s' if len(items_list) > 1 else ''}."
             )}]
 
-        # Patrón: cambiar cantidad por posición
-        # "ponme 3 del 2", "pon 2 del 3", "2 del 1"
+        # ponme 3 del 2 / pon 2 del 3 / 2 del 1
         m = re.match(r"^(?:pon(?:me)?|dame)\s+(\d+)\s+del\s+(\d+)$", txt)
         if not m:
             m = re.match(r"^(\d+)\s+del\s+(\d+)$", txt)
@@ -599,33 +641,27 @@ class BotEngine:
             qty = int(m.group(1))
             pos = int(m.group(2))
             if 1 <= pos <= len(items_list):
-                item = items_list[pos - 1]
-                return BotEngine._execute_update_quantity(
-                    db, channel, sender_id, session, item["id"], qty
-                )
+                return BotEngine._execute_update_quantity(db, channel, sender_id, session, items_list[pos - 1]["id"], qty)
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
                 f"No tengo un producto {pos} en tu pedido. Tienes {len(items_list)} producto{'s' if len(items_list) > 1 else ''}."
             )}]
 
-        # Patrón: "cambia el 2 a 3"
+        # cambia el 2 a 3
         m = re.match(r"^cambia(?:r)?\s+(?:el\s+|la\s+)?(\d+)\s+a\s+(\d+)$", txt)
         if m:
             pos = int(m.group(1))
             qty = int(m.group(2))
             if 1 <= pos <= len(items_list):
-                item = items_list[pos - 1]
-                return BotEngine._execute_update_quantity(
-                    db, channel, sender_id, session, item["id"], qty
-                )
+                return BotEngine._execute_update_quantity(db, channel, sender_id, session, items_list[pos - 1]["id"], qty)
             return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
                 f"No tengo un producto {pos} en tu pedido. Tienes {len(items_list)} producto{'s' if len(items_list) > 1 else ''}."
             )}]
 
-        return None  # No es un comando por posición
+        return None
 
-    # ── Punto de entrada principal ─────────────────────────────────────────────────────────────────────────────────
+    # ── Punto de entrada principal ────────────────────────────────────────────
 
     @staticmethod
     def process_message(
@@ -639,24 +675,274 @@ class BotEngine:
         out = []
         customer, session = BotEngine.get_or_create_session(db, organization_id, channel, sender_id)
 
-        # Nombre de la organización
         org = db.query(models.Organization).filter_by(id=organization_id).first()
         org_name = org.name if org else "Horno 74"
 
-        # Cargar menú completo del sistema, carrito, historial y promociones activas
         menu_items = db.query(models.MenuItem).filter_by(organization_id=organization_id).limit(50).all()
         promotions = db.query(models.Promotion).filter_by(organization_id=organization_id, is_active=True).all()
-        cart = dict(session.cart_data) if isinstance(session.cart_data, dict) else {"items": [], "total": 0.0, "history": []}
+        cart  = dict(session.cart_data) if isinstance(session.cart_data, dict) else {"items": [], "total": 0.0, "history": []}
         history = list(cart.get("history", []))
         state = session.state or "ACTIVO"
 
-        # Normalizar el texto entrante
         user_text = (text or "").strip()
 
-        # ── Palabras clave que reinician el flujo ─────────────────────────────────────────────────
-        RESET_KEYWORDS = {"hola", "menu", "menú", "inicio", "start", "reiniciar", "hi", "buenas", "buenos"}
+        # ── Timeout de inactividad: 20 minutos ───────────────────────────────
+        _INACTIVITY_TIMEOUT = timedelta(minutes=20)
+        last_interaction = session.last_interaction_at
+        if last_interaction is not None:
+            if hasattr(last_interaction, "tzinfo") and last_interaction.tzinfo is not None:
+                last_interaction = last_interaction.replace(tzinfo=None)
+            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "ACTIVO", "CARRITO_PENDIENTE"}
+            if (datetime.utcnow() - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states:
+                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+                session.cart_data = clean_cart
+                session.state = "ACTIVO"
+                session.last_interaction_at = datetime.utcnow()
+                db.commit()
+                cart  = clean_cart
+                state = "ACTIVO"
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "Tu sesión anterior expiró por inactividad. ¡Tu pedido fue cancelado automáticamente! 😊 ¿Quieres empezar uno nuevo?"
+                )})
+                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
+                return out
+
+        session.last_interaction_at = datetime.utcnow()
+        db.commit()
+
+        # ── Sin mensaje de texto (audio, imagen, sticker, etc.) ──────────────
+        if not user_text and not interactive_id:
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+                channel, sender_id,
+                "Disculpa, no te entiendo 😅 Escribe *menú* para ver nuestros productos."
+            )})
+            return out
+
+        # ══════════════════════════════════════════════════════════════════════
+        # MANEJO DE BOTONES INTERACTIVOS (interactive_id)
+        # ══════════════════════════════════════════════════════════════════════
+        if interactive_id:
+            btn = interactive_id.strip()
+
+            # ── Botones post-carrito ──────────────────────────────────────────
+            if btn == BTN_CONFIRM:
+                return BotEngine._start_confirm_flow(db, channel, sender_id, session, customer)
+
+            if btn == BTN_ADD_NOTE:
+                cart = dict(session.cart_data)
+                cart["pending_confirm_step"] = "asking_note"
+                session.cart_data = cart
+                db.commit()
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "✍️ Escribe las instrucciones especiales para tu pedido (ej: sin cebolla, extra salsa, toca el timbre, etc.):"
+                )}]
+
+            if btn == BTN_ADD_MORE:
+                session.state = "ACTIVO"
+                db.commit()
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "¡Claro! ¿Qué más quieres agregar o quitar? 😊\n(Para quitar escribe: 'quita el 1')"
+                )}]
+
+            # ── Botones de confirmación de datos (Sí / No) ───────────────────
+            if btn == BTN_DATA_YES:
+                # Cliente confirmó nombre y dirección guardados → finalizar
+                return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+
+            if btn == BTN_DATA_NO:
+                # Cliente quiere cambiar datos → ir a preguntar nombre
+                cart = dict(session.cart_data)
+                cart["pending_confirm_step"] = "asking_name"
+                session.cart_data = cart
+                db.commit()
+                return BotEngine._ask_name(channel, sender_id, customer)
+
+            # ── Botones de nombre ─────────────────────────────────────────────
+            if btn == BTN_NAME_OK:
+                # Confirmar nombre guardado → pasar a dirección
+                cart = dict(session.cart_data)
+                cart["customer_name"] = (customer.saved_name or "").strip()
+                cart["pending_confirm_step"] = "asking_address"
+                session.cart_data = cart
+                db.commit()
+                return BotEngine._ask_address(channel, sender_id, customer)
+
+            if btn == BTN_NAME_CHANGE:
+                cart = dict(session.cart_data)
+                cart["pending_confirm_step"] = "typing_name"
+                session.cart_data = cart
+                db.commit()
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "¿Cuál es tu nombre? Escríbelo 😊"
+                )}]
+
+            # ── Botones de dirección ──────────────────────────────────────────
+            if btn == BTN_ADDR_OK:
+                # Confirmar dirección guardada → finalizar
+                cart = dict(session.cart_data)
+                cart["address"] = (customer.saved_address or "").strip()
+                session.cart_data = cart
+                db.commit()
+                return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+
+            if btn == BTN_ADDR_CHANGE:
+                cart = dict(session.cart_data)
+                cart["pending_confirm_step"] = "typing_address"
+                session.cart_data = cart
+                db.commit()
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id,
+                    "¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
+                )}]
+
+            # Botón no reconocido → tratar como texto
+            user_text = interactive_id
+
+        # ══════════════════════════════════════════════════════════════════════
+        # MANEJO DE ESTADOS ESPECIALES (texto libre en estados de flujo)
+        # ══════════════════════════════════════════════════════════════════════
+
+        # ── Estado CONFIRMANDO_PEDIDO: pasos intermedios de datos ────────────
+        if state == "CONFIRMANDO_PEDIDO":
+            cart = dict(session.cart_data)
+            step = cart.get("pending_confirm_step", "")
+
+            # Esperando nota/instrucciones especiales
+            if step == "asking_note":
+                nota = user_text.strip()
+                if nota.lower() not in {"no", "ninguna", "nada", "sin nota", "n", "no gracias"}:
+                    cart["notes"] = nota[:200]
+                else:
+                    cart["notes"] = ""
+                cart["pending_confirm_step"] = "asking_name"
+                session.cart_data = cart
+                db.commit()
+                return BotEngine._ask_name(channel, sender_id, customer)
+
+            # Esperando nombre escrito
+            if step == "typing_name":
+                if user_text and len(user_text.strip()) >= 2:
+                    cart["customer_name"] = user_text.strip()[:80]
+                    cart["pending_confirm_step"] = "asking_address"
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._ask_address(channel, sender_id, customer)
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id, "Por favor escribe tu nombre para continuar 😊"
+                )}]
+
+            # Esperando dirección escrita
+            if step == "typing_address":
+                if user_text and len(user_text.strip()) > 5:
+                    cart["address"] = user_text.strip()[:_MAX_ADDRESS_LEN]
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id, "Por favor escribe tu dirección de entrega completa 📍"
+                )}]
+
+            # Esperando selección nombre (texto libre)
+            if step == "asking_name":
+                CONFIRM_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "ese mismo", "esa misma"}
+                if customer.saved_name and user_text.strip().lower() in CONFIRM_WORDS:
+                    cart["customer_name"] = customer.saved_name
+                    cart["pending_confirm_step"] = "asking_address"
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._ask_address(channel, sender_id, customer)
+                if user_text and len(user_text.strip()) >= 2:
+                    cart["customer_name"] = user_text.strip()[:80]
+                    cart["pending_confirm_step"] = "asking_address"
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._ask_address(channel, sender_id, customer)
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id, "Por favor escribe tu nombre para continuar 😊"
+                )}]
+
+            # Esperando selección dirección (texto libre)
+            if step == "asking_address":
+                CONFIRM_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "esa misma", "la misma"}
+                if customer.saved_address and user_text.strip().lower() in CONFIRM_WORDS:
+                    cart["address"] = customer.saved_address
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+                if user_text and len(user_text.strip()) > 5:
+                    cart["address"] = user_text.strip()[:_MAX_ADDRESS_LEN]
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+                return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                    channel, sender_id, "Por favor escribe tu dirección de entrega completa 📍"
+                )}]
+
+            # Esperando Sí/No sobre datos guardados (texto libre)
+            if step == "awaiting_yes_no":
+                YES_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "confirmar", "confirmo", "listo"}
+                NO_WORDS  = {"no", "nope", "cambiar", "no quiero", "modificar"}
+                txt_lower = user_text.strip().lower()
+                if txt_lower in YES_WORDS:
+                    return BotEngine._finalize_order(db, channel, sender_id, session, customer)
+                if txt_lower in NO_WORDS:
+                    cart["pending_confirm_step"] = "asking_name"
+                    session.cart_data = cart
+                    db.commit()
+                    return BotEngine._ask_name(channel, sender_id, customer)
+                # No reconocido → repetir pregunta
+                saved_name    = (customer.saved_name or "").strip()
+                saved_address = (customer.saved_address or "").strip()
+                body_text = f"¿Lo enviamos a nombre de *{saved_name}* a *{saved_address}*?"
+                buttons = [
+                    {"id": BTN_DATA_YES, "title": "✅ Sí, confirmar"},
+                    {"id": BTN_DATA_NO,  "title": "✏️ No, cambiar datos"},
+                ]
+                return [{"action": "SEND_BUTTONS", "payload": BotEngine._buttons(channel, sender_id, body_text, buttons)}]
+
+            # Cancelaciones explícitas
+            CANCELACIONES = {"no", "cancelar", "cancel", "nope", "olvídalo", "olvidalo", "no quiero"}
+            if user_text.strip().lower() in CANCELACIONES:
+                return BotEngine._execute_cancel_order(db, channel, sender_id, session)
+
+            # Cualquier otro texto en CONFIRMANDO_PEDIDO → volver a ACTIVO
+            session.state = "ACTIVO"
+            db.commit()
+            state = "ACTIVO"
+
+        # ── Estado CARRITO_PENDIENTE ──────────────────────────────────────────
+        if state == "CARRITO_PENDIENTE":
+            CONTINUAR = {"continuar", "seguir", "sí", "si", "yes", "ok", "dale", "claro", "va", "ese mismo", "el mismo"}
+            NUEVO     = {"nuevo", "empezar", "empezar nuevo", "nuevo pedido", "limpiar", "borrar", "eliminar", "no", "nope"}
+            txt_lower = user_text.lower()
+            if txt_lower in CONTINUAR:
+                session.state = "ACTIVO"
+                db.commit()
+                return BotEngine._execute_view_cart(channel, sender_id, session)
+            if txt_lower in NUEVO:
+                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+                session.cart_data = clean_cart
+                session.state = "ACTIVO"
+                db.commit()
+                return BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id)
+            active_items = cart.get("items", [])
+            summary = _format_cart_summary(active_items)
+            body = (
+                f"No entendí tu respuesta 😅 Tienes este pedido en curso:\n\n"
+                f"{summary}\n\n"
+                f"💰 Total: ${cart.get('total', 0.0)}\n\n"
+                f"Responde *continuar* para seguir con él o *nuevo* para empezar desde cero."
+            )
+            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)})
+            return out
+
+        # ── Palabras clave de reinicio / saludo ───────────────────────────────
+        RESET_KEYWORDS = {"hola", "menu", "menú", "inicio", "start", "reiniciar", "hi", "buenas", "buenos", "hey"}
         if user_text.lower() in RESET_KEYWORDS:
-            # Si tiene carrito activo con productos, preguntar antes de limpiar
             active_items = cart.get("items", [])
             if active_items and state not in ("CONFIRMANDO_PEDIDO",):
                 summary = _format_cart_summary(active_items)
@@ -671,246 +957,30 @@ class BotEngine:
                 )
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)})
                 return out
-            # Sin carrito activo → mostrar menú directamente
-            out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
+
+            # Saludo personalizado
+            saved_name = (customer.saved_name or "").strip()
+            if saved_name:
+                first = saved_name.split()[0].capitalize()
+                greeting = f"¡Hola {first}! 😊 Un gusto tenerte de vuelta. ¿Qué vas a ordenar hoy?"
+            else:
+                greeting = f"¡Hola! 😊 Bienvenido a {org_name}. ¿Qué vas a ordenar hoy?"
+
+            out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id, greeting=greeting))
             return out
 
-        # ── Estado especial: carrito pendiente (continuar o nuevo) ────────────────────────────────────
-        if state == "CARRITO_PENDIENTE":
-            CONTINUAR = {"continuar", "seguir", "sí", "si", "yes", "ok", "dale", "claro", "va", "ese mismo", "el mismo"}
-            NUEVO     = {"nuevo", "empezar", "empezar nuevo", "nuevo pedido", "limpiar", "borrar", "eliminar", "no", "nope"}
-            txt_lower = user_text.lower()
-            if txt_lower in CONTINUAR:
-                session.state = "ACTIVO"
-                db.commit()
-                # Mostrar el carrito actual para que siga desde donde estaba
-                return BotEngine._execute_view_cart(channel, sender_id, session)
-            if txt_lower in NUEVO:
-                # Limpiar carrito y mostrar menú
-                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
-                session.cart_data = clean_cart
-                session.state = "ACTIVO"
-                db.commit()
-                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
-                return out
-            # Respuesta no reconocida → volver a preguntar
+        # ── Palabras clave para confirmar pedido (texto libre) ────────────────
+        CONFIRM_KEYWORDS = {"confirmar pedido", "confirmar", "confirmo", "cerrar pedido", "finalizar pedido", "terminar pedido"}
+        if user_text.lower() in CONFIRM_KEYWORDS:
             active_items = cart.get("items", [])
-            summary = _format_cart_summary(active_items)
-            total   = cart.get("total", 0.0)
-            body = (
-                f"No entendí tu respuesta 😅 Tienes este pedido en curso:\n\n"
-                f"{summary}\n\n"
-                f"💰 Total: ${total}\n\n"
-                f"Responde *continuar* para seguir con él o *nuevo* para empezar desde cero."
-            )
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body)})
-            return out
-
-        # ── Palabras clave para cerrar pedido (sin pasar por DeepSeek) ──────────────────
-        # ── Timeout de inactividad: 20 minutos (se verifica ANTES de procesar estados) ───────────────
-        _INACTIVITY_TIMEOUT = timedelta(minutes=20)
-        last_interaction = session.last_interaction_at
-        if last_interaction is not None:
-            if hasattr(last_interaction, 'tzinfo') and last_interaction.tzinfo is not None:
-                last_interaction = last_interaction.replace(tzinfo=None)
-            now_utc = datetime.utcnow()
-            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "ACTIVO"}
-            if (now_utc - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states:
-                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
-                session.cart_data = clean_cart
-                session.state = "ACTIVO"
-                session.last_interaction_at = datetime.utcnow()
-                db.commit()
-                cart = clean_cart
-                state = "ACTIVO"
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                    channel, sender_id,
-                    "Tu sesión anterior expiró por inactividad. ¡No te preocupes, tu pedido fue cancelado automáticamente! 😊 ¿Quieres empezar uno nuevo?"
-                )})
-                out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
-                return out
-
-        # Actualizar last_interaction_at en TODOS los caminos desde aquí
-        session.last_interaction_at = datetime.utcnow()
-        db.commit()
-
-        # ── Sin mensaje (audio, imagen, sticker, etc.) ────────────────────────────────────────────────
-        if not user_text:
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
+            if active_items:
+                return BotEngine._start_confirm_flow(db, channel, sender_id, session, customer)
+            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                 channel, sender_id,
-                "Disculpa, no te entiendo 😅 ¿Cómo más te puedo ayudar? Escribe *menú* para ver nuestros productos."
-            )})
-            return out
+                "Tu pedido está vacío. Dime qué quieres pedir primero 😊"
+            )}]
 
-        CLOSE_KEYWORDS = {"cerrar pedido", "cerrar mi pedido", "terminar pedido", "terminar mi pedido", "finalizar pedido"}
-        if user_text.lower() in CLOSE_KEYWORDS:
-            return BotEngine._execute_ask_address(channel, sender_id, session, db)
-
-        # ── Estado especial: confirmación final (sin IA) ───────────────────────────────────
-        if state == "CONFIRMANDO_PEDIDO":
-            # Cancelar oculto: funciona internamente pero no se muestra en el mensaje
-            cancelaciones = {"no", "cancelar", "cancel", "nope", "olvídalo", "olvidalo", "no quiero"}
-            # Palabras que activan la confirmación final
-            CONFIRM_WORDS = {"confirmar", "confirmo", "si", "sí", "yes", "ok", "dale", "claro", "va",
-                             "correcto", "listo", "perfecto", "sale", "andale", "ándale", "así está bien"}
-            # "agregar" regresa al estado ACTIVO para seguir pidiendo
-            AGREGAR_WORDS = {"agregar", "añadir", "agregar más", "añadir más", "quiero más", "agrego"}
-            txt_lower = user_text.strip().lower()
-
-            # ── El cliente escribe "confirmar" → mostrar nombre y dirección para confirmación final ──
-            if txt_lower in CONFIRM_WORDS and not dict(session.cart_data).get("awaiting_data_confirm"):
-                cart = dict(session.cart_data)
-                current_name    = cart.get("customer_name", "").strip()
-                current_address = cart.get("address", "").strip()
-                name_line    = f"*{current_name}*" if current_name else "(sin nombre)"
-                address_line = f"*{current_address}*" if current_address else "(sin dirección)"
-                msg = (
-                    f"¿Confirmamos el pedido a nombre de {name_line} "
-                    f"y lo enviamos a {address_line}?\n\n"
-                    f"Escribe *sí* para confirmar, o corrígeme el nombre o dirección 😊"
-                )
-                cart["awaiting_data_confirm"] = True
-                session.cart_data = cart
-                db.commit()
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-                return out
-
-            # ── El cliente escribe "agregar" → regresar a ACTIVO para seguir pidiendo ──────────────
-            if txt_lower in AGREGAR_WORDS:
-                session.state = "ACTIVO"
-                db.commit()
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                    channel, sender_id,
-                    "¡Claro! ¿Qué más quieres agregar? 😊"
-                )})
-                return out
-
-            # ── Esperando confirmación de nombre/dirección ───────────────────────────────────────────
-            cart = dict(session.cart_data)
-            if cart.get("awaiting_data_confirm"):
-                cart.pop("awaiting_data_confirm", None)
-
-                if txt_lower in cancelaciones:
-                    session.cart_data = cart
-                    db.commit()
-                    return BotEngine._execute_cancel_order(db, channel, sender_id, session)
-
-                if txt_lower in {"si", "sí", "yes", "ok", "dale", "claro", "correcto", "listo",
-                                  "perfecto", "sale", "andale", "ándale", "confirmar", "confirmo"}:
-                    session.cart_data = cart
-                    db.commit()
-                    return BotEngine._finalize_order(db, channel, sender_id, session, customer)
-
-                # El cliente escribió algo diferente: puede ser nombre nuevo o dirección nueva
-                import re
-                has_street_keywords = bool(re.search(
-                    r'\b(calle|av|avenida|blvd|boulevard|col|colonia|fracc|fraccionamiento|'
-                    r'num|núm|#|\d{2,}|entre|esquina|interior|int|depto|departamento)\b',
-                    txt_lower
-                ))
-                has_digits = bool(re.search(r'\d', user_text))
-
-                if has_street_keywords or has_digits:
-                    cart["address"] = user_text.strip()[:_MAX_ADDRESS_LEN]
-                else:
-                    cart["customer_name"] = user_text.strip()[:80]
-
-                session.cart_data = cart
-                db.commit()
-
-                updated_name    = cart.get("customer_name", "").strip()
-                updated_address = cart.get("address", "").strip()
-                name_line    = f"*{updated_name}*" if updated_name else "(sin nombre)"
-                address_line = f"*{updated_address}*" if updated_address else "(sin dirección)"
-                cart["awaiting_data_confirm"] = True
-                session.cart_data = cart
-                db.commit()
-                msg = (
-                    f"¿Confirmamos el pedido a nombre de {name_line} "
-                    f"y lo enviamos a {address_line}?\n\n"
-                    f"Escribe *sí* para confirmar, o corrígeme el nombre o dirección 😊"
-                )
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-                return out
-
-            if txt_lower in cancelaciones:
-                return BotEngine._execute_cancel_order(db, channel, sender_id, session)
-            # Si escribe otra cosa, volver a ACTIVO para que DeepSeek procese
-            session.state = "ACTIVO"
-            db.commit()
-            state = "ACTIVO"
-
-        # ── Estado especial: esperando nota (sin IA) ─────────────────────────────────────────
-        if state == "PIDIENDO_NOTA":
-            nota = user_text.strip()
-            cart = dict(session.cart_data)
-            if nota.lower() not in {"no", "ninguna", "nada", "sin nota", "n", "no gracias"}:
-                cart["notes"] = nota[:200]
-            else:
-                cart["notes"] = ""
-            session.cart_data = cart
-            session.state = "PIDIENDO_NOMBRE"
-            db.commit()
-            # Si el cliente ya tiene nombre guardado, preguntar si sigue siendo el mismo
-            if customer.saved_name:
-                msg = f"¿Seguimos con el nombre {customer.saved_name}? Responde *sí* o escribe tu nombre 😊"
-            else:
-                msg = "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-            return out
-
-        # ── Estado especial: esperando nombre (sin IA) ───────────────────────────────────────
-        if state == "PIDIENDO_NOMBRE":
-            if user_text and len(user_text.strip()) >= 2:
-                # Verificar si el cliente confirmó su nombre guardado
-                CONFIRM_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "ese mismo"}
-                if customer.saved_name and user_text.strip().lower() in CONFIRM_WORDS:
-                    confirmed_name = customer.saved_name
-                else:
-                    confirmed_name = user_text.strip()[:80]
-
-                cart = dict(session.cart_data)
-                cart["customer_name"] = confirmed_name
-                session.cart_data = cart
-                session.state = "PIDIENDO_DIRECCION"
-                db.commit()
-
-                first = confirmed_name.split()[0].capitalize()
-                # Si tiene dirección guardada, preguntar si la usa de nuevo
-                if customer.saved_address:
-                    msg = (
-                        f"Gracias, {first} 😊 ¿Enviamos de nuevo a *{customer.saved_address}*? "
-                        f"Responde *sí* o escribe una nueva dirección 📍"
-                    )
-                else:
-                    msg = f"Gracias, {first} 😊 ¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
-                return out
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "Por favor escribe tu nombre para continuar 😊"
-            )})
-            return out
-
-        # ── Estado especial: esperando dirección (sin IA) ───────────────────────────────────
-        if state == "PIDIENDO_DIRECCION":
-            CONFIRM_WORDS = {"sí", "si", "yes", "ok", "dale", "claro", "va", "correcto", "esa misma", "la misma"}
-            # Si el cliente confirmó la dirección guardada
-            if customer.saved_address and user_text.strip().lower() in CONFIRM_WORDS:
-                return BotEngine._execute_confirm_order(
-                    db, channel, sender_id, session, customer, customer.saved_address
-                )
-            if user_text and len(user_text.strip()) > 5:
-                return BotEngine._execute_confirm_order(db, channel, sender_id, session, customer, user_text.strip())
-            out.append({"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "Por favor escribe tu dirección de entrega completa para continuar 📍"
-            )})
-            return out
-
-
-
-        # ── Resolver referencias por número de posición (ej: "quita el 2", "ponme 3 del 1") ───────
+        # ── Resolver comandos por número de posición ──────────────────────────
         position_result = BotEngine._resolve_position_command(db, channel, sender_id, session, organization_id, user_text)
         if position_result is not None:
             BotEngine._append_history(session, "user", user_text)
@@ -918,29 +988,23 @@ class BotEngine:
             db.commit()
             return position_result
 
-        # ── Resolver variante pendiente (ej: cliente responde "familiar" a ¿Grande o Familiar?) ─────────────────────────────────────────────────────────────────────────────────────
-        pending_item = cart.get("pending_variant_base")  # ej: "cuatro quesos"
-        pending_options = cart.get("pending_variant_options", [])  # ej: ["grande", "familiar"]
+        # ── Resolver variante pendiente (ej: "familiar" tras ¿Grande o Familiar?) ──
+        pending_item    = cart.get("pending_variant_base")
+        pending_options = cart.get("pending_variant_options", [])
         if pending_item and user_text:
             txt_low = user_text.strip().lower()
-
-            # Palabras coloquiales que significan "dámela" / afirmación sin especificar variante
             AFFIRMATIVE_VAGUE = {
                 "damela", "dámela", "esa", "ese", "dale", "ok", "va", "sí", "si",
                 "claro", "bueno", "listo", "perfecto", "sale", "órale", "orale",
                 "la quiero", "lo quiero", "quiero esa", "quiero ese",
                 "de esa", "de ese", "esa misma", "ese mismo",
             }
-
-            # Buscar el producto que coincida con base + variante exacta en el nombre
             matched_item = None
             for mi in menu_items:
                 mi_name_low = mi.name.lower()
                 if pending_item.lower() in mi_name_low and txt_low in mi_name_low:
                     matched_item = mi
                     break
-
-            # Si no hubo match exacto, buscar si el texto contiene alguna de las opciones conocidas
             if not matched_item and pending_options:
                 for opt in pending_options:
                     if opt in txt_low:
@@ -951,18 +1015,14 @@ class BotEngine:
                                 break
                         if matched_item:
                             break
-
-            # Si el cliente dijo algo vago/afirmativo y hay exactamente una opción disponible, usarla
             if not matched_item and txt_low in AFFIRMATIVE_VAGUE and len(pending_options) == 1:
                 opt = pending_options[0]
                 for mi in menu_items:
-                    mi_name_low = mi.name.lower()
-                    if pending_item.lower() in mi_name_low and opt in mi_name_low:
+                    if pending_item.lower() in mi.name.lower() and opt in mi.name.lower():
                         matched_item = mi
                         break
 
             if matched_item:
-                # Limpiar la variante pendiente y agregar al carrito
                 c = dict(session.cart_data)
                 c.pop("pending_variant_base", None)
                 c.pop("pending_variant_options", None)
@@ -974,24 +1034,22 @@ class BotEngine:
                 db.commit()
                 return result
             elif txt_low in AFFIRMATIVE_VAGUE and len(pending_options) > 1:
-                # El cliente dijo algo vago pero hay múltiples opciones — volver a preguntar
                 opts_str = " o ".join(f"*{o.capitalize()}*" for o in pending_options)
-                msg = BotEngine._clean_text(channel, f"¿Cómo la quieres? {opts_str} 😊")
+                msg = _clean_text(channel, f"¿Cómo la quieres? {opts_str} 😊")
                 out_msg = [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
                 BotEngine._append_history(session, "user", user_text)
                 BotEngine._append_history(session, "assistant", msg)
                 db.commit()
                 return out_msg
             else:
-                # El cliente cambió de tema — limpiar pending_variant_base
                 c = dict(session.cart_data)
                 c.pop("pending_variant_base", None)
                 c.pop("pending_variant_options", None)
                 session.cart_data = c
                 db.commit()
-                cart = dict(session.cart_data)  # Refrescar cart local
+                cart = dict(session.cart_data)
 
-        # ── Llamar a DeepSeek con los productos reales del sistema ────────────────────
+        # ── Llamar a DeepSeek ─────────────────────────────────────────────────
         ai_response = ask_deepseek(
             message=user_text,
             chat_history=history,
@@ -1002,13 +1060,11 @@ class BotEngine:
             promotions=promotions,
         )
 
-        # ai_response es una LISTA de acciones (puede contener múltiples ADD_TO_CART, etc.)
         actions_list = ai_response if isinstance(ai_response, list) else [ai_response]
         logger.info("DeepSeek actions=%s sender=%s channel=%s", actions_list, sender_id, channel)
 
         ai_reply_parts = []
 
-        # ── Ejecutar cada acción de la lista devuelta por DeepSeek ──────────────────────
         for ai_action in actions_list:
             action = ai_action.get("action", "CHAT")
 
@@ -1020,7 +1076,7 @@ class BotEngine:
             elif action == "ADD_TO_CART":
                 item_id = ai_action.get("item_id")
                 if item_id is None:
-                    msg = ai_action.get("message", "No encontré ese producto. ¿Puedes decirme exactamente cuál quieres?")
+                    msg = "Disculpa, no entendí tu pedido 😅 ¿Me lo repites?"
                     out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                     ai_reply_parts.append(msg)
                 else:
@@ -1035,8 +1091,8 @@ class BotEngine:
                         models.MenuItem.organization_id == organization_id
                     ).first()
                     product_name = menu_item.name if menu_item else f"Producto {item_id}"
-                    note_suffix = f" (✎ {item_note})" if item_note else ""
-                    ai_reply_parts.append(f"{product_name}{note_suffix} agregado a tu pedido.")
+                    note_suffix  = f" (✎ {item_note})" if item_note else ""
+                    ai_reply_parts.append(f"{product_name}{note_suffix} agregado.")
 
             elif action == "VIEW_CART":
                 result = BotEngine._execute_view_cart(channel, sender_id, session)
@@ -1044,57 +1100,27 @@ class BotEngine:
                 ai_reply_parts.append("Mostrando pedido.")
 
             elif action == "UPDATE_QUANTITY":
-                item_id = ai_action.get("item_id")
+                item_id  = ai_action.get("item_id")
                 quantity = ai_action.get("quantity")
                 if item_id is None or quantity is None:
-                    msg = ai_action.get("message", "¿Cuál producto quieres cambiar y a cuántas unidades?")
+                    msg = "¿Cuál producto quieres cambiar y a cuántas unidades?"
                     out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                     ai_reply_parts.append(msg)
                 else:
-                    result = BotEngine._execute_update_quantity(
-                        db, channel, sender_id, session, int(item_id), int(quantity)
-                    )
+                    result = BotEngine._execute_update_quantity(db, channel, sender_id, session, int(item_id), int(quantity))
                     out.extend(result)
-                    menu_item_upd = db.query(models.MenuItem).filter(
-                        models.MenuItem.id == int(item_id),
-                        models.MenuItem.organization_id == organization_id
-                    ).first()
-                    product_name_upd = menu_item_upd.name if menu_item_upd else f"Producto {item_id}"
-                    ai_reply_parts.append(f"Cantidad de {product_name_upd} actualizada a {quantity}.")
+                    ai_reply_parts.append(f"Cantidad actualizada.")
 
             elif action == "REMOVE_FROM_CART":
                 item_id = ai_action.get("item_id")
                 if item_id is None:
-                    msg = ai_action.get("message", "No identifiqué cuál producto quieres quitar. ¿Puedes decirme el nombre exacto?")
+                    msg = "No identifiqué cuál producto quieres quitar. ¿Puedes decirme el nombre exacto?"
                     out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)})
                     ai_reply_parts.append(msg)
                 else:
-                    result = BotEngine._execute_remove_from_cart(
-                        db, channel, sender_id, session, int(item_id)
-                    )
+                    result = BotEngine._execute_remove_from_cart(db, channel, sender_id, session, int(item_id))
                     out.extend(result)
-                    menu_item_rm = db.query(models.MenuItem).filter(
-                        models.MenuItem.id == int(item_id),
-                        models.MenuItem.organization_id == organization_id
-                    ).first()
-                    product_name_rm = menu_item_rm.name if menu_item_rm else f"Producto {item_id}"
-                    ai_reply_parts.append(f"{product_name_rm} eliminado de tu pedido.")
-
-            elif action == "ASK_ADDRESS":
-                result = BotEngine._execute_ask_address(channel, sender_id, session, db)
-                out.extend(result)
-                ai_reply_parts.append("Solicitando dirección de entrega.")
-
-            elif action == "CONFIRM_ORDER":
-                address = (ai_action.get("address") or "").strip()
-                if address:
-                    result = BotEngine._execute_confirm_order(db, channel, sender_id, session, customer, address)
-                    out.extend(result)
-                    ai_reply_parts.append(f"Confirmando pedido a: {address}")
-                else:
-                    result = BotEngine._execute_ask_address(channel, sender_id, session, db)
-                    out.extend(result)
-                    ai_reply_parts.append("Solicitando dirección.")
+                    ai_reply_parts.append(f"Producto eliminado.")
 
             elif action == "CANCEL_ORDER":
                 result = BotEngine._execute_cancel_order(db, channel, sender_id, session)
@@ -1116,31 +1142,27 @@ class BotEngine:
                 complaint_text = ai_action.get("message", "")
                 result = BotEngine._execute_complaint(db, channel, sender_id, session, organization_id, customer, complaint_text)
                 out.extend(result)
-                ai_reply_parts.append(f"Queja registrada: {complaint_text}")
+                ai_reply_parts.append(f"Queja registrada.")
 
             else:  # CHAT
-                _fallback_not_understood = "No te entendí bien 😅 ¿Me puedes decir qué quieres pedir o en qué te puedo ayudar?"
-                message_text = ai_action.get("message") or _fallback_not_understood
-                # Si el mensaje es muy corto o vacío, usar el fallback
+                _fallback = "Disculpa, no entendí tu pedido 😅 ¿Me lo repites?"
+                message_text = ai_action.get("message") or _fallback
                 if not message_text.strip():
-                    message_text = _fallback_not_understood
+                    message_text = _fallback
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
                 ai_reply_parts.append(message_text)
 
-                # ── Detectar pregunta de variante y guardar base del producto ─────────────────────────────────────────────────────────────────────────────────────
-                # Si el mensaje contiene "¿Cómo la quieres?" o variantes de tamaño,
-                # buscar qué producto base se está preguntando para resolver en el próximo mensaje
+                # Detectar pregunta de variante y guardar base del producto
                 msg_lower = message_text.lower()
                 is_variant_question = (
-                    "grande" in msg_lower and "familiar" in msg_lower
-                ) or "cómo la quieres" in msg_lower or "cómo lo quieres" in msg_lower
+                    ("grande" in msg_lower and "familiar" in msg_lower)
+                    or "cómo la quieres" in msg_lower
+                    or "cómo lo quieres" in msg_lower
+                )
                 if is_variant_question:
-                    # Detectar las opciones mencionadas en el mensaje (grande, familiar, etc.)
                     KNOWN_VARIANTS = ["grande", "familiar", "chico", "chica", "mediano", "mediana",
                                       "pequeño", "pequeña", "xl", "xxl", "individual"]
                     detected_opts = [v for v in KNOWN_VARIANTS if v in msg_lower]
-
-                    # Buscar qué producto del menú tiene nombre que aparezca en el mensaje de chat
                     found_base = None
                     for mi in menu_items:
                         base_parts = mi.name.lower()
@@ -1149,9 +1171,7 @@ class BotEngine:
                         if base_parts and base_parts in msg_lower:
                             if found_base is None or len(base_parts) > len(found_base):
                                 found_base = base_parts
-                    # Si no se encontró base por nombre exacto, buscar en el historial reciente
                     if not found_base:
-                        # Buscar en los últimos 4 mensajes del historial qué producto se mencionó
                         recent = history[-4:] if len(history) >= 4 else history
                         for h_msg in reversed(recent):
                             h_text = h_msg.get("content", "").lower() if isinstance(h_msg, dict) else ""
@@ -1164,7 +1184,6 @@ class BotEngine:
                                         found_base = base_parts
                             if found_base:
                                 break
-
                     if found_base:
                         c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
                         c["pending_variant_base"] = found_base
@@ -1172,9 +1191,7 @@ class BotEngine:
                             c["pending_variant_options"] = detected_opts
                         session.cart_data = c
                         db.commit()
-                        logger.info("pending_variant_base=%s options=%s", found_base, detected_opts)
                 else:
-                    # Si no es pregunta de variante, limpiar pending_variant_base y options
                     c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
                     changed = False
                     if "pending_variant_base" in c:
@@ -1187,15 +1204,13 @@ class BotEngine:
                         session.cart_data = c
                         db.commit()
 
-        ai_reply = " | ".join(ai_reply_parts) if ai_reply_parts else "OK"
-
-        # ── Fallback anti-silencio: si no se generó ninguna respuesta, mandar mensaje de no entendido ──────
+        # ── Fallback anti-silencio ────────────────────────────────────────────
         if not out:
-            fallback = "No te entendí bien 😅 ¿Me puedes decir qué quieres pedir o en qué te puedo ayudar?"
+            fallback = "Disculpa, no entendí tu pedido 😅 ¿Me lo repites?"
             out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, fallback)})
-            ai_reply = fallback
+            ai_reply_parts.append(fallback)
 
-        # ── Guardar historial ──────────────────────────────────────────────────────────────────────────────────────
+        ai_reply = " | ".join(ai_reply_parts) if ai_reply_parts else "OK"
         BotEngine._append_history(session, "user", user_text)
         BotEngine._append_history(session, "assistant", ai_reply)
         db.commit()
