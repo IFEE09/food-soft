@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0   # 0.0 = solo errores, sin trazas (cuesta menos)
     LOG_FORMAT: str = "console"              # "console" (dev) | "json" (prod)
     LOG_LEVEL: str = "INFO"
+
+    # Cache + queue (Redis). Si vacío: cache in-memory + queue via BackgroundTasks.
+    REDIS_URL: Optional[str] = None
+    CACHE_TTL_SECONDS: int = 60              # default TTL de caché (menu, promos, settings)
+
+    # Concurrency: Starlette default = 40 threads en threadpool. Subir para webhooks bot
+    # (DeepSeek puede tardar 2-8s; con 40 threads cae bajo pico).
+    THREADPOOL_SIZE: int = 100
     
     # Auth (no usar el valor por defecto en producción)
     SECRET_KEY: str = _DEFAULT_SECRET

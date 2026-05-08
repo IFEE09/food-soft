@@ -187,6 +187,14 @@ if settings.RUN_STARTUP_SEED:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     set_main_loop(asyncio.get_running_loop())
+    # Subir threadpool para que rutas síncronas (DeepSeek, queries DB en run_in_executor)
+    # no se bloqueen entre sí bajo pico. Default Starlette = 40.
+    try:
+        from anyio import to_thread
+        to_thread.current_default_thread_limiter().total_tokens = settings.THREADPOOL_SIZE
+        logger.info("threadpool_size_set value=%s", settings.THREADPOOL_SIZE)
+    except Exception:
+        logger.exception("threadpool_resize_failed")
     yield
 
 
