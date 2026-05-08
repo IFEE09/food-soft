@@ -909,25 +909,46 @@ class BotEngine:
                     found_base = None
 
                     # ── Fuente 1 (más confiable): buscar en el mensaje ACTUAL del usuario ──
-                    # Esto cubre typos como 'peñerojni' → DeepSeek sabe que es pepperoni
-                    # pero el código no. Usamos difflib para similitud.
-                    import difflib
-                    _user_text_low = user_text.lower()
-                    _best_ratio = 0.0
+                    # Cubre typos (peñerojni→pepperoni) y nombres multi-palabra (pan ajo).
+                    import difflib as _difflib
+                    _THRESHOLD = 0.55
+                    _user_words = [w for w in re.split(r'[\s,]+', user_text.lower()) if len(w) >= 3]
+                    _scores = {}  # base_str -> (ratio, base_len, mi)
                     for mi in menu_items:
                         _base = mi.name.lower()
                         for v in KNOWN_VARIANTS:
                             _base = _base.replace(v, "").strip()
                         if not _base or len(_base) < 3:
                             continue
-                        # Comparar cada palabra del user_text con el base
-                        for _word in re.split(r'[\s,]+', _user_text_low):
-                            if len(_word) < 3:
-                                continue
-                            _ratio = difflib.SequenceMatcher(None, _word, _base).ratio()
-                            if _ratio > _best_ratio and _ratio >= 0.6:
-                                _best_ratio = _ratio
-                                found_base = _base
+                        _base_words = [w for w in re.split(r'[\s,]+', _base) if len(w) >= 3]
+                        _best_for_item = 0.0
+                        for _uw in _user_words:
+                            _r = _difflib.SequenceMatcher(None, _uw, _base).ratio()
+                            if _r >= _THRESHOLD:
+                                _best_for_item = max(_best_for_item, _r)
+                            for _bw in _base_words:
+                                if len(_bw) < 4:
+                                    continue
+                                _r2 = _difflib.SequenceMatcher(None, _uw, _bw).ratio()
+                                if _r2 >= _THRESHOLD:
+                                    _best_for_item = max(_best_for_item, _r2)
+                        # Acumulado multi-palabra
+                        if len(_user_words) > 1 and len(_base_words) > 1:
+                            _matched = 0
+                            for _uw in _user_words:
+                                for _bw in _base_words:
+                                    if len(_bw) >= 3 and _difflib.SequenceMatcher(None, _uw, _bw).ratio() >= _THRESHOLD:
+                                        _matched += 1
+                                        break
+                            if _matched >= 2:
+                                _cov = _matched / max(len(_user_words), len(_base_words))
+                                _best_for_item = max(_best_for_item, _cov)
+                        if _best_for_item > 0:
+                            _scores[_base] = (_best_for_item, len(_base), mi)
+                    if _scores:
+                        # Mayor ratio; en empate, base más corto (más específico)
+                        _best_base_key = max(_scores, key=lambda k: (_scores[k][0], -_scores[k][1]))
+                        found_base = _best_base_key
 
                     # ── Fuente 2: buscar en el mensaje de DeepSeek (respuesta actual) ──
                     if not found_base:
