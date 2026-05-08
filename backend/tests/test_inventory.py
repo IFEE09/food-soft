@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 
-from app.db.session import Base, engine
-from app.db import models
 from app.core.inventory import deduct_supplies_for_line_items
+from app.db import models
+from app.db.session import Base, engine
 
 
 @pytest.fixture

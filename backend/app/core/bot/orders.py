@@ -1,10 +1,10 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db import models
 from app.core.activity import log_activity
 from app.core.inventory import deduct_supplies_for_line_items
 from app.core.notifier import schedule_notify_organization
+from app.db import models
 
 
 class OrderService:
@@ -13,7 +13,7 @@ class OrderService:
         """Converts the bot session cart into an actual restaurant Order"""
         cart = session.cart_data or {}
         items = cart.get("items", [])
-        
+
         if not items:
             return False
 

@@ -33,7 +33,7 @@ from __future__ import annotations
 import json
 import threading
 import time
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -42,8 +42,8 @@ log = get_logger(__name__)
 
 
 class Cache(Protocol):
-    def get(self, key: str) -> Optional[Any]: ...
-    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None: ...
+    def get(self, key: str) -> Any | None: ...
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None: ...
     def delete(self, key: str) -> None: ...
     def clear_prefix(self, prefix: str) -> None: ...
 
@@ -55,7 +55,7 @@ class _InMemoryCache:
         self._lock = threading.RLock()
         self._store: dict[str, tuple[float, Any]] = {}  # key -> (expires_at, value)
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         with self._lock:
             entry = self._store.get(key)
             if entry is None:
@@ -66,7 +66,7 @@ class _InMemoryCache:
                 return None
             return value
 
-    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         ttl = ttl_seconds if ttl_seconds is not None else settings.CACHE_TTL_SECONDS
         expires_at = time.monotonic() + ttl if ttl > 0 else 0.0
         with self._lock:
@@ -97,7 +97,7 @@ class _RedisCache:
         except Exception as exc:
             log.warning("cache_redis_ping_failed", error=str(exc))
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         try:
             raw = self._client.get(key)
         except Exception as exc:
@@ -110,7 +110,7 @@ class _RedisCache:
         except (TypeError, ValueError):
             return None
 
-    def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         ttl = ttl_seconds if ttl_seconds is not None else settings.CACHE_TTL_SECONDS
         try:
             payload = json.dumps(value, default=str)
@@ -139,7 +139,7 @@ class _RedisCache:
             log.warning("cache_clear_prefix_failed", prefix=prefix, error=str(exc))
 
 
-_cache_instance: Optional[Cache] = None
+_cache_instance: Cache | None = None
 _cache_lock = threading.Lock()
 
 

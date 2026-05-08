@@ -18,9 +18,7 @@ DURABILIDAD:
 from __future__ import annotations
 
 import time
-from typing import Any
 
-import structlog
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 

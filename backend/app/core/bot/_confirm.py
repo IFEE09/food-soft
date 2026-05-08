@@ -27,15 +27,13 @@ from app.core.bot._formatters import format_cart_summary
 from app.core.bot._messages import (
     address_confirm_msg,
     name_confirm_msg,
-    text,
+    send_text_action,
     yes_no_msg,
 )
 from app.core.bot.orders import OrderService
 from app.db import models
 
-
-def _send_text(channel: str, to: str, body: str) -> dict:
-    return {"action": "SEND_TEXT", "payload": text(channel, to, body)}
+_send_text = send_text_action
 
 
 # ── Inicio del flow ──────────────────────────────────────────────────────────

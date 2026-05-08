@@ -1,18 +1,18 @@
-from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
+
 
 class KitchenBase(BaseModel):
     name: str
-    address: Optional[str] = None
+    address: str | None = None
     is_active: bool = True
 
 class KitchenCreate(KitchenBase):
     pass
 
 class KitchenUpdate(BaseModel):
-    name: Optional[str] = None
-    address: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    address: str | None = None
+    is_active: bool | None = None
 
 class Kitchen(KitchenBase):
     model_config = ConfigDict(from_attributes=True)

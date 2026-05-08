@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -14,10 +14,10 @@ def _password_strength(v: str) -> str:
 
 class UserBase(BaseModel):
     email: EmailStr
-    full_name: Optional[str] = None
-    role: Optional[VALID_ROLES] = "cook"
-    is_active: Optional[bool] = True
-    kitchen_id: Optional[int] = None
+    full_name: str | None = None
+    role: VALID_ROLES | None = "cook"
+    is_active: bool | None = True
+    kitchen_id: int | None = None
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
@@ -33,14 +33,14 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     """No hereda UserBase: sin `role` (evita escalada si se usa en endpoints)."""
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
-    is_active: Optional[bool] = None
-    password: Optional[str] = Field(default=None, min_length=10, max_length=128)
+    email: EmailStr | None = None
+    full_name: str | None = None
+    is_active: bool | None = None
+    password: str | None = Field(default=None, min_length=10, max_length=128)
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, v: Optional[str]) -> Optional[str]:
+    def validate_password(cls, v: str | None) -> str | None:
         if v is None:
             return None
         return _password_strength(v)
@@ -48,12 +48,12 @@ class UserUpdate(BaseModel):
 
 class UserSelfUpdate(BaseModel):
     """Solo perfil propio: sin role/email/is_active (evita escalada de privilegios)."""
-    full_name: Optional[str] = None
-    password: Optional[str] = Field(default=None, min_length=10, max_length=128)
+    full_name: str | None = None
+    password: str | None = Field(default=None, min_length=10, max_length=128)
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, v: Optional[str]) -> Optional[str]:
+    def validate_password(cls, v: str | None) -> str | None:
         if v is None:
             return None
         return _password_strength(v)
@@ -72,8 +72,8 @@ class OrganizationBase(BaseModel):
 
 # Additional properties to return via API
 class User(UserInDBBase):
-    organization_id: Optional[int] = None
-    organizations: Optional[list[OrganizationBase]] = []
+    organization_id: int | None = None
+    organizations: list[OrganizationBase] | None = []
 
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):

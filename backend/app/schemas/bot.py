@@ -1,12 +1,14 @@
-from typing import List, Optional, Any
 from datetime import datetime
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict
+
 
 class BotCustomerBase(BaseModel):
     channel: str
     channel_user_id: str
-    name: Optional[str] = None
-    phone: Optional[str] = None
+    name: str | None = None
+    phone: str | None = None
 
 class BotCustomer(BotCustomerBase):
     model_config = ConfigDict(from_attributes=True)
@@ -23,7 +25,7 @@ class BotSession(BotSessionBase):
 
     id: int
     customer_id: int
-    organization_id: Optional[int]
+    organization_id: int | None
     created_at: datetime
     last_interaction_at: datetime
 

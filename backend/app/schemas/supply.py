@@ -1,15 +1,16 @@
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
+
 
 # Shared properties
 class SupplyBase(BaseModel):
-    name: Optional[str] = None
-    quantity: Optional[float] = 0.0
-    unit: Optional[str] = "pz"
-    cost: Optional[float] = 0.0
-    min_quantity: Optional[float] = 5.0
-    category: Optional[str] = None
-    kitchen_id: Optional[int] = None
+    name: str | None = None
+    quantity: float | None = 0.0
+    unit: str | None = "pz"
+    cost: float | None = 0.0
+    min_quantity: float | None = 5.0
+    category: str | None = None
+    kitchen_id: int | None = None
 
 # Properties to receive via API on creation
 class SupplyCreate(SupplyBase):

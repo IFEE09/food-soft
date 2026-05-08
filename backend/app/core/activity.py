@@ -31,8 +31,8 @@ import logging
 import queue
 import threading
 import time
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -44,12 +44,12 @@ logger = logging.getLogger(__name__)
 
 # ── Estructura interna del evento (sin acoplar a SQLAlchemy) ────────────────
 def _event_dict(
-    user: Optional[models.User],
+    user: models.User | None,
     action: str,
     entity_type: str,
-    entity_id: Optional[int],
-    description: Optional[str],
-    organization_id: Optional[int],
+    entity_id: int | None,
+    description: str | None,
+    organization_id: int | None,
 ) -> dict[str, Any]:
     org_id = organization_id if organization_id is not None else (user.organization_id if user else None)
     return {
@@ -61,7 +61,7 @@ def _event_dict(
         "entity_type": entity_type,
         "entity_id": entity_id,
         "description": description,
-        "created_at": datetime.now(timezone.utc),
+        "created_at": datetime.now(UTC),
     }
 
 
@@ -74,7 +74,7 @@ class _AsyncActivityWriter:
             maxsize=settings.ACTIVITY_LOG_QUEUE_MAX
         )
         self._stop_event = threading.Event()
-        self._worker: Optional[threading.Thread] = None
+        self._worker: threading.Thread | None = None
         self._lock = threading.Lock()
         self._dropped = 0  # contador de eventos perdidos por queue llena
 
@@ -147,7 +147,7 @@ class _AsyncActivityWriter:
         """Bulk insert tolerante a fallas. Si falla, dropea el batch."""
         if not batch:
             return
-        db: Optional[Session] = None
+        db: Session | None = None
         try:
             db = session_factory()
             db.bulk_insert_mappings(models.ActivityLog, batch)
@@ -179,12 +179,12 @@ _writer = _AsyncActivityWriter()
 # ── API pública (firma estable) ──────────────────────────────────────────────
 def log_activity(
     db: Session,
-    user: Optional[models.User],
+    user: models.User | None,
     action: str,
     entity_type: str,
-    entity_id: Optional[int] = None,
-    description: Optional[str] = None,
-    organization_id: Optional[int] = None,
+    entity_id: int | None = None,
+    description: str | None = None,
+    organization_id: int | None = None,
 ) -> None:
     """
     Registra una actividad. Async por defecto: encola y retorna inmediato.

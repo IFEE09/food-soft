@@ -1,26 +1,27 @@
-from typing import Any, List, Optional
+import logging
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-import logging
 
-from app.core.rate_limit import limiter
-from app.db.session import get_db
-from app.db import models
-from app.schemas import supply as supply_schema
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.rate_limit import limiter
 from app.core.tenant import get_owned_or_404
+from app.db import models
+from app.db.session import get_db
+from app.schemas import supply as supply_schema
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.get("/", response_model=List[supply_schema.Supply])
+@router.get("/", response_model=list[supply_schema.Supply])
 @limiter.limit("180/minute")
 def read_supplies(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    kitchen_id: Optional[int] = None,
+    kitchen_id: int | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -42,7 +43,7 @@ def create_supply(
     """ Create new supply for the user's organization. """
     if not current_user.organization_id:
         raise HTTPException(status_code=400, detail="Tu usuario no tiene una organización asignada. Por favor, contacta a soporte.")
-    
+
     try:
         supply = models.Supply(
             name=supply_in.name,

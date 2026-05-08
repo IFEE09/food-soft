@@ -1,24 +1,25 @@
-from typing import Any, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.core.rate_limit import limiter
-from app.db.session import get_db
-from app.db import models
-from app.schemas import user as user_schema
-from app.core import security
 from app.api.auth import get_current_user, require_owner
+from app.core import security
 from app.core.activity import log_activity
+from app.core.rate_limit import limiter
+from app.db import models
+from app.db.session import get_db
+from app.schemas import user as user_schema
 
 router = APIRouter()
 
-@router.get("/team", response_model=List[user_schema.User])
+@router.get("/team", response_model=list[user_schema.User])
 @limiter.limit("120/minute")
 def list_team_members(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_owner),
-    kitchen_id: Optional[int] = None,
+    kitchen_id: int | None = None,
 ) -> Any:
     """ List users in organization. Optional filter by kitchen. """
     query = db.query(models.User).filter(
@@ -40,11 +41,11 @@ def create_team_member(
     """ Owner creates a team member in their organization. """
     if user_in.role == "owner":
         raise HTTPException(status_code=400, detail="No puedes crear otro propietario.")
-    
+
     existing = db.query(models.User).filter(models.User.email == user_in.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Ya existe un usuario con este correo.")
-    
+
     new_user = models.User(
         email=user_in.email,
         full_name=user_in.full_name,
@@ -82,7 +83,7 @@ def delete_team_member(
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="No puedes eliminarte a ti mismo.")
-    
+
     deleted_name = user.full_name
     deleted_role = user.role
     db.delete(user)
@@ -103,7 +104,7 @@ def read_user_me(
     """ Get current user. """
     return current_user
 
-@router.get("/me/organizations", response_model=List[user_schema.OrganizationBase])
+@router.get("/me/organizations", response_model=list[user_schema.OrganizationBase])
 @limiter.limit("60/minute")
 def read_user_organizations(
     request: Request,
@@ -129,7 +130,7 @@ def update_user_me(
         current_user.hashed_password = hashed_password
     if "full_name" in update_data:
         current_user.full_name = update_data["full_name"]
-    
+
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
@@ -153,7 +154,7 @@ def change_password(
     """ Change password with current password verification. """
     if not security.verify_password(password_in.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Contraseña actual incorrecta.")
-    
+
     current_user.hashed_password = security.get_password_hash(password_in.new_password)
     db.add(current_user)
     db.commit()

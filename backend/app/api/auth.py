@@ -3,29 +3,30 @@ import secrets
 from datetime import timedelta
 from typing import Any
 
-from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-from app.db import models
-from app.db.session import get_db
 from app.core import security
-from app.core.rate_limit import limiter
-from app.core.config import settings
 from app.core.activity import log_activity
 from app.core.api_keys import hash_api_key
-from app.schemas.user import User as UserSchema, UserCreate
+from app.core.config import settings
+from app.core.rate_limit import limiter
+from app.db import models
+from app.db.session import get_db
+from app.schemas.user import User as UserSchema
+from app.schemas.user import UserCreate
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login"
 )
 
 def get_current_user(
-    db: Session = Depends(get_db), 
+    db: Session = Depends(get_db),
     token: str = Depends(reusable_oauth2),
     request: Request = None
 ) -> models.User:
@@ -42,7 +43,7 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Usuario inactivo")
-    
+
     # Manejo de Multi-tenancy dinámico
     # Si viene el header X-Organization-ID, verificamos si el usuario tiene acceso
     requested_org_id = request.headers.get("X-Organization-ID") if request else None
@@ -58,7 +59,7 @@ def get_current_user(
                 raise HTTPException(status_code=403, detail="No tienes acceso a este restaurante.")
         except ValueError:
             pass # Header malformado, ignorar
-            
+
     return user
 
 
@@ -104,7 +105,7 @@ def login_access_token(
             detail="Email o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not security.verify_password(form_data.password, user.hashed_password):
         logger.warning("Login fallido: Contraseña incorrecta para -> %s", form_data.username)
         raise HTTPException(
@@ -117,7 +118,7 @@ def login_access_token(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Usuario inactivo",
         )
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     log_activity(
         db, user,
@@ -191,7 +192,7 @@ def register_user(
             status_code=400,
             detail="Ya existe un usuario con este correo electrónico.",
         )
-    
+
     raw_api = secrets.token_urlsafe(32)
     new_org = models.Organization(
         name=f"Kitchen of {user_in.full_name}",

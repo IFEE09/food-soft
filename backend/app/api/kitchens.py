@@ -1,18 +1,19 @@
-from typing import Any, List
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.rate_limit import limiter
-from app.db.session import get_db
-from app.db import models
-from app.schemas import kitchen as kitchen_schema
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.rate_limit import limiter
 from app.core.tenant import get_owned_or_404
+from app.db import models
+from app.db.session import get_db
+from app.schemas import kitchen as kitchen_schema
 
 router = APIRouter()
 
-@router.get("/", response_model=List[kitchen_schema.Kitchen])
+@router.get("/", response_model=list[kitchen_schema.Kitchen])
 @limiter.limit("180/minute")
 def read_kitchens(
     request: Request,

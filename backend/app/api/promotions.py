@@ -1,13 +1,14 @@
-from typing import Any, List
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from app.core.rate_limit import limiter
-from app.core.menu_cache import invalidate_promotions
-from app.db.session import get_db
-from app.db import models
-from app.api.auth import get_current_user
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.orm import Session
+
+from app.api.auth import get_current_user
+from app.core.menu_cache import invalidate_promotions
+from app.core.rate_limit import limiter
+from app.db import models
+from app.db.session import get_db
 
 router = APIRouter()
 
@@ -16,21 +17,21 @@ router = APIRouter()
 
 class PromotionCreate(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     is_active: bool = True
 
 
 class PromotionUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
 
 
 class PromotionOut(BaseModel):
     id: int
     organization_id: int
     title: str
-    description: Optional[str]
+    description: str | None
     is_active: bool
 
     class Config:
@@ -39,7 +40,7 @@ class PromotionOut(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=List[PromotionOut])
+@router.get("/", response_model=list[PromotionOut])
 @limiter.limit("120/minute")
 def list_promotions(
     request: Request,

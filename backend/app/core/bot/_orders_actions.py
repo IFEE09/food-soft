@@ -10,12 +10,10 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.core.bot._messages import text
+from app.core.bot._messages import send_text_action
 from app.db import models
 
-
-def _send_text(channel: str, to: str, body: str) -> dict:
-    return {"action": "SEND_TEXT", "payload": text(channel, to, body)}
+_send_text = send_text_action
 
 
 # ── Estado del pedido ────────────────────────────────────────────────────────

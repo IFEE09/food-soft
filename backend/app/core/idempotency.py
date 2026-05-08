@@ -25,7 +25,6 @@ ATÓMICIDAD:
 from __future__ import annotations
 
 import threading
-from typing import Optional
 
 from app.core.cache import _InMemoryCache, _RedisCache, get_cache
 from app.core.logging import get_logger

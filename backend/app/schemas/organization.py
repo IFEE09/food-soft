@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -14,5 +13,5 @@ class OrganizationPublic(BaseModel):
 
     id: int
     name: str
-    whatsapp_phone_number_id: Optional[str] = None
-    created_at: Optional[datetime] = None
+    whatsapp_phone_number_id: str | None = None
+    created_at: datetime | None = None

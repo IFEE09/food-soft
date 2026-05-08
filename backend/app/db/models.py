@@ -1,8 +1,21 @@
 from datetime import datetime
-from typing import Any, Optional
-from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey, JSON, Table, UniqueConstraint
-from sqlalchemy.orm import relationship, Mapped
+from typing import Any
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
+
 from app.db.session import Base
 
 # Association table for Many-to-Many relationship
@@ -40,17 +53,17 @@ class User(Base):
     # Role can be 'owner' or 'cook'
     role = Column(String, default="cook", nullable=False)
     is_active = Column(Boolean(), default=True)
-    
+
     # organization_id holds the "active" or "primary" organization
-    organization_id: Mapped[Optional[int]] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
-    
+
     organizations = relationship("Organization", secondary=user_organization_link, back_populates="users")
     kitchen = relationship("Kitchen")
 
 class Supply(Base):
     __tablename__ = "supplies"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     quantity = Column(Float, default=0.0)
@@ -58,32 +71,32 @@ class Supply(Base):
     cost = Column(Float, default=0.0) # Cost per unit
     min_quantity = Column(Float, default=5.0) # threshold for alerts
     category = Column(String, index=True, nullable=True) # Proteins, Veggies, etc.
-    
+
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
 
 class Kitchen(Base):
     __tablename__ = "kitchens"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False) # e.g., "Sucursal Polanco"
     address = Column(String, nullable=True)
     is_active = Column(Boolean(), default=True)
-    
+
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    
+
     stations = relationship("Station", back_populates="kitchen")
 
 class Station(Base):
     __tablename__ = "stations"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False) # e.g., "Hornos", "Fríos", "Empaque"
     is_active = Column(Boolean(), default=True)
-    
+
     kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    
+
     kitchen = relationship("Kitchen", back_populates="stations")
     orders = relationship("Order", back_populates="station")
 
@@ -99,23 +112,23 @@ class Order(Base):
 
     station_id = Column(Integer, ForeignKey("stations.id"), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     ready_at = Column(DateTime(timezone=True), nullable=True)
     delivered_at = Column(DateTime(timezone=True), nullable=True)
-    
+
     items = relationship("OrderItem", back_populates="order")
     station = relationship("Station", back_populates="orders")
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     product_name = Column(String, nullable=False)
     quantity = Column(Integer, default=1)
     note = Column(String, nullable=True)  # Modificación del cliente (ej: 'sin cebolla')
-    
+
     order = relationship("Order", back_populates="items")
 
 class MenuItem(Base):
@@ -127,7 +140,7 @@ class MenuItem(Base):
     category = Column(String, index=True, nullable=True)
     description = Column(String, nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    
+
     recipe_items = relationship("MenuItemRecipe", back_populates="menu_item", cascade="all, delete-orphan")
 
 class MenuItemRecipe(Base):
@@ -162,17 +175,17 @@ class BotCustomer(Base):
     __tablename__ = "bot_customers"
 
     id: Mapped[int] = Column(Integer, primary_key=True, index=True)
-    organization_id: Mapped[Optional[int]] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
 
     channel: Mapped[str] = Column(String, index=True, nullable=False) # 'whatsapp', 'messenger', 'instagram'
     channel_user_id: Mapped[str] = Column(String, index=True, nullable=False) # Phone number or PSID/IGSID
 
-    name: Mapped[Optional[str]] = Column(String, nullable=True)
-    phone: Mapped[Optional[str]] = Column(String, nullable=True) # Usually same as channel_user_id for WA
+    name: Mapped[str | None] = Column(String, nullable=True)
+    phone: Mapped[str | None] = Column(String, nullable=True) # Usually same as channel_user_id for WA
 
     # Memoria persistente entre pedidos
-    saved_name: Mapped[Optional[str]]    = Column(String, nullable=True)  # Último nombre confirmado
-    saved_address: Mapped[Optional[str]] = Column(String, nullable=True)  # Última dirección usada
+    saved_name: Mapped[str | None]    = Column(String, nullable=True)  # Último nombre confirmado
+    saved_address: Mapped[str | None] = Column(String, nullable=True)  # Última dirección usada
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -189,7 +202,7 @@ class BotSession(Base):
     __tablename__ = "bot_sessions"
 
     id: Mapped[int] = Column(Integer, primary_key=True, index=True)
-    organization_id: Mapped[Optional[int]] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     customer_id: Mapped[int] = Column(Integer, ForeignKey("bot_customers.id"), nullable=False, unique=True)
 
     # State machine status: START, VIEWING_MENU, BUILDING_CART, CONFIRMING_ORDER, FINISHED

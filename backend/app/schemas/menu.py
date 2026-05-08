@@ -1,6 +1,8 @@
-from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict
+
 from .supply import Supply
+
 
 class RecipeItemBase(BaseModel):
     supply_id: int
@@ -14,24 +16,24 @@ class RecipeItem(RecipeItemBase):
 
     id: int
     menu_item_id: int
-    supply: Optional[Supply] = None
+    supply: Supply | None = None
 
 class MenuItemBase(BaseModel):
     name: str
     price: float = 0.0
-    category: Optional[str] = None
-    description: Optional[str] = None
+    category: str | None = None
+    description: str | None = None
 
 class MenuItemCreate(MenuItemBase):
-    recipe_items: List[RecipeItemCreate] = []
+    recipe_items: list[RecipeItemCreate] = []
 
 class MenuItemUpdate(MenuItemBase):
-    name: Optional[str] = None
-    price: Optional[float] = None
-    recipe_items: Optional[List[RecipeItemCreate]] = None
+    name: str | None = None
+    price: float | None = None
+    recipe_items: list[RecipeItemCreate] | None = None
 
 class MenuItem(MenuItemBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    recipe_items: List[RecipeItem] = []
+    recipe_items: list[RecipeItem] = []

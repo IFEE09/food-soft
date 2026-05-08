@@ -1,20 +1,21 @@
-from typing import Any, List, Optional
-from datetime import datetime, date
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
 import csv
 import io
 import logging
+from datetime import date, datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.core.rate_limit import limiter
-from app.db.session import get_db
-from app.db import models
-from app.schemas import order as order_schema
 from app.api.auth import get_current_user
 from app.core.activity import log_activity
 from app.core.inventory import deduct_supplies_for_line_items
+from app.core.rate_limit import limiter
 from app.core.tenant import assert_kitchen_in_organization
+from app.db import models
+from app.db.session import get_db
+from app.schemas import order as order_schema
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ _DELIVERY_PHONE = "9993372150"
 
 router = APIRouter()
 
-@router.get("/", response_model=List[order_schema.Order])
+@router.get("/", response_model=list[order_schema.Order])
 @limiter.limit("180/minute")
 def read_orders(
     request: Request,
@@ -31,10 +32,10 @@ def read_orders(
     current_user: models.User = Depends(get_current_user),
     skip: int = 0,
     limit: int = 100,
-    status: Optional[str] = None,
-    kitchen_id: Optional[int] = None,
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
+    status: str | None = None,
+    kitchen_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> Any:
     """ Retrieve orders for organization with optional date filters. """
     query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
@@ -57,9 +58,9 @@ def export_orders_csv(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
-    status: Optional[str] = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    status: str | None = None,
 ) -> Any:
     """ Export orders as CSV with optional date and status filters. """
     query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
@@ -103,12 +104,11 @@ def orders_summary(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
-    status: Optional[str] = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    status: str | None = None,
 ) -> Any:
     """ Return daily breakdown of orders for charting. """
-    from sqlalchemy import func as sqlfunc
     query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
     if status:
         query = query.filter(models.Order.status == status)
@@ -154,7 +154,7 @@ async def create_order(
 ) -> Any:
     """ Create new order for organization. """
     assert_kitchen_in_organization(db, order_in.kitchen_id, current_user.organization_id)
-    
+
     if not order_in.items:
         raise HTTPException(status_code=400, detail="La orden debe contener al menos un platillo.")
 
@@ -183,7 +183,7 @@ async def create_order(
         deduct_supplies_for_line_items(db, current_user.organization_id, lines)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
+
     db.commit()
     db.refresh(order)
     log_activity(
@@ -209,7 +209,7 @@ def update_order(
               .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     update_data = order_in.model_dump(exclude_unset=True)
     if "kitchen_id" in update_data and update_data["kitchen_id"] is not None:
         assert_kitchen_in_organization(
@@ -217,13 +217,13 @@ def update_order(
         )
     for field in update_data:
         setattr(order, field, update_data[field])
-    
+
     # Special logic for status transitions
     if order.status == "ready" and not order.ready_at:
         order.ready_at = datetime.now()
     elif order.status == "delivered" and not order.delivered_at:
         order.delivered_at = datetime.now()
-    
+
     db.add(order)
     db.commit()
     db.refresh(order)
@@ -329,7 +329,7 @@ def delete_order(
               .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     # Delete items first
     db.query(models.OrderItem).filter(models.OrderItem.order_id == id).delete()
 

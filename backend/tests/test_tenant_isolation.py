@@ -11,8 +11,8 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 
 from app.core.tenant_guard import has_org_column, scoped_query
-from app.db.session import Base, engine
 from app.db import models
+from app.db.session import Base, engine
 
 
 @pytest.fixture

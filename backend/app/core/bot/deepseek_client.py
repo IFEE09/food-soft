@@ -5,10 +5,10 @@ Usa la API de DeepSeek (compatible con OpenAI SDK) para procesar mensajes
 en lenguaje natural y devolver acciones estructuradas que el BotEngine ejecuta.
 """
 
-import os
 import json
 import logging
-from typing import Optional
+import os
+
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEEPSEEK_MODEL = "deepseek-chat"
 
-_client: Optional[OpenAI] = None
+_client: OpenAI | None = None
 
 
 def _get_client() -> OpenAI:

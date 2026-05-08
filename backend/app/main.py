@@ -12,7 +12,6 @@ warnings.filterwarnings(
     module="slowapi.*",
 )
 
-from typing import Optional
 
 from fastapi import FastAPI, Query, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +19,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
+
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.observability import init_sentry
@@ -29,23 +29,36 @@ configure_logging()
 init_sentry()
 
 import logging
+
 logger = logging.getLogger(__name__)
 
-from app.db.session import SessionLocal, engine, get_db
-from app.db import models
 from app.core.db_observability import install_db_observability
+from app.db import models
+from app.db.session import SessionLocal, engine, get_db
 
 install_db_observability(engine)
 from app.api import (
-    auth, kitchens, users, supplies, orders, menu, integrations,
-    activity_logs, bot, organizations, stations, promotions, health,
+    activity_logs,
+    auth,
+    bot,
+    health,
+    integrations,
+    kitchens,
+    menu,
+    orders,
+    organizations,
+    promotions,
+    stations,
+    supplies,
+    users,
 )
-from app.core.notifier import manager, set_main_loop
 from app.core import security
+from app.core.api_keys import hash_api_key
+from app.core.notifier import manager, set_main_loop
 from app.core.rate_limit import limiter
 from app.core.request_id import RequestIDMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
-from app.core.api_keys import hash_api_key
+
 
 # MVP/Dev only: ALTER TABLE idempotente. En producción usar Alembic
 # (alembic upgrade head) y poner RUN_STARTUP_MIGRATIONS=False.
@@ -108,9 +121,8 @@ def run_migrations():
 # Create/Fix users and organizations
 def init_db_data():
     from app.core import security
-    from app.core.api_keys import hash_api_key
     db = next(get_db())
-    
+
     # 1. Asegurar Organización Horno 74
     org_name = "Horno 74"
     org = db.query(models.Organization).filter(models.Organization.name == org_name).first()
@@ -123,7 +135,7 @@ def init_db_data():
         db.add(org)
         db.flush()
         logger.info("Auto-Seed: Organización '%s' creada.", org_name)
-    
+
     org_id = org.id
 
     # 2. Asegurar Usuario Administrador
@@ -141,11 +153,11 @@ def init_db_data():
         db.add(admin)
         db.flush()
         logger.info("Auto-Seed: Usuario '%s' creado.", admin_email)
-    
+
     # 2b. Vincular admin a la organización (Many-to-Many)
     if org not in admin.organizations:
         admin.organizations.append(org)
-    
+
     db.commit()
 
     # 3. Asegurar Menú Inicial (27 items)
@@ -255,7 +267,7 @@ def root():
 async def websocket_endpoint(
     websocket: WebSocket,
     org_id: int,
-    token: Optional[str] = Query(
+    token: str | None = Query(
         None,
         description="Opcional (legacy). Preferir mensaje inicial JSON auth.",
     ),
@@ -272,7 +284,7 @@ async def websocket_endpoint(
             payload = json.loads(raw)
             if isinstance(payload, dict) and payload.get("type") == "auth":
                 auth_token = payload.get("token")
-        except (asyncio.TimeoutError, json.JSONDecodeError, TypeError, ValueError):
+        except (TimeoutError, json.JSONDecodeError, TypeError, ValueError):
             await websocket.close(code=4401)
             return
     if not auth_token:

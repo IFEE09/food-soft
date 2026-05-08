@@ -10,11 +10,19 @@ Si añades un canal nuevo, solo extiendes `text()` y `image()`.
 
 from __future__ import annotations
 
-from app.core.bot.adapters import InstagramAdapter, MessengerAdapter, WhatsAppAdapter
 from app.core.bot._formatters import clean_text
-
+from app.core.bot.adapters import InstagramAdapter, MessengerAdapter, WhatsAppAdapter
 
 # ── Adapter por canal ───────────────────────────────────────────────────────
+
+
+def send_text_action(channel: str, to: str, body: str) -> dict:
+    """Wrapper común para acción SEND_TEXT. Usar este en lugar de duplicar el dict.
+
+    Devuelve `{"action": "SEND_TEXT", "payload": text(...)}`. Las funciones de
+    `_actions`, `_orders_actions` y `_confirm` usaban esto duplicado.
+    """
+    return {"action": "SEND_TEXT", "payload": text(channel, to, body)}
 
 
 def text(channel: str, to: str, body: str) -> dict:

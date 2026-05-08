@@ -13,13 +13,11 @@ Diseño: SQLite en memoria + factory de orgs/menu/sesiones. Cada test es aislado
 
 from __future__ import annotations
 
-from typing import List
-
 import pytest
 from sqlalchemy.orm import sessionmaker
 
-from app.db.session import Base, engine
 from app.db import models
+from app.db.session import Base, engine
 
 
 @pytest.fixture

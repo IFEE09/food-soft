@@ -8,3 +8,38 @@ venv = ".venv"
 # pythonpath asegura que `import app.*` funcione local y en CI.
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+# Línea max razonable (no la default 88; permite f-strings descriptivos).
+line-length = 110
+target-version = "py312"
+extend-exclude = ["alembic/versions", "alembic"]
+
+[tool.ruff.lint]
+# Reglas core (defaults) + bugbear + pycodestyle warnings + pyupgrade.
+# Empezamos con un set conservador. Subir a `select = ["ALL"]` cuando el código
+# esté listo (genera ~1000 hallazgos hoy, ruido excesivo).
+select = ["E", "F", "W", "B", "UP", "I"]
+ignore = [
+    "E501",   # line-too-long: lo manejamos vía formatter, no lint hard-fail
+    "B008",   # function-call-in-default-argument: FastAPI Depends() es idiomático
+    "UP007",  # PEP 604 union types: Optional[X] sigue siendo válido y más explícito
+    "UP047",  # PEP 695 generics: requiere Python 3.12+ y reescritura agresiva
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["E402"]                      # imports en tests pueden venir tras setup
+"alembic/env.py" = ["E402"]                     # imports tras config inicial
+"alembic/versions/*.py" = ["E402"]              # autogenerate orderings
+"app/core/bot/engine.py" = ["F841"]             # vars del state machine pueden no usarse
+# main.py: imports después de configure_logging() / init_sentry() (orden importa).
+"app/main.py" = ["E402"]
+# routers/api: imports lazy dentro de funciones para evitar ciclos en bootstrap.
+"app/api/*.py" = ["E402", "B904"]
+# core/* helpers que tienen imports tardíos o re-raise sin from por compatibilidad.
+"app/core/db_observability.py" = ["E402"]
+"app/core/tenant.py" = ["B904"]
+"app/core/tenant_guard.py" = ["B904"]

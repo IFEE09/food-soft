@@ -1,17 +1,17 @@
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from app.core.rate_limit import limiter
-from app.db.session import get_db
-from app.db import models
 from app.api.auth import require_owner
+from app.core.rate_limit import limiter
+from app.db import models
+from app.db.session import get_db
 from app.schemas import activity as activity_schema
 
 router = APIRouter()
 
-@router.get("/", response_model=List[activity_schema.ActivityLog])
+@router.get("/", response_model=list[activity_schema.ActivityLog])
 @limiter.limit("90/minute")
 def read_activity_logs(
     request: Request,
@@ -19,9 +19,9 @@ def read_activity_logs(
     current_user: Annotated[models.User, Depends(require_owner)],
     skip: int = 0,
     limit: Annotated[int, Query(le=200)] = 100,
-    entity_type: Optional[str] = None,
-    action: Optional[str] = None,
-    user_id: Optional[int] = None,
+    entity_type: str | None = None,
+    action: str | None = None,
+    user_id: int | None = None,
 ) -> Any:
     """ Retrieve activity logs for the user's organization. """
     logs_query = db.query(models.ActivityLog)\

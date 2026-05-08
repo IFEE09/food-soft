@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,10 +15,10 @@ class Settings(BaseSettings):
     # development | production
     ENV: str = "development"
     # Orígenes CORS separados por coma (requerido si ENV=production)
-    ALLOWED_ORIGINS: Optional[str] = None
-    
+    ALLOWED_ORIGINS: str | None = None
+
     # Database
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: str | None = None
 
     # Fallback (Local Dev Only) — contraseña solo en .env, no en código.
     POSTGRES_SERVER: str = "localhost"
@@ -41,13 +40,13 @@ class Settings(BaseSettings):
     RUN_STARTUP_SEED: bool = True
 
     # Observability
-    SENTRY_DSN: Optional[str] = None
+    SENTRY_DSN: str | None = None
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0   # 0.0 = solo errores, sin trazas (cuesta menos)
     LOG_FORMAT: str = "console"              # "console" (dev) | "json" (prod)
     LOG_LEVEL: str = "INFO"
 
     # Cache + queue (Redis). Si vacío: cache in-memory + queue via BackgroundTasks.
-    REDIS_URL: Optional[str] = None
+    REDIS_URL: str | None = None
     CACHE_TTL_SECONDS: int = 60              # default TTL de caché (menu, promos, settings)
 
     # Concurrency: Starlette default = 40 threads en threadpool. Subir para webhooks bot
@@ -66,8 +65,8 @@ class Settings(BaseSettings):
     DB_QUERY_COUNT_WARN_THRESHOLD: int = 50      # warn si un request hace > N queries
 
     # Read replica (DATABASE_REPLICA_URL: Postgres replica para SELECT pesados).
-    DATABASE_REPLICA_URL: Optional[str] = None
-    
+    DATABASE_REPLICA_URL: str | None = None
+
     # Auth (no usar el valor por defecto en producción)
     SECRET_KEY: str = _DEFAULT_SECRET
     ALGORITHM: str = "HS256"
@@ -80,12 +79,12 @@ class Settings(BaseSettings):
 
     # Meta Platform (Bot) — definir en .env (verify token del webhook Meta).
     META_VERIFY_TOKEN: str = ""
-    META_ACCESS_TOKEN: Optional[str] = None
-    META_APP_SECRET: Optional[str] = None
+    META_ACCESS_TOKEN: str | None = None
+    META_APP_SECRET: str | None = None
 
     # Si True, permite POST /bot/mock fuera de producción. Por seguridad, por defecto es False.
     ENABLE_BOT_MOCK_ENDPOINT: bool = False
-    
+
     # Use pydantic_settings model config to load .env if present
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
 
@@ -94,7 +93,7 @@ class Settings(BaseSettings):
         if self.ENV == "production":
             # Forzar apagado de endpoints de prueba/mock en producción
             self.ENABLE_BOT_MOCK_ENDPOINT = False
-            
+
             if self.SECRET_KEY == _DEFAULT_SECRET:
                 raise ValueError(
                     "SECRET_KEY no puede ser el valor por defecto cuando ENV=production."
@@ -125,11 +124,11 @@ class Settings(BaseSettings):
             )
         return self
 
-    def get_cors_origins(self) -> List[str]:
+    def get_cors_origins(self) -> list[str]:
         raw = (self.ALLOWED_ORIGINS or "").strip()
         if raw:
             return [o.strip() for o in raw.split(",") if o.strip()]
-        
+
         # Orígenes por defecto para desarrollo y tus dominios específicos de Railway
         origins = [
             "http://localhost:5173",
@@ -139,10 +138,10 @@ class Settings(BaseSettings):
             # Tu dominio de frontend específico (detectado en consola)
             "https://compassionate-blessing-production-bc5c.up.railway.app",
         ]
-        
+
         if self.ENV == "production":
             logger.info("CORS: Usando orígenes permitidos: %s", origins)
-        
+
         return origins
 
     def get_database_url(self) -> str:

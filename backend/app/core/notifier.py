@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -35,7 +35,7 @@ from app.core.logging import get_logger
 
 log = get_logger(__name__)
 
-_main_loop: Optional[asyncio.AbstractEventLoop] = None
+_main_loop: asyncio.AbstractEventLoop | None = None
 
 
 def set_main_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -62,7 +62,7 @@ class _InMemoryManager:
     """Single-process manager. Mensajes se entregan solo a websockets de este worker."""
 
     def __init__(self) -> None:
-        self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.active_connections: dict[int, list[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, org_id: int) -> None:
         # El caller debe hacer websocket.accept() antes (auth por primer mensaje).
@@ -95,8 +95,8 @@ class _RedisPubSubManager:
         import redis.asyncio as aioredis
 
         self._client = aioredis.from_url(url, decode_responses=True)
-        self._local: Dict[int, List[WebSocket]] = {}
-        self._subscribers: Dict[int, asyncio.Task] = {}
+        self._local: dict[int, list[WebSocket]] = {}
+        self._subscribers: dict[int, asyncio.Task] = {}
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, org_id: int) -> None:

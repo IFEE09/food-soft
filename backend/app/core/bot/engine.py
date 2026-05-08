@@ -26,29 +26,37 @@ FLUJO PRINCIPAL:
 
 import logging
 import re
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional, Tuple, cast
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.db import models
-from app.core.bot.deepseek_client import ask_deepseek
+
+from app.core.bot import _actions, _confirm, _orders_actions
+from app.core.bot import _messages as _msg
 from app.core.bot._constants import (
     MAX_ADDRESS_LEN as _MAX_ADDRESS_LEN,
+)
+from app.core.bot._constants import (
     MAX_HISTORY as _MAX_HISTORY,
-    STEP_CART_OPTIONS,
-    STEP_AWAITING_YES_NO,
-    STEP_ASKING_NAME,
-    STEP_TYPING_NAME,
+)
+from app.core.bot._constants import (
     STEP_ASKING_ADDRESS,
-    STEP_TYPING_ADDRESS,
+    STEP_ASKING_NAME,
     STEP_ASKING_NOTE,
+    STEP_AWAITING_YES_NO,
+    STEP_CART_OPTIONS,
+    STEP_TYPING_ADDRESS,
+    STEP_TYPING_NAME,
+)
+from app.core.bot._formatters import (
+    clean_text as _clean_text,
 )
 from app.core.bot._formatters import (
     format_cart_summary as _format_cart_summary,
-    clean_text as _clean_text,
 )
-from app.core.bot import _actions, _confirm, _messages as _msg, _orders_actions
+from app.core.bot.deepseek_client import ask_deepseek
+from app.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +80,7 @@ class BotEngine:
     @staticmethod
     def get_or_create_session(
         db: Session, org_id: int, channel: str, sender_id: str
-    ) -> Tuple[models.BotCustomer, models.BotSession]:
+    ) -> tuple[models.BotCustomer, models.BotSession]:
         # 1. Try to find customer
         customer = db.query(models.BotCustomer).filter_by(
             organization_id=org_id,
@@ -148,7 +156,7 @@ class BotEngine:
     def _execute_show_menu(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int,
-        greeting: Optional[str] = None,
+        greeting: str | None = None,
     ) -> list:
         return _actions.show_menu(channel, sender_id, greeting=greeting)
 
@@ -156,7 +164,7 @@ class BotEngine:
     def _execute_add_to_cart(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int, item_id: int,
-        item_note: Optional[str] = None,
+        item_note: str | None = None,
     ) -> list:
         return _actions.add_to_cart(
             db, channel, sender_id, session, organization_id, item_id, item_note=item_note,
@@ -165,7 +173,7 @@ class BotEngine:
     @staticmethod
     def _execute_view_cart(
         channel: str, sender_id: str, session: models.BotSession,
-        db: Optional[Session] = None,
+        db: Session | None = None,
     ) -> list:
         return _actions.view_cart(channel, sender_id, session, db=db)
 
@@ -287,8 +295,8 @@ class BotEngine:
         organization_id: int,
         channel: str,
         sender_id: str,
-        text: Optional[str] = None,
-        interactive_id: Optional[str] = None,
+        text: str | None = None,
+        interactive_id: str | None = None,
     ) -> list:
         out = []
         customer, session = BotEngine.get_or_create_session(db, organization_id, channel, sender_id)
@@ -313,11 +321,11 @@ class BotEngine:
                 last_interaction = last_interaction.replace(tzinfo=None)
             inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "CARRITO_PENDIENTE"}
             has_items = bool(cart.get("items"))
-            if (datetime.now(timezone.utc).replace(tzinfo=None) - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states and has_items:
+            if (datetime.now(UTC).replace(tzinfo=None) - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states and has_items:
                 clean_cart: dict[str, Any] = {"items": [], "total": 0.0, "history": list(cast(list, cart.get("history", [])))}
                 session.cart_data = clean_cart
                 session.state = "ACTIVO"
-                session.last_interaction_at = datetime.now(timezone.utc)
+                session.last_interaction_at = datetime.now(UTC)
                 db.commit()
                 cart  = clean_cart
                 state = "ACTIVO"
@@ -327,7 +335,7 @@ class BotEngine:
                 )})
                 out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
                 return out
-        session.last_interaction_at = datetime.now(timezone.utc)
+        session.last_interaction_at = datetime.now(UTC)
         db.commit()
 
         # ── Manejo directo de botones del catálogo (bypass IA) ────────────────
@@ -525,7 +533,7 @@ class BotEngine:
                         )}]
 
                     # Opción no reconocida
-                    options_text = f"1️⃣ Sí, esa dirección\n2️⃣ Cambiar dirección"
+                    options_text = "1️⃣ Sí, esa dirección\n2️⃣ Cambiar dirección"
                     return BotEngine._unrecognized_option(channel, sender_id, options_text) + \
                            [{"action": "SEND_TEXT", "payload": BotEngine._address_confirm_msg(channel, sender_id, saved_address)}]
                 else:
@@ -657,7 +665,7 @@ class BotEngine:
             return position_result
 
         # ── Resolver variante pendiente ───────────────────────────────────────
-        pending_item: Optional[str] = cast(Optional[str], cart.get("pending_variant_base"))
+        pending_item: str | None = cast(str | None, cart.get("pending_variant_base"))
         pending_options: list = cast(list, cart.get("pending_variant_options", []))
         if pending_item and user_text:
             AFFIRMATIVE_VAGUE = {

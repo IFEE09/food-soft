@@ -1,4 +1,5 @@
 from typing import TypeVar
+
 from fastapi import HTTPException
 from sqlalchemy.orm import DeclarativeBase, Session
 

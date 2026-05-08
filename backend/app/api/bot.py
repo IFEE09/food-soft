@@ -6,7 +6,6 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -29,7 +28,7 @@ class MockBotPayload(BaseModel):
     channel_user_id: str
     organization_id: int
     text: str = ""
-    interactive_id: Optional[str] = None
+    interactive_id: str | None = None
 
 
 @router.get("/webhook")
@@ -103,7 +102,7 @@ def mock_bot_message(
     return {"outbound_messages": outbound}
 
 
-def _resolve_org_by_whatsapp(db: Session, phone_number_id: Optional[str]) -> Optional[int]:
+def _resolve_org_by_whatsapp(db: Session, phone_number_id: str | None) -> int | None:
     if not phone_number_id:
         return None
     pn = str(phone_number_id).strip()
@@ -115,7 +114,7 @@ def _resolve_org_by_whatsapp(db: Session, phone_number_id: Optional[str]) -> Opt
     return org.id if org else None
 
 
-def _resolve_org_by_page(db: Session, page_id: Optional[str], channel: str) -> Optional[int]:
+def _resolve_org_by_page(db: Session, page_id: str | None, channel: str) -> int | None:
     if not page_id:
         return None
     pid = str(page_id).strip()

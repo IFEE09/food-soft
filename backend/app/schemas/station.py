@@ -1,18 +1,18 @@
-from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
+
 
 class StationBase(BaseModel):
     name: str
     is_active: bool = True
-    kitchen_id: Optional[int] = None
+    kitchen_id: int | None = None
 
 class StationCreate(StationBase):
     pass
 
 class StationUpdate(BaseModel):
-    name: Optional[str] = None
-    is_active: Optional[bool] = None
-    kitchen_id: Optional[int] = None
+    name: str | None = None
+    is_active: bool | None = None
+    kitchen_id: int | None = None
 
 class Station(StationBase):
     model_config = ConfigDict(from_attributes=True)

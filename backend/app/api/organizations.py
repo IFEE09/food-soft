@@ -1,24 +1,24 @@
 import secrets
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
-from app.db import models
 from app.api.auth import require_owner
 from app.core.activity import log_activity
 from app.core.api_keys import hash_api_key
-from app.schemas import organization as organization_schema
 from app.core.rate_limit import limiter
+from app.db import models
+from app.db.session import get_db
+from app.schemas import organization as organization_schema
 
 router = APIRouter()
 
 
 class WhatsAppPhoneBinding(BaseModel):
     """Valor exacto de `metadata.phone_number_id` del webhook de WhatsApp Cloud API."""
-    whatsapp_phone_number_id: Optional[str] = Field(
+    whatsapp_phone_number_id: str | None = Field(
         default=None,
         description="Cadena vacía o null desvincula.",
     )
@@ -53,12 +53,12 @@ def create_organization(
     )
     db.add(org)
     db.flush()
-    
+
     # Vincular al dueño actual
     current_user.organizations.append(org)
     db.commit()
     db.refresh(org)
-    
+
     log_activity(
         db, current_user,
         action="create", entity_type="organization", entity_id=org.id,
@@ -78,20 +78,20 @@ def rotate_api_key(
     org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
-    
+
     new_key = secrets.token_urlsafe(32)
     org.api_key_hash = hash_api_key(new_key)
     org.api_key = None
     db.add(org)
     db.commit()
     db.refresh(org)
-    
+
     log_activity(
         db, current_user,
         action="update", entity_type="organization", entity_id=org.id,
         description="Rotó la llave de API de integración"
     )
-    
+
     return {"api_key": new_key}
 
 
@@ -148,11 +148,11 @@ def bind_whatsapp_phone_number_id(
 # ─────────────────────────────────────────────────────────────────────────────
 
 class FacebookPageBinding(BaseModel):
-    facebook_page_id: Optional[str] = Field(default=None, description="Cadena vacía o null desvincula.")
+    facebook_page_id: str | None = Field(default=None, description="Cadena vacía o null desvincula.")
 
 
 class InstagramPageBinding(BaseModel):
-    instagram_page_id: Optional[str] = Field(default=None, description="Cadena vacía o null desvincula.")
+    instagram_page_id: str | None = Field(default=None, description="Cadena vacía o null desvincula.")
 
 
 @router.patch("/me/facebook")

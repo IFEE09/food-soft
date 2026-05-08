@@ -16,7 +16,7 @@ optimización futura (ej: batchear commits) debe revisarlas todas juntas.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -28,12 +28,11 @@ from app.core.bot._constants import (
     STEP_CART_OPTIONS,
 )
 from app.core.bot._formatters import format_cart_summary, round_price
-from app.core.bot._messages import cart_options_msg, image, text
+from app.core.bot._messages import cart_options_msg, image, send_text_action
 from app.db import models
 
-
-def _send_text(channel: str, to: str, body: str) -> dict:
-    return {"action": "SEND_TEXT", "payload": text(channel, to, body)}
+# Alias local para mantener legibilidad del código existente.
+_send_text = send_text_action
 
 
 def _send_image(channel: str, to: str, image_url: str) -> dict:
@@ -57,7 +56,7 @@ def _recompute_total(items_list: list) -> float:
 # ── Show menu ─────────────────────────────────────────────────────────────────
 
 
-def show_menu(channel: str, sender_id: str, greeting: Optional[str] = None) -> list:
+def show_menu(channel: str, sender_id: str, greeting: str | None = None) -> list:
     out = []
     if greeting:
         out.append(_send_text(channel, sender_id, greeting))
@@ -79,7 +78,7 @@ def add_to_cart(
     session: models.BotSession,
     organization_id: int,
     item_id: int,
-    item_note: Optional[str] = None,
+    item_note: str | None = None,
 ) -> list:
     menu_item = (
         db.query(models.MenuItem)
@@ -144,7 +143,7 @@ def view_cart(
     channel: str,
     sender_id: str,
     session: models.BotSession,
-    db: Optional[Session] = None,
+    db: Session | None = None,
 ) -> list:
     cart: dict[str, Any] = dict(session.cart_data)
     items_list = cart.get("items", [])

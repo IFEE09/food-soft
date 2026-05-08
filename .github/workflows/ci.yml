@@ -35,7 +35,7 @@ jobs:
           pip install ruff
 
       - name: Lint (ruff)
-        run: ruff check app/ tests/ || true   # warn-only por ahora
+        run: ruff check app/ tests/
 
       - name: Run tests
         env:

@@ -1,24 +1,25 @@
-from typing import Any, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.rate_limit import limiter
-from app.db.session import get_db
-from app.db import models
-from app.schemas import station as station_schema
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.rate_limit import limiter
 from app.core.tenant import get_owned_or_404
+from app.db import models
+from app.db.session import get_db
+from app.schemas import station as station_schema
 
 router = APIRouter()
 
-@router.get("/", response_model=List[station_schema.Station])
+@router.get("/", response_model=list[station_schema.Station])
 @limiter.limit("180/minute")
 def read_stations(
     request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
-    kitchen_id: Optional[int] = None,
+    kitchen_id: int | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -41,7 +42,7 @@ def create_station(
 ) -> Any:
     """ Add new production station for a kitchen. """
     station = models.Station(
-        name=station_in.name, 
+        name=station_in.name,
         is_active=station_in.is_active,
         kitchen_id=station_in.kitchen_id,
         organization_id=current_user.organization_id

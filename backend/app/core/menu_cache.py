@@ -20,7 +20,7 @@ debe migrarse a este helper para que se beneficie del cache.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -39,7 +39,7 @@ def _promos_key(org_id: int) -> str:
 
 
 # ── Serialización (independiente de SQLAlchemy) ─────────────────────────────
-def _serialize_menu_item(item: models.MenuItem) -> Dict[str, Any]:
+def _serialize_menu_item(item: models.MenuItem) -> dict[str, Any]:
     return {
         "id": item.id,
         "name": item.name,
@@ -50,7 +50,7 @@ def _serialize_menu_item(item: models.MenuItem) -> Dict[str, Any]:
     }
 
 
-def _serialize_promotion(promo: Any) -> Dict[str, Any]:
+def _serialize_promotion(promo: Any) -> dict[str, Any]:
     return {
         "id": promo.id,
         "name": getattr(promo, "name", None),
@@ -61,7 +61,7 @@ def _serialize_promotion(promo: Any) -> Dict[str, Any]:
 
 
 # ── API pública ─────────────────────────────────────────────────────────────
-def get_menu_for_org(db: Session, organization_id: int) -> List[Dict[str, Any]]:
+def get_menu_for_org(db: Session, organization_id: int) -> list[dict[str, Any]]:
     """Lista de menu items dict-serializados. Cache TTL desde settings.CACHE_TTL_SECONDS."""
     cache = get_cache()
     key = _menu_key(organization_id)
@@ -79,7 +79,7 @@ def get_menu_for_org(db: Session, organization_id: int) -> List[Dict[str, Any]]:
     return payload
 
 
-def get_active_promotions_for_org(db: Session, organization_id: int) -> List[Dict[str, Any]]:
+def get_active_promotions_for_org(db: Session, organization_id: int) -> list[dict[str, Any]]:
     cache = get_cache()
     key = _promos_key(organization_id)
     cached = cache.get(key)

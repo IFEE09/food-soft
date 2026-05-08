@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Security
 from fastapi.security.api_key import APIKeyHeader
@@ -7,12 +7,12 @@ from sqlalchemy.orm import Session
 from app.core.activity import log_activity
 from app.core.api_keys import hash_api_key
 from app.core.inventory import deduct_supplies_for_line_items
-from app.db.session import get_db
-from app.db import models
-from app.schemas import order as order_schema
 from app.core.notifier import manager
-from app.core.tenant import assert_kitchen_in_organization
 from app.core.rate_limit import limiter
+from app.core.tenant import assert_kitchen_in_organization
+from app.db import models
+from app.db.session import get_db
+from app.schemas import order as order_schema
 
 router = APIRouter()
 

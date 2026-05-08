@@ -3,15 +3,13 @@ MetaClient — Cliente HTTP para enviar mensajes a Meta Graph API.
 Soporta WhatsApp, Facebook Messenger e Instagram DM.
 """
 import logging
-import os
-from typing import Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
 
 META_GRAPH_URL = "https://graph.facebook.com/v19.0"
-_ACCESS_TOKEN: Optional[str] = None
+_ACCESS_TOKEN: str | None = None
 
 
 def _get_token() -> str:
@@ -71,7 +69,7 @@ def send_instagram_message(payload: dict) -> bool:
 def dispatch_outbound_messages(
     outbound_messages: list,
     channel: str,
-    phone_number_id: Optional[str] = None,
+    phone_number_id: str | None = None,
 ) -> None:
     """
     Despacha todos los mensajes salientes generados por BotEngine a Meta.

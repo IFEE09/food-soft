@@ -1,19 +1,20 @@
-from typing import Any, List
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.rate_limit import limiter
-from app.core.menu_cache import invalidate_menu
-from app.db.session import get_db
-from app.db import models
-from app.schemas import menu as menu_schemas
 from app.api.auth import get_current_user, require_owner
 from app.core.activity import log_activity
+from app.core.menu_cache import invalidate_menu
+from app.core.rate_limit import limiter
 from app.core.tenant import assert_supply_in_organization, get_owned_or_404
+from app.db import models
+from app.db.session import get_db
+from app.schemas import menu as menu_schemas
 
 router = APIRouter()
 
-@router.get("/", response_model=List[menu_schemas.MenuItem])
+@router.get("/", response_model=list[menu_schemas.MenuItem])
 @limiter.limit("180/minute")
 def read_menu_items(
     request: Request,
@@ -60,7 +61,7 @@ def create_menu_item(
             quantity=recipe_in.quantity
         )
         db.add(recipe_entry)
-    
+
     db.commit()
     db.refresh(new_item)
     invalidate_menu(current_user.organization_id)

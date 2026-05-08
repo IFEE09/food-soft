@@ -7,7 +7,6 @@ para su canal correspondiente:
   - MessengerAdapter  → Facebook Messenger (Page Messaging)
   - InstagramAdapter  → Instagram Direct Messages (Messaging API)
 """
-from typing import Any, List
 
 
 class WhatsAppAdapter:
@@ -39,7 +38,7 @@ class WhatsAppAdapter:
         header_text: str,
         body_text: str,
         button_text: str,
-        sections: List[dict],
+        sections: list[dict],
     ) -> dict:
         return {
             "messaging_product": "whatsapp",
@@ -58,7 +57,7 @@ class WhatsAppAdapter:
         }
 
     @staticmethod
-    def format_buttons(to: str, body_text: str, buttons: List[dict]) -> dict:
+    def format_buttons(to: str, body_text: str, buttons: list[dict]) -> dict:
         action_buttons = [
             {
                 "type": "reply",
@@ -104,7 +103,7 @@ class MessengerAdapter:
         }
 
     @staticmethod
-    def format_quick_replies(to: str, text: str, buttons: List[dict]) -> dict:
+    def format_quick_replies(to: str, text: str, buttons: list[dict]) -> dict:
         quick_replies = [
             {
                 "content_type": "text",
@@ -123,7 +122,7 @@ class MessengerAdapter:
         }
 
     @staticmethod
-    def format_generic_template(to: str, elements: List[dict]) -> dict:
+    def format_generic_template(to: str, elements: list[dict]) -> dict:
         return {
             "messaging_type": "RESPONSE",
             "recipient": {"id": to},
@@ -162,7 +161,7 @@ class InstagramAdapter:
         }
 
     @staticmethod
-    def format_quick_replies(to: str, text: str, buttons: List[dict]) -> dict:
+    def format_quick_replies(to: str, text: str, buttons: list[dict]) -> dict:
         quick_replies = [
             {
                 "content_type": "text",
@@ -180,7 +179,7 @@ class InstagramAdapter:
         }
 
     @staticmethod
-    def format_generic_template(to: str, elements: List[dict]) -> dict:
+    def format_generic_template(to: str, elements: list[dict]) -> dict:
         return {
             "recipient": {"id": to},
             "message": {
