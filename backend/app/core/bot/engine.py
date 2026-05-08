@@ -27,7 +27,6 @@ FLUJO PRINCIPAL:
 import logging
 import re
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional, Tuple, cast
 
 from sqlalchemy.exc import IntegrityError
@@ -36,43 +35,25 @@ from app.db import models
 from app.core.bot.adapters import WhatsAppAdapter, MessengerAdapter, InstagramAdapter
 from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
-
-# URL pública de la imagen del menú
-MENU_IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/POImasJjRHaTAgIa.png"
+from app.core.bot._constants import (
+    MENU_IMG,
+    MAX_ADDRESS_LEN as _MAX_ADDRESS_LEN,
+    MAX_HISTORY as _MAX_HISTORY,
+    STEP_CART_OPTIONS,
+    STEP_AWAITING_YES_NO,
+    STEP_ASKING_NAME,
+    STEP_TYPING_NAME,
+    STEP_ASKING_ADDRESS,
+    STEP_TYPING_ADDRESS,
+    STEP_ASKING_NOTE,
+)
+from app.core.bot._formatters import (
+    round_price as _round_price,
+    format_cart_summary as _format_cart_summary,
+    clean_text as _clean_text,
+)
 
 logger = logging.getLogger(__name__)
-
-_MAX_ADDRESS_LEN = 200
-_MAX_HISTORY = 20
-
-# ── Estados del flujo de confirmación (guardados en cart["confirm_step"]) ─────
-STEP_CART_OPTIONS    = "cart_options"      # Esperando 1/2/3 post-carrito
-STEP_AWAITING_YES_NO = "awaiting_yes_no"   # Esperando 1/2 sobre nombre+dirección guardados
-STEP_ASKING_NAME     = "asking_name"       # Esperando 1/2 sobre nombre guardado
-STEP_TYPING_NAME     = "typing_name"       # Esperando texto libre del nombre
-STEP_ASKING_ADDRESS  = "asking_address"    # Esperando 1/2 sobre dirección guardada
-STEP_TYPING_ADDRESS  = "typing_address"    # Esperando texto libre de la dirección
-STEP_ASKING_NOTE     = "asking_note"       # Esperando texto libre de instrucciones
-
-
-def _round_price(value: float) -> float:
-    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-
-
-def _format_cart_summary(items_list: list) -> str:
-    lines = []
-    for i, it in enumerate(items_list):
-        line = f"{i + 1}. {it['name']} x{it['qty']} — ${_round_price(it['price'] * it['qty'])}"
-        if it.get("note"):
-            line += f" ✎ {it['note']}"
-        lines.append(line)
-    return "\n".join(lines)
-
-
-def _clean_text(channel: str, text: str) -> str:
-    if channel in ("messenger", "instagram", "facebook"):
-        text = re.sub(r"\*+(.*?)\*+", r"\1", text)
-    return text
 
 
 class BotEngine:
