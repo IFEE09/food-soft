@@ -951,7 +951,9 @@ class BotEngine:
             "1️⃣" in str(m)
             for m in out
         )
-        if items_now and not already_has_options:
+        # No activar la red de seguridad si hay una variante pendiente (pregunta Grande/Familiar)
+        _has_pending_variant_now = bool(cart_now.get("pending_variant_base"))
+        if items_now and not already_has_options and not _has_pending_variant_now:
             summary = _format_cart_summary(items_now)
             cart_body = (
                 f"🛒 Tu pedido ({len(items_now)} producto{'s' if len(items_now) > 1 else ''}):\n"

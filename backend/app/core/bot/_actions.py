@@ -156,8 +156,7 @@ def view_cart(
     cart_body = (
         f"🛒 Tu pedido ({_items_count_label(items_list)}):\n"
         f"{format_cart_summary(items_list)}\n\n"
-        f"💰 Total: ${cart.get('total', 0.0)}\n"
-        f"(Para quitar: escribe 'quita el 1', para cambiar: 'ponme 2 del 3')"
+        f"💰 Total: ${cart.get('total', 0.0)}"
     )
     if db is not None:
         cart["confirm_step"] = STEP_CART_OPTIONS
