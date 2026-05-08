@@ -41,18 +41,19 @@ jobs:
         env:
           ENV: development
           DATABASE_URL: sqlite:///./test.db
-        run: pytest -x -q
+          PYTHONPATH: .
+        run: python -m pytest -x -q
 
       - name: Alembic check (no drift)
         env:
           ENV: development
           DATABASE_URL: sqlite:///./alembic_test.db
+          PYTHONPATH: .
         run: |
-          alembic upgrade head
+          python -m alembic upgrade head
           # Si hay diferencias entre models y schema → autogenerate produciría una migration.
           # Ese caso debe fallar el CI para forzar al dev a generar la migration.
-          OUTPUT=$(alembic revision --autogenerate -m "drift_check" --rev-id drift_check 2>&1 || true)
-          # Limpiar archivo generado y verificar contenido real
+          python -m alembic revision --autogenerate -m "drift_check" --rev-id drift_check 2>&1 || true
           DRIFT_FILE=$(find alembic/versions -name "*drift_check*.py" | head -1)
           if [ -n "$DRIFT_FILE" ]; then
             if grep -E "op\.(add_column|drop_column|create_table|drop_table|alter_column)" "$DRIFT_FILE" >/dev/null; then
