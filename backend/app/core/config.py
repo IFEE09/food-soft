@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     # Concurrency: Starlette default = 40 threads en threadpool. Subir para webhooks bot
     # (DeepSeek puede tardar 2-8s; con 40 threads cae bajo pico).
     THREADPOOL_SIZE: int = 100
+
+    # ActivityLog async writer
+    ACTIVITY_LOG_QUEUE_MAX: int = 10000      # cap del buffer; si se llena, dropea + warn
+    ACTIVITY_LOG_BATCH_SIZE: int = 100       # bulk insert cada N events
+    ACTIVITY_LOG_FLUSH_INTERVAL: float = 2.0 # segundos entre flushes forzados
+    ACTIVITY_LOG_ASYNC: bool = True          # False = comportamiento legacy (commit sync)
     
     # Auth (no usar el valor por defecto en producción)
     SECRET_KEY: str = _DEFAULT_SECRET
