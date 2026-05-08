@@ -37,7 +37,7 @@ from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
 
 # URL pública de la imagen del menú
-MENU_IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/RmfrxWhJgBqCqpyQ.jpg"
+MENU_IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663247606651/EISNXkwVsxzEdnKm.jpg"
 
 logger = logging.getLogger(__name__)
 
