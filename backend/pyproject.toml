@@ -2,3 +2,9 @@
 include = ["app"]
 venvPath = "."
 venv = ".venv"
+
+[tool.pytest.ini_options]
+# pytest no agrega backend/ a sys.path en CI (rootdir != cwd siempre).
+# pythonpath asegura que `import app.*` funcione local y en CI.
+pythonpath = ["."]
+testpaths = ["tests"]

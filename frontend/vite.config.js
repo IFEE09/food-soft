@@ -9,5 +9,19 @@ export default defineConfig({
   },
   preview: {
     allowedHosts: true
-  }
+  },
+  build: {
+    // Code splitting + chunks estables: la cache del navegador sobrevive
+    // a deploys que solo cambien páginas individuales.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core: cambia raras veces, chunk dedicado.
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+    // Aviso si un chunk crece demasiado (no falla el build).
+    chunkSizeWarningLimit: 600,
+  },
 })
