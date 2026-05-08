@@ -2,6 +2,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.core.rate_limit import limiter
+from app.core.menu_cache import invalidate_promotions
 from app.db.session import get_db
 from app.db import models
 from app.api.auth import get_current_user
@@ -72,6 +73,7 @@ def create_promotion(
     db.add(promo)
     db.commit()
     db.refresh(promo)
+    invalidate_promotions(current_user.organization_id)
     return promo
 
 
@@ -103,6 +105,7 @@ def update_promotion(
         promo.is_active = payload.is_active
     db.commit()
     db.refresh(promo)
+    invalidate_promotions(current_user.organization_id)
     return promo
 
 
@@ -127,3 +130,4 @@ def delete_promotion(
         raise HTTPException(status_code=404, detail="Promoción no encontrada")
     db.delete(promo)
     db.commit()
+    invalidate_promotions(current_user.organization_id)

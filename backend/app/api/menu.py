@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import limiter
+from app.core.menu_cache import invalidate_menu
 from app.db.session import get_db
 from app.db import models
 from app.schemas import menu as menu_schemas
@@ -62,6 +63,7 @@ def create_menu_item(
     
     db.commit()
     db.refresh(new_item)
+    invalidate_menu(current_user.organization_id)
     log_activity(
         db, current_user,
         action="create", entity_type="menu_item", entity_id=new_item.id,
@@ -105,6 +107,7 @@ def update_menu_item(
 
     db.commit()
     db.refresh(db_item)
+    invalidate_menu(current_user.organization_id)
     log_activity(
         db, current_user,
         action="update", entity_type="menu_item", entity_id=db_item.id,
@@ -129,6 +132,7 @@ def delete_menu_item(
     deleted_id = db_item.id
     db.delete(db_item)
     db.commit()
+    invalidate_menu(current_user.organization_id)
     log_activity(
         db, current_user,
         action="delete", entity_type="menu_item", entity_id=deleted_id,
