@@ -32,7 +32,6 @@ from typing import Any, Optional, Tuple, cast
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.db import models
-from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
 from app.core.bot._constants import (
     MAX_ADDRESS_LEN as _MAX_ADDRESS_LEN,
@@ -49,7 +48,7 @@ from app.core.bot._formatters import (
     format_cart_summary as _format_cart_summary,
     clean_text as _clean_text,
 )
-from app.core.bot import _actions, _messages as _msg, _orders_actions
+from app.core.bot import _actions, _confirm, _messages as _msg, _orders_actions
 
 logger = logging.getLogger(__name__)
 
@@ -192,112 +191,12 @@ class BotEngine:
 
     # ── Flujo de confirmación ─────────────────────────────────────────────────
 
-    @staticmethod
-    def _start_confirm_flow(
-        db: Session, channel: str, sender_id: str,
-        session: models.BotSession, customer: models.BotCustomer
-    ) -> list:
-        """Paso 1: mostrar nombre+dirección guardados con opciones 1️⃣/2️⃣."""
-        cart = dict(session.cart_data)
-        items_list = cart.get("items", [])
-        if not items_list:
-            return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-                channel, sender_id,
-                "Tu pedido está vacío. Dime qué quieres pedir primero 😊"
-            )}]
+    # ── Confirm flow (wrappers a app.core.bot._confirm) ──────────────────────
 
-        saved_name    = (customer.saved_name or "").strip()
-        saved_address = (customer.saved_address or "").strip()
-        summary = _format_cart_summary(items_list)
-
-        if saved_name and saved_address:
-            body = (
-                f"📋 Tu pedido:\n{summary}\n\n"
-                f"💰 Total: ${cart.get('total', 0.0)}\n\n"
-                f"¿Lo enviamos a nombre de *{saved_name}* a *{saved_address}*?"
-            )
-            cart["confirm_step"] = STEP_AWAITING_YES_NO
-            session.cart_data = cart
-            session.state = "CONFIRMANDO_PEDIDO"
-            db.commit()
-            return [{"action": "SEND_TEXT", "payload": BotEngine._yes_no_msg(channel, sender_id, body)}]
-        else:
-            # Sin datos → pedir nombre primero
-            cart["confirm_step"] = STEP_ASKING_NAME
-            session.cart_data = cart
-            session.state = "CONFIRMANDO_PEDIDO"
-            db.commit()
-            return BotEngine._ask_name_msg(channel, sender_id, customer)
-
-    @staticmethod
-    def _ask_name_msg(channel: str, sender_id: str, customer: models.BotCustomer) -> list:
-        saved_name = (customer.saved_name or "").strip()
-        if saved_name:
-            return [{"action": "SEND_TEXT", "payload": BotEngine._name_confirm_msg(channel, sender_id, saved_name)}]
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-            channel, sender_id,
-            "¿Cómo te llamas? Escribe tu nombre para el pedido 😊"
-        )}]
-
-    @staticmethod
-    def _ask_address_msg(channel: str, sender_id: str, customer: models.BotCustomer) -> list:
-        saved_address = (customer.saved_address or "").strip()
-        if saved_address:
-            return [{"action": "SEND_TEXT", "payload": BotEngine._address_confirm_msg(channel, sender_id, saved_address)}]
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(
-            channel, sender_id,
-            "¿A qué dirección enviamos tu pedido? Escribe tu dirección completa 📍"
-        )}]
-
-    @staticmethod
-    def _finalize_order(
-        db: Session, channel: str, sender_id: str,
-        session: models.BotSession, customer: models.BotCustomer
-    ) -> list:
-        """Crea el pedido en BD, notifica cocina por WebSocket, limpia carrito y envía mensaje final."""
-        cart = dict(session.cart_data)
-        confirmed_name    = cart.get("customer_name", "").strip() or (customer.saved_name or "").strip()
-        confirmed_address = cart.get("address", "").strip() or (customer.saved_address or "").strip()
-
-        cart["customer_name"] = confirmed_name
-        cart["address"]       = confirmed_address
-        cart.pop("confirm_step", None)
-        session.cart_data = cart
-        db.commit()
-
-        # Crear pedido → llega al Dashboard y Panel de Cocinas vía WebSocket
-        order_id = OrderService.send_to_internal_software(db, customer, session)
-        success  = bool(order_id)
-
-        # Guardar nombre y dirección para futuros pedidos
-        if confirmed_name:
-            customer.saved_name = confirmed_name
-        if confirmed_address:
-            customer.saved_address = confirmed_address
-
-        # Limpiar carrito
-        cart["items"] = []
-        cart["total"] = 0.0
-        if order_id and order_id is not True:
-            cart["last_order_id"] = order_id
-        cart.pop("confirm_step", None)
-        session.cart_data = cart
-        session.state = "ACTIVO"
-        db.commit()
-
-        first_name = confirmed_name.split()[0].capitalize() if confirmed_name else "Cliente"
-        order_num  = f"#{order_id}" if (order_id and order_id is not True) else ""
-
-        if success:
-            msg = (
-                f"¡Gracias {first_name}! 😊 Enviaremos tu pedido {order_num} "
-                f"a *{confirmed_address}* en un estimado de 40 a 45 minutos. "
-                f"¡Que lo disfrutes! 🍕"
-            )
-        else:
-            msg = "Lo sentimos, tuvimos un problema técnico al procesar tu pedido. Por favor inténtalo de nuevo."
-
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
+    _start_confirm_flow = staticmethod(_confirm.start_confirm_flow)
+    _ask_name_msg       = staticmethod(_confirm.ask_name_msg)
+    _ask_address_msg    = staticmethod(_confirm.ask_address_msg)
+    _finalize_order     = staticmethod(_confirm.finalize_order)
 
     # ── Estado del pedido, calificación y quejas ──────────────────────────────
 
