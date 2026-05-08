@@ -56,6 +56,17 @@ def run_migrations():
         "ALTER TABLE orders ADD COLUMN delivery_address VARCHAR",
         "ALTER TABLE orders ADD COLUMN notes VARCHAR",
         "ALTER TABLE order_items ADD COLUMN note VARCHAR",
+        # Descripciones del menú (UPDATE idempotente por nombre)
+        "UPDATE menu_items SET description = 'Base de tomate y doble queso' WHERE name IN ('Doble Queso Grande', 'Doble Queso Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate, queso y peperoni' WHERE name IN ('Peperoni Grande', 'Peperoni Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, jam\u00f3n, salami y champi\u00f1ones' WHERE name IN ('Italiana Grande', 'Italiana Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, jam\u00f3n, pi\u00f1a y tocino' WHERE name IN ('Ohana Hawaiana Grande', 'Ohana Hawaiana Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, peperoni, jam\u00f3n y tocino' WHERE name IN ('Mama Meat Grande', 'Mama Meat Familiar', 'Molson Pizza Grande', 'Molson Pizza Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate, queso manchego, mozzarella, parmesano y roquefort' WHERE name IN ('Cuatro Quesos Grande', 'Cuatro Quesos Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, tocino hecho en casa, pimientos, champi\u00f1ones y dip de tocino' WHERE name IN ('Bacon Special Grande', 'Bacon Special Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, jam\u00f3n, salami, champi\u00f1ones, cebolla y pimientos' WHERE name IN ('Suprema 74 Grande', 'Suprema 74 Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, doble peperoni y orilla de philadelphia con chipotle' WHERE name IN ('Peperoni Extreme Grande', 'Peperoni Extreme Familiar') AND (description IS NULL OR description = '')",
+        "UPDATE menu_items SET description = 'Base de tomate y queso, pierna ahumada de cerdo en salsa BBQ chipotle, pi\u00f1a y ranch' WHERE name IN ('Canadian BBQ Grande', 'Canadian BBQ Familiar') AND (description IS NULL OR description = '')",
     ]
 
     for query in migrations:
@@ -63,8 +74,11 @@ def run_migrations():
             with engine.connect() as conn:
                 conn.execute(text(query))
                 conn.commit()
-                column_name = query.split('ADD COLUMN ')[1].split(' ')[0]
-                logger.info("Migración: Columna '%s' añadida con éxito.", column_name)
+                if 'ADD COLUMN' in query:
+                    column_name = query.split('ADD COLUMN ')[1].split(' ')[0]
+                    logger.info("Migración: Columna '%s' añadida con éxito.", column_name)
+                elif query.strip().upper().startswith('UPDATE'):
+                    logger.info("Migración UPDATE ejecutada: %s", query[:60])
         except Exception:
             # El error es silencioso porque la columna probablemente ya existe (psycopg2.errors.DuplicateColumn)
             pass

@@ -81,45 +81,46 @@ def seed_menu():
         db.query(models.MenuItem).filter(models.MenuItem.organization_id == org_id).delete()
         db.commit()
 
-        # 6. Menú Completo (27 Items)
+        # 6. Menú Completo (27 Items) — (nombre, precio, categoría, descripción)
         menu_items = [
-            # ENTRADAS
-            ("Peperoni Bites", 79, "Entradas"),
-            ("Pan con Ajo y Queso", 125, "Entradas"),
-            ("Cheese Bread", 125, "Entradas"),
-            ("Calzone", 149, "Entradas"),
-            ("Dip de Espinaca y Tocino", 149, "Entradas"),
-            # TRADICIONALES
-            ("Doble Queso Grande", 149, "Pizzas Tradicionales"),
-            ("Doble Queso Familiar", 169, "Pizzas Tradicionales"),
-            ("Peperoni Grande", 149, "Pizzas Tradicionales"),
-            ("Peperoni Familiar", 169, "Pizzas Tradicionales"),
-            ("Italiana Grande", 189, "Pizzas Tradicionales"),
-            ("Italiana Familiar", 219, "Pizzas Tradicionales"),
-            ("Ohana Hawaiana Grande", 189, "Pizzas Tradicionales"),
-            ("Ohana Hawaiana Familiar", 219, "Pizzas Tradicionales"),
-            ("Mama Meat Grande", 189, "Pizzas Tradicionales"),
-            ("Mama Meat Familiar", 219, "Pizzas Tradicionales"),
-            ("Molson Pizza Grande", 189, "Pizzas Tradicionales"),
-            ("Molson Pizza Familiar", 219, "Pizzas Tradicionales"),
-            # ESPECIALES
-            ("Cuatro Quesos Grande", 249, "Pizzas Especiales"),
-            ("Cuatro Quesos Familiar", 289, "Pizzas Especiales"),
-            ("Bacon Special Grande", 249, "Pizzas Especiales"),
-            ("Bacon Special Familiar", 289, "Pizzas Especiales"),
-            ("Suprema 74 Grande", 289, "Pizzas Especiales"),
-            ("Suprema 74 Familiar", 319, "Pizzas Especiales"),
-            ("Peperoni Extreme Grande", 219, "Pizzas Especiales"),
-            ("Peperoni Extreme Familiar", 289, "Pizzas Especiales"),
-            ("Canadian BBQ Grande", 289, "Pizzas Especiales"),
-            ("Canadian BBQ Familiar", 319, "Pizzas Especiales"),
+            # ENTRADAS — sin variantes de tamaño
+            ("Peperoni Bites",          79,  "Entradas",              None),
+            ("Pan con Ajo y Queso",     125, "Entradas",              None),
+            ("Cheese Bread",            125, "Entradas",              None),
+            ("Calzone",                 149, "Entradas",              None),
+            ("Dip de Espinaca y Tocino",149, "Entradas",              None),
+            # PIZZAS TRADICIONALES
+            ("Doble Queso Grande",      149, "Pizzas Tradicionales",  "Base de tomate y doble queso"),
+            ("Doble Queso Familiar",    169, "Pizzas Tradicionales",  "Base de tomate y doble queso"),
+            ("Peperoni Grande",         149, "Pizzas Tradicionales",  "Base de tomate, queso y peperoni"),
+            ("Peperoni Familiar",       169, "Pizzas Tradicionales",  "Base de tomate, queso y peperoni"),
+            ("Italiana Grande",         189, "Pizzas Tradicionales",  "Base de tomate y queso, jamón, salami y champiñones"),
+            ("Italiana Familiar",       219, "Pizzas Tradicionales",  "Base de tomate y queso, jamón, salami y champiñones"),
+            ("Ohana Hawaiana Grande",   189, "Pizzas Tradicionales",  "Base de tomate y queso, jamón, piña y tocino"),
+            ("Ohana Hawaiana Familiar", 219, "Pizzas Tradicionales",  "Base de tomate y queso, jamón, piña y tocino"),
+            ("Mama Meat Grande",        189, "Pizzas Tradicionales",  "Base de tomate y queso, peperoni, jamón y tocino"),
+            ("Mama Meat Familiar",      219, "Pizzas Tradicionales",  "Base de tomate y queso, peperoni, jamón y tocino"),
+            ("Molson Pizza Grande",     189, "Pizzas Tradicionales",  "Base de tomate y queso, peperoni, jamón y tocino"),
+            ("Molson Pizza Familiar",   219, "Pizzas Tradicionales",  "Base de tomate y queso, peperoni, jamón y tocino"),
+            # PIZZAS ESPECIALES
+            ("Cuatro Quesos Grande",    249, "Pizzas Especiales",     "Base de tomate, queso manchego, mozzarella, parmesano y roquefort"),
+            ("Cuatro Quesos Familiar",  289, "Pizzas Especiales",     "Base de tomate, queso manchego, mozzarella, parmesano y roquefort"),
+            ("Bacon Special Grande",    249, "Pizzas Especiales",     "Base de tomate y queso, tocino hecho en casa, pimientos, champiñones y dip de tocino"),
+            ("Bacon Special Familiar",  289, "Pizzas Especiales",     "Base de tomate y queso, tocino hecho en casa, pimientos, champiñones y dip de tocino"),
+            ("Suprema 74 Grande",       289, "Pizzas Especiales",     "Base de tomate y queso, jamón, salami, champiñones, cebolla y pimientos"),
+            ("Suprema 74 Familiar",     319, "Pizzas Especiales",     "Base de tomate y queso, jamón, salami, champiñones, cebolla y pimientos"),
+            ("Peperoni Extreme Grande", 219, "Pizzas Especiales",     "Base de tomate y queso, doble peperoni y orilla de philadelphia con chipotle"),
+            ("Peperoni Extreme Familiar",289,"Pizzas Especiales",     "Base de tomate y queso, doble peperoni y orilla de philadelphia con chipotle"),
+            ("Canadian BBQ Grande",     289, "Pizzas Especiales",     "Base de tomate y queso, pierna ahumada de cerdo en salsa BBQ chipotle, piña y ranch"),
+            ("Canadian BBQ Familiar",   319, "Pizzas Especiales",     "Base de tomate y queso, pierna ahumada de cerdo en salsa BBQ chipotle, piña y ranch"),
         ]
 
-        for name, price, cat in menu_items:
+        for name, price, cat, desc in menu_items:
             new_item = models.MenuItem(
                 name=name,
                 price=price,
                 category=cat,
+                description=desc,
                 organization_id=org_id
             )
             db.add(new_item)
