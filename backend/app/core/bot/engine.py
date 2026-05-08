@@ -737,11 +737,12 @@ class BotEngine:
         actions_list = ai_response if isinstance(ai_response, list) else [ai_response]
         logger.info("DeepSeek actions=%s sender=%s channel=%s", actions_list, sender_id, channel)
 
-        # ── Solución 4: Re-llamar a DeepSeek si solo devuelvió CHAT y el usuario pidió un producto ──
-        # Si la respuesta completa es solo CHAT (sin ADD_TO_CART) y el mensaje del usuario
-        # contiene el nombre de un producto del menú, re-llamamos con un recordatorio fuerte.
+        # ── Solución 4: Re-llamar a DeepSeek si solo devolvió CHAT y el usuario pidió un producto ──
+        # SOLO activa si NO hay una variante pendiente (Grande/Familiar) — para no interferir
+        # con el flujo de selección de tamaño.
         _all_chat = all(a.get("action") == "CHAT" for a in actions_list)
-        if _all_chat:
+        _has_pending_variant = bool(cart.get("pending_variant_base"))
+        if _all_chat and not _has_pending_variant:
             _user_lower = user_text.lower()
             _product_mentioned = next(
                 (mi for mi in menu_items if mi.name.lower() in _user_lower),
@@ -766,13 +767,12 @@ class BotEngine:
                     promotions=promotions,
                 )
                 _retry_list = _retry_response if isinstance(_retry_response, list) else [_retry_response]
-                # Solo usar el retry si devuelvió ADD_TO_CART
+                # Solo usar el retry si devolvió ADD_TO_CART (no forzar si también falla)
                 if any(a.get("action") == "ADD_TO_CART" for a in _retry_list):
                     logger.info("[DEEPSEEK-RETRY] Éxito. Usando respuesta del retry: %s", _retry_list)
                     actions_list = _retry_list
                 else:
-                    logger.warning("[DEEPSEEK-RETRY] Retry también falló. Forzando ADD_TO_CART directo.")
-                    actions_list = [{"action": "ADD_TO_CART", "item_id": _product_mentioned.id}]
+                    logger.warning("[DEEPSEEK-RETRY] Retry también falló. Dejando respuesta CHAT original.")
 
         ai_reply_parts = []
 
