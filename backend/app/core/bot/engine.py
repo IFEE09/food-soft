@@ -32,7 +32,6 @@ from typing import Any, Optional, Tuple, cast
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.db import models
-from app.core.bot.adapters import WhatsAppAdapter, MessengerAdapter, InstagramAdapter
 from app.core.bot.orders import OrderService
 from app.core.bot.deepseek_client import ask_deepseek
 from app.core.bot._constants import (
@@ -52,74 +51,24 @@ from app.core.bot._formatters import (
     format_cart_summary as _format_cart_summary,
     clean_text as _clean_text,
 )
+from app.core.bot import _messages as _msg
 
 logger = logging.getLogger(__name__)
 
 
 class BotEngine:
 
-    # ── Helpers de formato ────────────────────────────────────────────────────
+    # ── Helpers de formato (wrappers a app.core.bot._messages) ────────────────
+    # Mantenidos como métodos estáticos para que callers internos sigan usando
+    # `BotEngine._text(...)` sin cambios. Implementación delegada para reuso.
 
-    @staticmethod
-    def _image(channel: str, to: str, image_url: str) -> dict:
-        if channel == "whatsapp":
-            return WhatsAppAdapter.format_image(to, image_url)
-        if channel == "messenger":
-            return MessengerAdapter.format_image(to, image_url)
-        return InstagramAdapter.format_image(to, image_url)
-
-    @staticmethod
-    def _text(channel: str, to: str, text: str) -> dict:
-        text = _clean_text(channel, text)
-        if channel == "whatsapp":
-            return WhatsAppAdapter.format_text(to, text)
-        if channel == "messenger":
-            return MessengerAdapter.format_text(to, text)
-        return InstagramAdapter.format_text(to, text)
-
-    # ── Mensajes de opciones numeradas (sin botones interactivos) ─────────────
-
-    @staticmethod
-    def _cart_options_msg(channel: str, to: str, cart_body: str) -> dict:
-        """Mensaje post-carrito con 3 opciones numeradas con emojis."""
-        text = (
-            f"{cart_body}\n\n"
-            f"¿Qué deseas hacer?\n"
-            f"1️⃣ Confirmar pedido\n"
-            f"2️⃣ Agregar instrucciones\n"
-            f"3️⃣ Agregar / quitar productos"
-        )
-        return BotEngine._text(channel, to, text)
-
-    @staticmethod
-    def _yes_no_msg(channel: str, to: str, body: str) -> dict:
-        """Mensaje con opciones Sí / No numeradas."""
-        text = f"{body}\n\n1️⃣ Sí, confirmar\n2️⃣ No, cambiar datos"
-        return BotEngine._text(channel, to, text)
-
-    @staticmethod
-    def _name_confirm_msg(channel: str, to: str, saved_name: str) -> dict:
-        text = (
-            f"¿Tu nombre sigue siendo *{saved_name}*?\n\n"
-            f"1️⃣ Sí, ese es mi nombre\n"
-            f"2️⃣ Cambiar nombre"
-        )
-        return BotEngine._text(channel, to, text)
-
-    @staticmethod
-    def _address_confirm_msg(channel: str, to: str, saved_address: str) -> dict:
-        text = (
-            f"¿Enviamos a *{saved_address}*?\n\n"
-            f"1️⃣ Sí, esa dirección\n"
-            f"2️⃣ Cambiar dirección"
-        )
-        return BotEngine._text(channel, to, text)
-
-    @staticmethod
-    def _unrecognized_option(channel: str, to: str, options_text: str) -> list:
-        """Responde 'Opción no reconocida' y reenvía las opciones."""
-        msg = f"⚠️ Opción no reconocida. Por favor elige una de las siguientes:\n\n{options_text}"
-        return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, to, msg)}]
+    _image = staticmethod(_msg.image)
+    _text = staticmethod(_msg.text)
+    _cart_options_msg = staticmethod(_msg.cart_options_msg)
+    _yes_no_msg = staticmethod(_msg.yes_no_msg)
+    _name_confirm_msg = staticmethod(_msg.name_confirm_msg)
+    _address_confirm_msg = staticmethod(_msg.address_confirm_msg)
+    _unrecognized_option = staticmethod(_msg.unrecognized_option)
 
     # ── Gestión de sesión ─────────────────────────────────────────────────────
 
