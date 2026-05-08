@@ -941,8 +941,22 @@ class BotEngine:
         # ══════════════════════════════════════════════════════════════════════
 
         # ── Palabras clave de reinicio / saludo ───────────────────────────────
-        RESET_KEYWORDS = {"hola", "menu", "menú", "inicio", "start", "reiniciar", "hi", "buenas", "buenos", "hey"}
-        if txt_lower in RESET_KEYWORDS:
+        RESET_KEYWORDS = {
+            "hola", "menu", "menú", "inicio", "start", "reiniciar",
+            "hi", "hey", "hello",
+            "buenas", "buenos",
+            "buenas noches", "buenas tardes", "buenos días", "buenos dias",
+            "buen día", "buen dia", "buen provecho",
+            "que hay", "qué hay", "que onda", "qué onda",
+            "ver menu", "ver menú", "quiero pedir", "quiero ordenar",
+        }
+        # También capturar si el mensaje EMPIEZA con saludo (ej: "buenas noches!")
+        is_greeting = txt_lower in RESET_KEYWORDS or any(
+            txt_lower.startswith(kw) for kw in (
+                "hola", "buenas", "buenos", "hi ", "hey ", "hello"
+            )
+        )
+        if is_greeting:
             active_items = cart.get("items", [])
             if active_items:
                 summary = _format_cart_summary(active_items)
