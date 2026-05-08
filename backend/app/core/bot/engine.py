@@ -390,10 +390,10 @@ class BotEngine:
                 out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body_early)})
                 return out
 
-        # ══════════════════════════════════════════════════════════════════════
+        # ══════════════════════════════════════════════════════════════════
         # ESTADO CONFIRMANDO_PEDIDO — manejo de opciones numéricas
-        # ══════════════════════════════════════════════════════════════════════
-        if state == "CONFIRMANDO_PEDIDO":
+        # ══════════════════════════════════════════════════════════════════
+        if state == "CONFIRMANDO_PEDIDO" and not (dict(session.cart_data) if isinstance(session.cart_data, dict) else {}).get("pending_variant_base"):
             cart = dict(session.cart_data)
             step = cart.get("confirm_step", STEP_CART_OPTIONS)
 
@@ -416,9 +416,12 @@ class BotEngine:
                     cart.pop("confirm_step", None)
                     session.cart_data = cart
                     db.commit()
+                    # Mostrar nombre del primer producto en lugar del número
+                    _items_hint = cart.get("items", [])
+                    _first_name = _items_hint[0]["name"] if _items_hint else "un producto"
                     return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                         channel, sender_id,
-                        "¡Claro! ¿Qué más quieres agregar o quitar? 😊\n(Para quitar escribe: 'quita el 1')"
+                        f"¡Claro! ¿Qué más quieres agregar o quitar? 😊\n(Para quitar escribe: 'quita el {_first_name}')"
                     )}]
 
                 # Cancelaciones
