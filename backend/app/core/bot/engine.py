@@ -778,6 +778,7 @@ class BotEngine:
                     logger.warning("[DEEPSEEK-RETRY] Retry también falló. Dejando respuesta CHAT original.")
 
         ai_reply_parts = []
+        _variant_was_detected = False  # Se activa si DeepSeek pregunta Grande/Familiar en este turno
 
         for ai_action in actions_list:
             action = ai_action.get("action", "CHAT")
@@ -933,6 +934,9 @@ class BotEngine:
                             c["pending_variant_options"] = detected_opts
                         session.cart_data = c
                         db.commit()
+                    # Marcar siempre que hubo pregunta de variante en este turno
+                    # (independientemente de si se detectó found_base)
+                    _variant_was_detected = True
                 else:
                     c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
                     changed = False
@@ -955,7 +959,8 @@ class BotEngine:
             for m in out
         )
         # No activar la red de seguridad si hay una variante pendiente (pregunta Grande/Familiar)
-        _has_pending_variant_now = bool(cart_now.get("pending_variant_base"))
+        # Usamos TANTO el flag local (detectado en este turno) COMO el valor en BD
+        _has_pending_variant_now = bool(cart_now.get("pending_variant_base")) or _variant_was_detected
         if items_now and not already_has_options and not _has_pending_variant_now:
             summary = _format_cart_summary(items_now)
             cart_body = (
