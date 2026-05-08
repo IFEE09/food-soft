@@ -737,6 +737,43 @@ class BotEngine:
         actions_list = ai_response if isinstance(ai_response, list) else [ai_response]
         logger.info("DeepSeek actions=%s sender=%s channel=%s", actions_list, sender_id, channel)
 
+        # ── Solución 4: Re-llamar a DeepSeek si solo devuelvió CHAT y el usuario pidió un producto ──
+        # Si la respuesta completa es solo CHAT (sin ADD_TO_CART) y el mensaje del usuario
+        # contiene el nombre de un producto del menú, re-llamamos con un recordatorio fuerte.
+        _all_chat = all(a.get("action") == "CHAT" for a in actions_list)
+        if _all_chat:
+            _user_lower = user_text.lower()
+            _product_mentioned = next(
+                (mi for mi in menu_items if mi.name.lower() in _user_lower),
+                None
+            )
+            if _product_mentioned:
+                logger.warning(
+                    "[DEEPSEEK-RETRY] Solo CHAT para '%s' que menciona producto '%s'. Reintentando.",
+                    user_text, _product_mentioned.name
+                )
+                _retry_msg = (
+                    f"SISTEMA: El cliente pidió '{_product_mentioned.name}' (ID:{_product_mentioned.id}). "
+                    f"Debes responder SOLO con: [{{\"action\": \"ADD_TO_CART\", \"item_id\": {_product_mentioned.id}}}]"
+                )
+                _retry_response = ask_deepseek(
+                    message=_retry_msg,
+                    chat_history=history,
+                    menu_items=menu_items,
+                    cart=cart,
+                    state=state,
+                    org_name=org_name,
+                    promotions=promotions,
+                )
+                _retry_list = _retry_response if isinstance(_retry_response, list) else [_retry_response]
+                # Solo usar el retry si devuelvió ADD_TO_CART
+                if any(a.get("action") == "ADD_TO_CART" for a in _retry_list):
+                    logger.info("[DEEPSEEK-RETRY] Éxito. Usando respuesta del retry: %s", _retry_list)
+                    actions_list = _retry_list
+                else:
+                    logger.warning("[DEEPSEEK-RETRY] Retry también falló. Forzando ADD_TO_CART directo.")
+                    actions_list = [{"action": "ADD_TO_CART", "item_id": _product_mentioned.id}]
+
         ai_reply_parts = []
 
         for ai_action in actions_list:
@@ -823,8 +860,36 @@ class BotEngine:
                 message_text = ai_action.get("message") or _fallback
                 if not message_text.strip():
                     message_text = _fallback
-                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
-                ai_reply_parts.append(message_text)
+
+                # ── Solución 2: Interceptar CHAT que confirma un producto ────────
+                # Si DeepSeek dijo "X agregado" en CHAT pero no usó ADD_TO_CART,
+                # buscamos el producto en el menú y lo agregamos automáticamente.
+                _chat_lower = message_text.lower()
+                _is_confirming = any(kw in _chat_lower for kw in [
+                    "agregado", "agregada", "añadido", "añadida",
+                    "listo", "perfecto", "claro", "agregado a tu pedido"
+                ])
+                _intercepted = False
+                if _is_confirming:
+                    # Buscar si el mensaje menciona algún producto del menú
+                    for mi in menu_items:
+                        if mi.name.lower() in _chat_lower:
+                            logger.warning(
+                                "[CHAT-INTERCEPT] DeepSeek usó CHAT para confirmar '%s'. "
+                                "Ejecutando ADD_TO_CART id=%s automáticamente.",
+                                mi.name, mi.id
+                            )
+                            result = BotEngine._execute_add_to_cart(
+                                db, channel, sender_id, session, organization_id, mi.id
+                            )
+                            out.extend(result)
+                            ai_reply_parts.append(f"{mi.name} agregado (interceptado).")
+                            _intercepted = True
+                            break
+
+                if not _intercepted:
+                    out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
+                    ai_reply_parts.append(message_text)
 
                 # Detectar pregunta de variante
                 msg_lower = message_text.lower()

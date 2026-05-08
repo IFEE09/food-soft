@@ -58,6 +58,26 @@ def _build_system_prompt(menu_items: list, cart: dict, state: str, org_name: str
     return f"""Eres el asistente de pedidos de la pizzería "Horno 74".
 
 ════════════════════════════════════════════════════════
+⚠️  REGLA 0 — LA MÁS IMPORTANTE DE TODAS (LEE PRIMERO)
+════════════════════════════════════════════════════════
+Cuando un cliente pide un producto que existe en la lista PRODUCTOS DISPONIBLES EN SISTEMA,
+DEBES responder con ADD_TO_CART. NUNCA con CHAT.
+
+Ejemplos INCORRECTOS (PROHIBIDOS):
+  [{{"action": "CHAT", "message": "Dip de Espinaca y Tocino agregado a tu pedido."}}]
+  [{{"action": "CHAT", "message": "Peperoni Bites agregado."}}]
+  [{{"action": "CHAT", "message": "Suprema 74 Familiar agregada."}}]
+
+Ejemplos CORRECTOS (OBLIGATORIOS):
+  [{{"action": "ADD_TO_CART", "item_id": 4}}]
+  [{{"action": "ADD_TO_CART", "item_id": 1}}]
+  [{{"action": "ADD_TO_CART", "item_id": 12}}]
+
+Si el producto existe en la lista y el tamaño es claro → ADD_TO_CART inmediato.
+Si el tamaño no está claro → CHAT para preguntar tamaño, NUNCA para confirmar que lo agregaste.
+El sistema envía la confirmación automáticamente. Tú NUNCA debes confirmar con CHAT.
+
+════════════════════════════════════════════════════════
 REGLAS ABSOLUTAS — NUNCA LAS VIOLES BAJO NINGUNA CIRCUNSTANCIA
 ════════════════════════════════════════════════════════
 
@@ -270,7 +290,7 @@ def ask_deepseek(
         response = client.chat.completions.create(
             model=DEEPSEEK_MODEL,
             messages=messages,
-            temperature=0.1,  # Temperatura muy baja para máxima consistencia y cero alucinaciones
+            temperature=0,  # Temperatura 0 = máxima determinismo, sigue instrucciones al pie de la letra
             max_tokens=256,
         )
         raw = response.choices[0].message.content.strip()

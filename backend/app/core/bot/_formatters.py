@@ -17,12 +17,13 @@ def round_price(value: float) -> float:
 
 
 def format_cart_summary(items_list: list) -> str:
-    """Renderiza el resumen del carrito como bloque de texto numerado."""
+    """Renderiza el resumen del carrito como bloque de texto: '1x Producto — $precio'."""
     lines = []
-    for i, it in enumerate(items_list):
-        line = f"{i + 1}. {it['name']} x{it['qty']} — ${round_price(it['price'] * it['qty'])}"
+    for it in items_list:
+        qty = it.get('qty', 1)
+        line = f"{qty}x {it['name']} — ${round_price(it['price'] * qty)}"
         if it.get("note"):
-            line += f" ✎ {it['note']}"
+            line += f"\n   ✎ {it['note']}"
         lines.append(line)
     return "\n".join(lines)
 
