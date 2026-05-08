@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import secrets
 import warnings
 from contextlib import asynccontextmanager
@@ -15,27 +14,37 @@ warnings.filterwarnings(
 
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query, WebSocket
+from fastapi import FastAPI, Query, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.core.config import settings
+from app.core.logging import configure_logging
+from app.core.observability import init_sentry
 
-logging.basicConfig(level=logging.INFO)
+# Logging + Sentry primero, antes de cualquier otra inicialización.
+configure_logging()
+init_sentry()
+
+import logging
 logger = logging.getLogger(__name__)
+
 from app.db.session import SessionLocal, engine, get_db
 from app.db import models
-from app.api import auth, kitchens, users, supplies, orders, menu, integrations, activity_logs, bot, organizations, stations, promotions
+from app.api import (
+    auth, kitchens, users, supplies, orders, menu, integrations,
+    activity_logs, bot, organizations, stations, promotions, health,
+)
 from app.core.notifier import manager, set_main_loop
 from app.core import security
 from app.core.rate_limit import limiter
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.api_keys import hash_api_key
 
-# For simple MVP/Dev, we check for missing columns on startup
+# MVP/Dev only: ALTER TABLE idempotente. En producción usar Alembic
+# (alembic upgrade head) y poner RUN_STARTUP_MIGRATIONS=False.
 def run_migrations():
     logger.info("Sincronizando esquema de base de datos...")
     # Create Organizations table FIRST
@@ -167,9 +176,12 @@ def init_db_data():
     if legacy_users:
         db.commit()
 
-# Start Sync & Seed
-run_migrations()
-init_db_data()
+# Start Sync & Seed — gated por env var.
+# Producción: poner RUN_STARTUP_MIGRATIONS=False y correr `alembic upgrade head` aparte.
+if settings.RUN_STARTUP_MIGRATIONS:
+    run_migrations()
+if settings.RUN_STARTUP_SEED:
+    init_db_data()
 
 
 @asynccontextmanager
@@ -203,6 +215,8 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Register Routers
+# Health primero, sin prefix ni rate limiting → orquestador siempre puede chequear.
+app.include_router(health.router)
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(supplies.router, prefix=f"{settings.API_V1_STR}/supplies", tags=["supplies"])
 app.include_router(orders.router, prefix=f"{settings.API_V1_STR}/orders", tags=["orders"])
@@ -274,11 +288,4 @@ async def websocket_endpoint(
     finally:
         db.close()
 
-@app.get("/health")
-def health_check(db: Session = Depends(get_db)):
-    try:
-        db.execute(text("SELECT 1"))
-        return {"status": "ok"}
-    except Exception:
-        logger.exception("Health check failed")
-        raise HTTPException(status_code=503, detail="Database unavailable")
+# /health (liveness) y /ready (readiness) → app/api/health.py

@@ -3,5 +3,6 @@ builder = "nixpacks"
 root = "backend"
 
 [deploy]
-startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+# Migrations primero (Alembic), luego web. Idempotente: si ya está al día no hace nada.
+startCommand = "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 healthCheckPath = "/health"

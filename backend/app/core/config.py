@@ -20,13 +20,31 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: Optional[str] = None
-    
+
     # Fallback (Local Dev Only) — contraseña solo en .env, no en código.
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = "foodsoftdb"
     POSTGRES_PORT: str = "5432"
+
+    # Connection pool — defaults sanos para Postgres tras PgBouncer (transaction mode).
+    # Ajustar vía env vars sin tocar código.
+    DB_POOL_SIZE: int = 20            # conexiones permanentes por worker
+    DB_MAX_OVERFLOW: int = 30         # extras temporales bajo pico
+    DB_POOL_TIMEOUT: int = 30         # segundos esperando conexión libre
+    DB_POOL_RECYCLE: int = 1800       # reciclar tras 30 min (evita conexiones zombi)
+
+    # Lifecycle: si True, ejecuta migrations + seed en startup (dev/MVP).
+    # En producción ponerlo en False y correr `alembic upgrade head` aparte.
+    RUN_STARTUP_MIGRATIONS: bool = True
+    RUN_STARTUP_SEED: bool = True
+
+    # Observability
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0   # 0.0 = solo errores, sin trazas (cuesta menos)
+    LOG_FORMAT: str = "console"              # "console" (dev) | "json" (prod)
+    LOG_LEVEL: str = "INFO"
     
     # Auth (no usar el valor por defecto en producción)
     SECRET_KEY: str = _DEFAULT_SECRET
