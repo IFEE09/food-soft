@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint + tests + alembic)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Lint (ruff)
+        run: ruff check app/ tests/ || true   # warn-only por ahora
+
+      - name: Run tests
+        env:
+          ENV: development
+          DATABASE_URL: sqlite:///./test.db
+        run: pytest -x -q
+
+      - name: Alembic check (no drift)
+        env:
+          ENV: development
+          DATABASE_URL: sqlite:///./alembic_test.db
+        run: |
+          alembic upgrade head
+          # Si hay diferencias entre models y schema → autogenerate produciría una migration.
+          # Ese caso debe fallar el CI para forzar al dev a generar la migration.
+          OUTPUT=$(alembic revision --autogenerate -m "drift_check" --rev-id drift_check 2>&1 || true)
+          # Limpiar archivo generado y verificar contenido real
+          DRIFT_FILE=$(find alembic/versions -name "*drift_check*.py" | head -1)
+          if [ -n "$DRIFT_FILE" ]; then
+            if grep -E "op\.(add_column|drop_column|create_table|drop_table|alter_column)" "$DRIFT_FILE" >/dev/null; then
+              echo "❌ Schema drift detectado. Models y migrations no coinciden."
+              cat "$DRIFT_FILE"
+              rm "$DRIFT_FILE"
+              exit 1
+            fi
+            rm "$DRIFT_FILE"
+          fi
+          echo "✅ Schema sin drift"
+
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build

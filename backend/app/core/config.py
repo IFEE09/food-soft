@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     ACTIVITY_LOG_BATCH_SIZE: int = 100       # bulk insert cada N events
     ACTIVITY_LOG_FLUSH_INTERVAL: float = 2.0 # segundos entre flushes forzados
     ACTIVITY_LOG_ASYNC: bool = True          # False = comportamiento legacy (commit sync)
+
+    # DB observability
+    SLOW_QUERY_MS_THRESHOLD: float = 250.0       # logear queries que tarden más
+    DB_QUERY_COUNT_ENABLED: bool = False         # True en dev/staging para detectar N+1
+    DB_QUERY_COUNT_WARN_THRESHOLD: int = 50      # warn si un request hace > N queries
+
+    # Read replica (DATABASE_REPLICA_URL: Postgres replica para SELECT pesados).
+    DATABASE_REPLICA_URL: Optional[str] = None
     
     # Auth (no usar el valor por defecto en producción)
     SECRET_KEY: str = _DEFAULT_SECRET

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.bot.engine import BotEngine
 from app.core.bot.meta_client import dispatch_outbound_messages
 from app.core.config import settings
+from app.core.idempotency import claim_once
 from app.core.rate_limit import limiter
 from app.db import models
 from app.db.session import get_db
@@ -154,6 +155,11 @@ def process_meta_payload(body: dict):
                         continue
 
                     for msg in value.get("messages", []):
+                        msg_id = msg.get("id")
+                        if msg_id and not claim_once(f"meta:wa:{msg_id}"):
+                            logger.info("Webhook duplicado WA ignorado: %s", msg_id)
+                            continue
+
                         sender_id = msg.get("from", "")
                         text = (msg.get("text") or {}).get("body", "")
 
@@ -189,6 +195,13 @@ def process_meta_payload(body: dict):
                 for event in entry.get("messaging", []):
                     sender_id = (event.get("sender") or {}).get("id", "")
                     if not sender_id:
+                        continue
+
+                    msg_id = (event.get("message") or {}).get("mid") or (
+                        event.get("postback") or {}
+                    ).get("mid")
+                    if msg_id and not claim_once(f"meta:fb:{msg_id}"):
+                        logger.info("Webhook duplicado FB ignorado: %s", msg_id)
                         continue
 
                     text = ""
@@ -228,6 +241,13 @@ def process_meta_payload(body: dict):
                 for event in entry.get("messaging", []):
                     sender_id = (event.get("sender") or {}).get("id", "")
                     if not sender_id:
+                        continue
+
+                    msg_id = (event.get("message") or {}).get("mid") or (
+                        event.get("postback") or {}
+                    ).get("mid")
+                    if msg_id and not claim_once(f"meta:ig:{msg_id}"):
+                        logger.info("Webhook duplicado IG ignorado: %s", msg_id)
                         continue
 
                     text = ""

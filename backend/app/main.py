@@ -33,6 +33,9 @@ logger = logging.getLogger(__name__)
 
 from app.db.session import SessionLocal, engine, get_db
 from app.db import models
+from app.core.db_observability import install_db_observability
+
+install_db_observability(engine)
 from app.api import (
     auth, kitchens, users, supplies, orders, menu, integrations,
     activity_logs, bot, organizations, stations, promotions, health,
@@ -40,6 +43,7 @@ from app.api import (
 from app.core.notifier import manager, set_main_loop
 from app.core import security
 from app.core.rate_limit import limiter
+from app.core.request_id import RequestIDMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.api_keys import hash_api_key
 
@@ -221,6 +225,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SecurityHeadersMiddleware)
+# RequestID PRIMERO (LIFO en Starlette: el último add se ejecuta primero), así todo lo
+# demás corre con el contexto bindeado.
+app.add_middleware(RequestIDMiddleware)
 
 # Register Routers
 # Health primero, sin prefix ni rate limiting → orquestador siempre puede chequear.
