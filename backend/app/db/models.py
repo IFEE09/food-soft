@@ -1,5 +1,6 @@
+from typing import Any
 from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey, JSON, Table, UniqueConstraint
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.sql import func
 from app.db.session import Base
 
@@ -120,8 +121,8 @@ class MenuItem(Base):
     __tablename__ = "menu_items"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)
-    price = Column(Float, default=0.0)
+    name: Mapped[str] = Column(String, index=True, nullable=False)
+    price: Mapped[float] = Column(Float, default=0.0)
     category = Column(String, index=True, nullable=True)
     description = Column(String, nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
@@ -191,10 +192,10 @@ class BotSession(Base):
     customer_id = Column(Integer, ForeignKey("bot_customers.id"), nullable=False, unique=True)
     
     # State machine status: START, VIEWING_MENU, BUILDING_CART, CONFIRMING_ORDER, FINISHED
-    state = Column(String, default="START", index=True, nullable=False)
-    
+    state: Mapped[str] = Column(String, default="START", index=True, nullable=False)
+
     # Holds shopping cart items before they become a real Order: [{'menu_item_id': 1, 'qty': 2}]
-    cart_data = Column(JSON, default=list) 
+    cart_data: Mapped[Any] = Column(JSON, default=list)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_interaction_at = Column(DateTime(timezone=True), server_default=func.now())

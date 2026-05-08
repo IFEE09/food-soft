@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # Order Items
 class OrderItemBase(BaseModel):
@@ -11,12 +11,11 @@ class OrderItemCreate(OrderItemBase):
     pass
 
 class OrderItem(OrderItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     order_id: int
     note: Optional[str] = None  # Modificación del cliente (ej: 'sin cebolla')
-
-    class Config:
-        from_attributes = True
 
 # Orders
 class OrderBase(BaseModel):
@@ -35,6 +34,8 @@ class OrderUpdate(OrderBase):
     kitchen_id: Optional[int] = None
 
 class Order(OrderBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
     ready_at: Optional[datetime] = None
@@ -42,6 +43,3 @@ class Order(OrderBase):
     delivery_address: Optional[str] = None
     notes: Optional[str] = None
     items: List[OrderItem] = []
-
-    class Config:
-        from_attributes = True

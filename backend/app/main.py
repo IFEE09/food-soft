@@ -2,7 +2,16 @@ import asyncio
 import json
 import logging
 import secrets
+import warnings
 from contextlib import asynccontextmanager
+
+# slowapi 0.1.9 usa asyncio.iscoroutinefunction (deprecado en Py3.14). Bug upstream.
+warnings.filterwarnings(
+    "ignore",
+    message=".*asyncio.iscoroutinefunction.*",
+    category=DeprecationWarning,
+    module="slowapi.*",
+)
 
 from typing import Optional
 
@@ -164,7 +173,7 @@ init_db_data()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     set_main_loop(asyncio.get_running_loop())
     yield
 
@@ -180,7 +189,7 @@ app = FastAPI(
     openapi_url="/openapi.json" if _docs else None,
 )
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS

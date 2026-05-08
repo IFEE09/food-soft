@@ -1,7 +1,7 @@
 import re
 from typing import Optional, Literal
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 # Shared properties
 VALID_ROLES = Literal["owner", "receptionist", "cook"]
@@ -60,16 +60,15 @@ class UserSelfUpdate(BaseModel):
 
 
 class UserInDBBase(UserBase):
-    id: int
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
 
 class OrganizationBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
-    class Config:
-        from_attributes = True
 
 # Additional properties to return via API
 class User(UserInDBBase):

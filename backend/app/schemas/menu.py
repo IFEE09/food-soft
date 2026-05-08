@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from .supply import Supply
 
 class RecipeItemBase(BaseModel):
@@ -10,12 +10,11 @@ class RecipeItemCreate(RecipeItemBase):
     pass
 
 class RecipeItem(RecipeItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     menu_item_id: int
     supply: Optional[Supply] = None
-
-    class Config:
-        from_attributes = True
 
 class MenuItemBase(BaseModel):
     name: str
@@ -32,8 +31,7 @@ class MenuItemUpdate(MenuItemBase):
     recipe_items: Optional[List[RecipeItemCreate]] = None
 
 class MenuItem(MenuItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     recipe_items: List[RecipeItem] = []
-
-    class Config:
-        from_attributes = True

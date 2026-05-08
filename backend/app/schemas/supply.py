@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # Shared properties
 class SupplyBase(BaseModel):
@@ -20,10 +20,9 @@ class SupplyUpdate(SupplyBase):
     pass
 
 class SupplyInDBBase(SupplyBase):
-    id: int
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
 
 # Additional properties to return via API
 class Supply(SupplyInDBBase):

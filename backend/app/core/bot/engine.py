@@ -26,9 +26,10 @@ FLUJO PRINCIPAL:
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional
+from typing import Any, List, Optional, Tuple, cast
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.db import models
@@ -144,12 +145,13 @@ class BotEngine:
     @staticmethod
     def get_or_create_session(
         db: Session, org_id: int, channel: str, sender_id: str
-    ) -> tuple:
-        customer = (
-            db.query(models.BotCustomer)
-            .filter_by(organization_id=org_id, channel=channel, channel_user_id=sender_id)
-            .first()
-        )
+    ) -> Tuple[models.BotCustomer, models.BotSession]:
+        # 1. Try to find customer
+        customer = db.query(models.BotCustomer).filter_by(
+            organization_id=org_id,
+            channel_user_id=sender_id,
+            channel=channel,
+        ).first()
         if not customer:
             customer = models.BotCustomer(
                 organization_id=org_id,
@@ -162,11 +164,18 @@ class BotEngine:
                 db.flush()
             except IntegrityError:
                 db.rollback()
-                customer = (
-                    db.query(models.BotCustomer)
-                    .filter_by(organization_id=org_id, channel=channel, channel_user_id=sender_id)
-                    .first()
-                )
+            try:
+                db.flush()
+            except IntegrityError:
+                db.rollback()
+                # If someone else created it in the meantime, fetch it
+                customer = db.query(models.BotCustomer).filter_by(
+                    organization_id=org_id,
+                    channel_user_id=sender_id,
+                    channel=channel,
+                ).first()
+        if customer is None:
+            raise RuntimeError("No se pudo crear ni recuperar BotCustomer.")
 
         session = db.query(models.BotSession).filter_by(customer_id=customer.id).first()
         if not session:
@@ -182,6 +191,8 @@ class BotEngine:
             except IntegrityError:
                 db.rollback()
                 session = db.query(models.BotSession).filter_by(customer_id=customer.id).first()
+        if session is None:
+            raise RuntimeError("No se pudo crear ni recuperar BotSession.")
 
         if not isinstance(session.cart_data, dict):
             session.cart_data = {"items": [], "total": 0.0, "history": []}
@@ -210,7 +221,7 @@ class BotEngine:
     def _execute_show_menu(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int,
-        greeting: str = None
+        greeting: Optional[str] = None
     ) -> list:
         out = []
         if greeting:
@@ -226,7 +237,7 @@ class BotEngine:
     def _execute_add_to_cart(
         db: Session, channel: str, sender_id: str,
         session: models.BotSession, organization_id: int, item_id: int,
-        item_note: str = None
+        item_note: Optional[str] = None
     ) -> list:
         menu_item = (
             db.query(models.MenuItem)
@@ -284,7 +295,7 @@ class BotEngine:
 
     @staticmethod
     def _execute_view_cart(
-        channel: str, sender_id: str, session: models.BotSession, db: Session = None
+        channel: str, sender_id: str, session: models.BotSession, db: Optional[Session] = None
     ) -> list:
         cart = dict(session.cart_data)
         items_list = cart.get("items", [])
@@ -704,7 +715,7 @@ class BotEngine:
                 clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
                 session.cart_data = clean_cart
                 session.state = "ACTIVO"
-                session.last_interaction_at = datetime.utcnow()
+                session.last_interaction_at = datetime.now(timezone.utc)
                 db.commit()
                 cart  = clean_cart
                 state = "ACTIVO"
@@ -714,9 +725,20 @@ class BotEngine:
                 )})
                 out.extend(BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id))
                 return out
-
-        session.last_interaction_at = datetime.utcnow()
+        session.last_interaction_at = datetime.now(timezone.utc)
         db.commit()
+
+        # ── Manejo directo de botones del catálogo (bypass IA) ────────────────
+        if interactive_id and interactive_id.startswith("add_item_"):
+            try:
+                item_id = int(interactive_id.split("_")[-1])
+                out.extend(BotEngine._execute_add_to_cart(db, channel, sender_id, session, organization_id, item_id))
+                BotEngine._append_history(session, "user", f"[Botón: {interactive_id}]")
+                BotEngine._append_history(session, "assistant", "Producto agregado vía catálogo.")
+                db.commit()
+                return out
+            except Exception as e:
+                logger.error("Error al agregar item desde catálogo: %s", e)
 
         # ── Sin mensaje ───────────────────────────────────────────────────────
         if not user_text:

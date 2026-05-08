@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class KitchenBase(BaseModel):
     name: str
@@ -15,7 +15,6 @@ class KitchenUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class Kitchen(KitchenBase):
-    id: int
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: int
