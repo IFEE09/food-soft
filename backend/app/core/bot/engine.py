@@ -907,17 +907,48 @@ class BotEngine:
                                       "pequeño", "pequeña", "xl", "xxl", "individual"]
                     detected_opts = [v for v in KNOWN_VARIANTS if v in msg_lower]
                     found_base = None
+
+                    # ── Fuente 1 (más confiable): buscar en el mensaje ACTUAL del usuario ──
+                    # Esto cubre typos como 'peñerojni' → DeepSeek sabe que es pepperoni
+                    # pero el código no. Usamos difflib para similitud.
+                    import difflib
+                    _user_text_low = user_text.lower()
+                    _best_ratio = 0.0
                     for mi in menu_items:
-                        base_parts = mi.name.lower()
+                        _base = mi.name.lower()
                         for v in KNOWN_VARIANTS:
-                            base_parts = base_parts.replace(v, "").strip()
-                        if base_parts and base_parts in msg_lower:
-                            if found_base is None or len(base_parts) > len(found_base):
-                                found_base = base_parts
+                            _base = _base.replace(v, "").strip()
+                        if not _base or len(_base) < 3:
+                            continue
+                        # Comparar cada palabra del user_text con el base
+                        for _word in re.split(r'[\s,]+', _user_text_low):
+                            if len(_word) < 3:
+                                continue
+                            _ratio = difflib.SequenceMatcher(None, _word, _base).ratio()
+                            if _ratio > _best_ratio and _ratio >= 0.6:
+                                _best_ratio = _ratio
+                                found_base = _base
+
+                    # ── Fuente 2: buscar en el mensaje de DeepSeek (respuesta actual) ──
                     if not found_base:
-                        recent = history[-4:] if len(history) >= 4 else history
-                        for h_msg in reversed(recent):
-                            h_text = h_msg.get("content", "").lower() if isinstance(h_msg, dict) else ""
+                        for mi in menu_items:
+                            base_parts = mi.name.lower()
+                            for v in KNOWN_VARIANTS:
+                                base_parts = base_parts.replace(v, "").strip()
+                            if base_parts and base_parts in msg_lower:
+                                if found_base is None or len(base_parts) > len(found_base):
+                                    found_base = base_parts
+
+                    # ── Fuente 3 (menos confiable): buscar en historial reciente ──
+                    # Solo usar el último mensaje del USUARIO (no del bot) para evitar
+                    # que un producto mencionado antes contamine el contexto.
+                    if not found_base:
+                        recent_user_msgs = [
+                            h for h in (history[-6:] if len(history) >= 6 else history)
+                            if isinstance(h, dict) and h.get("role") == "user"
+                        ]
+                        for h_msg in reversed(recent_user_msgs[:2]):
+                            h_text = h_msg.get("content", "").lower()
                             for mi in menu_items:
                                 base_parts = mi.name.lower()
                                 for v in KNOWN_VARIANTS:
