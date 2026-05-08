@@ -1237,10 +1237,9 @@ class BotEngine:
         # ── Si hay items en el carrito pero no se mostraron las opciones, forzarlas ──
         cart_now = dict(session.cart_data)
         items_now = cart_now.get("items", [])
-        # Detectar si algún mensaje ya incluye las opciones 1️⃣
+        # Detectar si algún mensaje ya incluye las opciones 1️⃣ (búsqueda en todo el payload serializado)
         already_has_options = any(
-            "1️⃣" in str(m.get("payload", {}).get("text", {}).get("body", "") or
-                         m.get("payload", {}).get("message", {}).get("text", ""))
+            "1️⃣" in str(m)
             for m in out
         )
         if items_now and not already_has_options:
