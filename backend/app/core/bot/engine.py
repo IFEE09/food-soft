@@ -28,7 +28,7 @@ import logging
 import re
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Optional, Tuple, cast
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -160,10 +160,6 @@ class BotEngine:
                 name="Invitado",
             )
             db.add(customer)
-            try:
-                db.flush()
-            except IntegrityError:
-                db.rollback()
             try:
                 db.flush()
             except IntegrityError:
@@ -696,8 +692,8 @@ class BotEngine:
 
         menu_items = db.query(models.MenuItem).filter_by(organization_id=organization_id).limit(50).all()
         promotions = db.query(models.Promotion).filter_by(organization_id=organization_id, is_active=True).all()
-        cart    = dict(session.cart_data) if isinstance(session.cart_data, dict) else {"items": [], "total": 0.0, "history": []}
-        history = list(cart.get("history", []))
+        cart: dict[str, Any] = dict(session.cart_data) if isinstance(session.cart_data, dict) else {"items": [], "total": 0.0, "history": []}
+        history = list(cast(list, cart.get("history", [])))
         state   = session.state or "ACTIVO"
 
         # Si viene interactive_id (botón de plataforma), tratarlo como texto
@@ -711,8 +707,8 @@ class BotEngine:
                 last_interaction = last_interaction.replace(tzinfo=None)
             inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "CARRITO_PENDIENTE"}
             has_items = bool(cart.get("items"))
-            if (datetime.utcnow() - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states and has_items:
-                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+            if (datetime.now(timezone.utc).replace(tzinfo=None) - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states and has_items:
+                clean_cart: dict[str, Any] = {"items": [], "total": 0.0, "history": list(cast(list, cart.get("history", [])))}
                 session.cart_data = clean_cart
                 session.state = "ACTIVO"
                 session.last_interaction_at = datetime.now(timezone.utc)
@@ -940,12 +936,12 @@ class BotEngine:
                 db.commit()
                 return BotEngine._execute_view_cart(channel, sender_id, session, db)
             if txt_lower in NUEVO:
-                clean_cart = {"items": [], "total": 0.0, "history": list(cart.get("history", []))}
+                clean_cart: dict[str, Any] = {"items": [], "total": 0.0, "history": list(cast(list, cart.get("history", [])))}
                 session.cart_data = clean_cart
                 session.state = "ACTIVO"
                 db.commit()
                 return BotEngine._execute_show_menu(db, channel, sender_id, session, organization_id)
-            active_items = cart.get("items", [])
+            active_items = cast(list, cart.get("items", []))
             summary = _format_cart_summary(active_items)
             body = (
                 f"⚠️ Opción no reconocida.\n\n"
@@ -979,7 +975,7 @@ class BotEngine:
             )
         )
         if is_greeting:
-            active_items = cart.get("items", [])
+            active_items = cast(list, cart.get("items", []))
             if active_items:
                 summary = _format_cart_summary(active_items)
                 total   = cart.get("total", 0.0)
@@ -1025,8 +1021,8 @@ class BotEngine:
             return position_result
 
         # ── Resolver variante pendiente ───────────────────────────────────────
-        pending_item    = cart.get("pending_variant_base")
-        pending_options = cart.get("pending_variant_options", [])
+        pending_item: Optional[str] = cast(Optional[str], cart.get("pending_variant_base"))
+        pending_options: list = cast(list, cart.get("pending_variant_options", []))
         if pending_item and user_text:
             AFFIRMATIVE_VAGUE = {
                 "damela", "dámela", "esa", "ese", "dale", "ok", "va", "sí", "si",

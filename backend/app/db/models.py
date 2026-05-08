@@ -1,4 +1,5 @@
-from typing import Any
+from datetime import datetime
+from typing import Any, Optional
 from sqlalchemy import Boolean, Column, Integer, String, Float, DateTime, ForeignKey, JSON, Table, UniqueConstraint
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.sql import func
@@ -14,8 +15,8 @@ user_organization_link = Table(
 
 class Organization(Base):
     __tablename__ = "organizations"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = Column(String, index=True, nullable=False)
     # Legacy: texto plano (se migra a api_key_hash y se anula)
     api_key = Column(String, unique=True, index=True, nullable=True)
     api_key_hash = Column(String, unique=True, index=True, nullable=True)
@@ -41,7 +42,7 @@ class User(Base):
     is_active = Column(Boolean(), default=True)
     
     # organization_id holds the "active" or "primary" organization
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[Optional[int]] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
     
     organizations = relationship("Organization", secondary=user_organization_link, back_populates="users")
@@ -88,11 +89,11 @@ class Station(Base):
 
 class Order(Base):
     __tablename__ = "orders"
-    
-    id = Column(Integer, primary_key=True, index=True)
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
     client_name = Column(String, index=True, nullable=True)
     total = Column(Float, default=0.0)
-    status = Column(String, default="pending") # pending, ready, delivered
+    status: Mapped[str] = Column(String, default="pending") # pending, ready, delivered
     delivery_address = Column(String, nullable=True)   # dirección de entrega del bot
     notes = Column(String, nullable=True)              # notas especiales del pedido
 
@@ -119,8 +120,8 @@ class OrderItem(Base):
 
 class MenuItem(Base):
     __tablename__ = "menu_items"
-    
-    id = Column(Integer, primary_key=True, index=True)
+
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
     name: Mapped[str] = Column(String, index=True, nullable=False)
     price: Mapped[float] = Column(Float, default=0.0)
     category = Column(String, index=True, nullable=True)
@@ -160,18 +161,18 @@ class BotCustomer(Base):
     """External customers interacting via Meta platforms"""
     __tablename__ = "bot_customers"
 
-    id = Column(Integer, primary_key=True, index=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    
-    channel = Column(String, index=True, nullable=False) # 'whatsapp', 'messenger', 'instagram'
-    channel_user_id = Column(String, index=True, nullable=False) # Phone number or PSID/IGSID
-    
-    name = Column(String, nullable=True)
-    phone = Column(String, nullable=True) # Usually same as channel_user_id for WA
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[Optional[int]] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+
+    channel: Mapped[str] = Column(String, index=True, nullable=False) # 'whatsapp', 'messenger', 'instagram'
+    channel_user_id: Mapped[str] = Column(String, index=True, nullable=False) # Phone number or PSID/IGSID
+
+    name: Mapped[Optional[str]] = Column(String, nullable=True)
+    phone: Mapped[Optional[str]] = Column(String, nullable=True) # Usually same as channel_user_id for WA
 
     # Memoria persistente entre pedidos
-    saved_name    = Column(String, nullable=True)  # Último nombre confirmado
-    saved_address = Column(String, nullable=True)  # Última dirección usada
+    saved_name: Mapped[Optional[str]]    = Column(String, nullable=True)  # Último nombre confirmado
+    saved_address: Mapped[Optional[str]] = Column(String, nullable=True)  # Última dirección usada
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -187,18 +188,18 @@ class BotSession(Base):
     """State machine tracker for order flows"""
     __tablename__ = "bot_sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
-    customer_id = Column(Integer, ForeignKey("bot_customers.id"), nullable=False, unique=True)
-    
+    id: Mapped[int] = Column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[Optional[int]] = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    customer_id: Mapped[int] = Column(Integer, ForeignKey("bot_customers.id"), nullable=False, unique=True)
+
     # State machine status: START, VIEWING_MENU, BUILDING_CART, CONFIRMING_ORDER, FINISHED
     state: Mapped[str] = Column(String, default="START", index=True, nullable=False)
 
     # Holds shopping cart items before they become a real Order: [{'menu_item_id': 1, 'qty': 2}]
     cart_data: Mapped[Any] = Column(JSON, default=list)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_interaction_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_interaction_at: Mapped[datetime] = Column(DateTime(timezone=True), server_default=func.now())
 
     customer = relationship("BotCustomer", back_populates="sessions")
 
