@@ -7,7 +7,7 @@ FLUJO PRINCIPAL:
      - Si DeepSeek no entiende → "Disculpa, no entendí tu pedido, ¿me lo repites?"
   3. Después de agregar → mensaje de texto con opciones numeradas con emojis:
        1️⃣ Confirmar pedido
-       2️⃣ Agregar instrucciones
+       2️⃣ Agregar notas (sin cebolla, extra queso...)
        3️⃣ Agregar / quitar productos
      El cliente escribe 1, 2 o 3.
      Si escribe algo no reconocido → "Opción no reconocida" + reenvía las opciones.
@@ -402,13 +402,13 @@ class BotEngine:
                 if txt_lower in {"1", "1️⃣", "confirmar", "confirmar pedido", "confirmo"}:
                     return BotEngine._start_confirm_flow(db, channel, sender_id, session, customer)
 
-                if txt_lower in {"2", "2️⃣", "instrucciones", "agregar instrucciones", "nota"}:
+                if txt_lower in {"2", "2️⃣", "instrucciones", "agregar instrucciones", "nota", "notas", "agregar notas"}:
                     cart["confirm_step"] = STEP_ASKING_NOTE
                     session.cart_data = cart
                     db.commit()
                     return [{"action": "SEND_TEXT", "payload": BotEngine._text(
                         channel, sender_id,
-                        "✍️ Escribe las instrucciones especiales para tu pedido\n(ej: sin cebolla, extra salsa, toca el timbre...)\n\nO escribe *no* si no tienes ninguna:"
+                        "✍️ Escribe las notas para tu pedido\n(ej: sin cebolla, extra queso, bien cocida...)\n\nO escribe *no* si no tienes ninguna:"
                     )}]
 
                 if txt_lower in {"3", "3️⃣", "agregar", "quitar", "agregar mas", "agregar más", "modificar"}:
@@ -434,7 +434,7 @@ class BotEngine:
                     f"🛒 Tu pedido:\n{summary}\n\n"
                     f"💰 Total: ${cart.get('total', 0.0)}"
                 )
-                options_text = "1️⃣ Confirmar pedido\n2️⃣ Agregar instrucciones\n3️⃣ Agregar / quitar productos"
+                options_text = "1️⃣ Confirmar pedido\n2️⃣ Agregar notas (sin cebolla, extra queso...)\n3️⃣ Agregar / quitar productos"
                 return BotEngine._unrecognized_option(channel, sender_id, options_text) + \
                        [{"action": "SEND_TEXT", "payload": BotEngine._cart_options_msg(channel, sender_id, cart_body)}]
 

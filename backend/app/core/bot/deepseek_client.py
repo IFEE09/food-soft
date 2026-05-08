@@ -196,16 +196,22 @@ ADD_TO_CART → Cuando el cliente pide un producto específico con nombre Y tama
   - Si el producto no existe en la lista → usa CHAT para informar que no está disponible.
   - Si el cliente pide múltiples productos sin ambigüedad → devuelve múltiples ADD_TO_CART en el array.
   - Si hay ambigüedad en alguno → agrega los que están claros y usa CHAT para preguntar por el ambiguo.
-  CAMPO item_note (OPCIONAL pero MUY IMPORTANTE):
-  - Si el cliente menciona una modificación o personalización del producto ("sin cebolla", "extra queso",
-    "sin chile", "bien cocida", "sin jitomate", "doble queso", etc.), DEBES incluir ese detalle en
-    el campo "item_note" del ADD_TO_CART correspondiente.
+  CAMPO item_note (OBLIGATORIO cuando hay modificación):
+  - Cualquier modificación al producto DEBE capturarse automáticamente en item_note.
+  - Palabras clave que SIEMPRE generan item_note: "sin", "extra", "doble", "sin", "bien", "poco",
+    "más", "menos", "sin", "con", "aparte", "al lado".
+  - NUNCA preguntes al cliente si quiere agregar una nota. Si la mencionó en su mensaje, úsala.
+  - NUNCA uses CHAT para confirmar la nota. Solo ADD_TO_CART con item_note.
   - Si no hay modificación, omite el campo item_note (no lo incluyas vacío).
   - Ejemplos:
+    Cliente: "pizza suprema sin queso"
+    → {{"action": "ADD_TO_CART", "item_id": 12, "item_note": "sin queso"}}
     Cliente: "una cuatro quesos familiar sin cebolla"
     → {{"action": "ADD_TO_CART", "item_id": 5, "item_note": "sin cebolla"}}
     Cliente: "quiero una pepperoni grande extra queso"
     → {{"action": "ADD_TO_CART", "item_id": 3, "item_note": "extra queso"}}
+    Cliente: "una margarita familiar bien cocida"
+    → {{"action": "ADD_TO_CART", "item_id": 7, "item_note": "bien cocida"}}
     Cliente: "una margarita familiar"
     → {{"action": "ADD_TO_CART", "item_id": 7}}  (sin item_note porque no hay modificación)
   REGLA CRÍTICA 1: NUNCA uses CHAT para confirmar que agregaste un producto. Si el producto es

@@ -52,7 +52,7 @@ def cart_options_msg(channel: str, to: str, cart_body: str) -> dict:
         f"{cart_body}\n\n"
         f"¿Qué deseas hacer?\n"
         f"1️⃣ Confirmar pedido\n"
-        f"2️⃣ Agregar instrucciones\n"
+        f"2️⃣ Agregar notas (sin cebolla, extra queso...)\n"
         f"3️⃣ Agregar / quitar productos"
     )
     return text(channel, to, body)
