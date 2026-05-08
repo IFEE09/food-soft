@@ -15,5 +15,5 @@ requests>=2.31.0
 openai>=1.0.0
 alembic>=1.13.0
 structlog>=24.1.0
-sentry-sdk[fastapi]>=2.0.0
+sentry-sdk[fastapi]>=2.59.0
 redis>=5.0.0
