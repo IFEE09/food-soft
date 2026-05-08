@@ -746,6 +746,36 @@ class BotEngine:
 
         txt_lower = user_text.strip().lower()
 
+        # ── Saludo con carrito activo: siempre tiene prioridad sobre cualquier estado ──
+        _GREETING_KEYWORDS = {
+            "hola", "menu", "menú", "inicio", "start", "reiniciar",
+            "hi", "hey", "hello",
+            "buenas", "buenos",
+            "buenas noches", "buenas tardes", "buenos días", "buenos dias",
+            "buen día", "buen dia",
+            "que hay", "qué hay", "que onda", "qué onda",
+            "ver menu", "ver menú", "quiero pedir", "quiero ordenar",
+        }
+        _is_greeting_early = txt_lower in _GREETING_KEYWORDS or any(
+            txt_lower.startswith(kw) for kw in ("hola", "buenas", "buenos", "hi ", "hey ", "hello")
+        )
+        if _is_greeting_early and state in ("CONFIRMANDO_PEDIDO", "CARRITO_PENDIENTE"):
+            active_items_early = cast(list, cart.get("items", []))
+            if active_items_early:
+                summary_early = _format_cart_summary(active_items_early)
+                total_early   = cart.get("total", 0.0)
+                session.state = "CARRITO_PENDIENTE"
+                db.commit()
+                body_early = (
+                    f"🛒 Tienes un pedido en curso:\n\n"
+                    f"{summary_early}\n\n"
+                    f"💰 Total: ${total_early}\n\n"
+                    f"1️⃣ Continuar con este pedido\n"
+                    f"2️⃣ Empezar uno nuevo"
+                )
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, body_early)})
+                return out
+
         # ══════════════════════════════════════════════════════════════════════
         # ESTADO CONFIRMANDO_PEDIDO — manejo de opciones numéricas
         # ══════════════════════════════════════════════════════════════════════
