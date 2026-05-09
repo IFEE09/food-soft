@@ -116,3 +116,31 @@ def diag_whatsapp(db: Session = Depends(get_db)) -> dict:
             result["test_envio"] = "SALTADO — phone_number_id vacío en BD"
 
     return result
+
+
+@router.get("/diag/set-phone-id", summary="Guardar phone_number_id en BD — temporal")
+def diag_set_phone_id(
+    org_id: int,
+    phone_number_id: str,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Endpoint temporal para guardar el whatsapp_phone_number_id en la BD.
+    Uso: /diag/set-phone-id?org_id=3&phone_number_id=1121553614371005
+    """
+    from app.db import models
+    org = db.query(models.Organization).filter(models.Organization.id == org_id).first()
+    if not org:
+        return {"error": f"Organización {org_id} no encontrada"}
+    old_id = org.whatsapp_phone_number_id
+    org.whatsapp_phone_number_id = phone_number_id.strip()
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    return {
+        "ok": True,
+        "org_id": org.id,
+        "org_name": org.name,
+        "phone_number_id_anterior": old_id,
+        "phone_number_id_nuevo": org.whatsapp_phone_number_id
+    }
