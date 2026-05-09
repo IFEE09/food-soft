@@ -144,3 +144,31 @@ def diag_set_phone_id(
         "phone_number_id_anterior": old_id,
         "phone_number_id_nuevo": org.whatsapp_phone_number_id
     }
+
+
+@router.get("/diag/set-facebook-page-id", summary="Guardar facebook_page_id en BD — temporal")
+def diag_set_facebook_page_id(
+    org_id: int,
+    page_id: str,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Endpoint temporal para guardar el facebook_page_id en la BD.
+    Uso: /diag/set-facebook-page-id?org_id=3&page_id=98237083829207
+    """
+    from app.db import models
+    org = db.query(models.Organization).filter(models.Organization.id == org_id).first()
+    if not org:
+        return {"error": f"Organización {org_id} no encontrada"}
+    old_id = org.facebook_page_id
+    org.facebook_page_id = page_id.strip()
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    return {
+        "ok": True,
+        "org_id": org.id,
+        "org_name": org.name,
+        "facebook_page_id_anterior": old_id,
+        "facebook_page_id_nuevo": org.facebook_page_id
+    }
