@@ -14,28 +14,17 @@ logger = logging.getLogger(__name__)
 
 META_GRAPH_URL = "https://graph.facebook.com/v19.0"
 
-# Cache de tokens para evitar importar settings en cada llamada
-_WA_TOKEN: str | None = None
-_MESSENGER_TOKEN: str | None = None
-
-
 def _get_wa_token() -> str:
-    """Token para WhatsApp Business API."""
-    global _WA_TOKEN
-    if not _WA_TOKEN:
-        from app.core.config import settings
-        # Preferir META_WA_TOKEN; si no está, usar META_ACCESS_TOKEN como fallback
-        _WA_TOKEN = (settings.META_WA_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
-    return _WA_TOKEN
+    """Token para WhatsApp Business API. Lee siempre desde settings (sin caché)."""
+    from app.core.config import settings
+    # Preferir META_WA_TOKEN; si no está, usar META_ACCESS_TOKEN como fallback
+    return (settings.META_WA_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
 
 
 def _get_messenger_token() -> str:
-    """Token para Messenger/Instagram (Page Access Token)."""
-    global _MESSENGER_TOKEN
-    if not _MESSENGER_TOKEN:
-        from app.core.config import settings
-        _MESSENGER_TOKEN = (settings.META_ACCESS_TOKEN or "").strip()
-    return _MESSENGER_TOKEN
+    """Token para Messenger/Instagram (Page Access Token). Lee siempre desde settings."""
+    from app.core.config import settings
+    return (settings.META_ACCESS_TOKEN or "").strip()
 
 
 def _send(url: str, payload: dict, token: str) -> bool:
