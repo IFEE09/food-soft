@@ -10,7 +10,6 @@ No mover lógica de negocio aquí. Estos endpoints deben ser baratos y rápidos.
 from __future__ import annotations
 
 import requests as _requests
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
