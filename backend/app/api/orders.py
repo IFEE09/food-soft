@@ -290,7 +290,7 @@ def mark_order_ready(
                 f"\U0001f464 Cliente: *{nombre}*\n"
                 f"\U0001f4cd Dirección: {direccion}\n"
                 f"\U0001f4b0 Monto: *{monto}*\n\n"
-                f"Por favor recoge el pedido en el restaurante. \U0001f60a"
+                f"Ya puedes pasar al restaurante *Horno 74* a recoger el pedido. \U0001f354"
             )
             payload = {
                 "messaging_product": "whatsapp",
