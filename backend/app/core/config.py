@@ -79,7 +79,8 @@ class Settings(BaseSettings):
 
     # Meta Platform (Bot) — definir en .env (verify token del webhook Meta).
     META_VERIFY_TOKEN: str = ""
-    META_ACCESS_TOKEN: str | None = None
+    META_ACCESS_TOKEN: str | None = None   # Page Access Token para Messenger/Facebook
+    META_WA_TOKEN: str | None = None       # Token para WhatsApp Business API (si es diferente al de Messenger)
     META_APP_SECRET: str | None = None
 
     # Si True, permite POST /bot/mock fuera de producción. Por seguridad, por defecto es False.

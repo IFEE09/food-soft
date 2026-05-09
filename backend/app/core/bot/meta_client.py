@@ -1,6 +1,10 @@
 """
 MetaClient — Cliente HTTP para enviar mensajes a Meta Graph API.
 Soporta WhatsApp, Facebook Messenger e Instagram DM.
+
+Tokens por canal:
+  - WhatsApp: usa META_WA_TOKEN si está definido, sino cae a META_ACCESS_TOKEN
+  - Messenger/Instagram: usa META_ACCESS_TOKEN (Page Access Token)
 """
 import logging
 
@@ -9,21 +13,34 @@ import requests
 logger = logging.getLogger(__name__)
 
 META_GRAPH_URL = "https://graph.facebook.com/v19.0"
-_ACCESS_TOKEN: str | None = None
+
+# Cache de tokens para evitar importar settings en cada llamada
+_WA_TOKEN: str | None = None
+_MESSENGER_TOKEN: str | None = None
 
 
-def _get_token() -> str:
-    global _ACCESS_TOKEN
-    if not _ACCESS_TOKEN:
+def _get_wa_token() -> str:
+    """Token para WhatsApp Business API."""
+    global _WA_TOKEN
+    if not _WA_TOKEN:
         from app.core.config import settings
-        _ACCESS_TOKEN = settings.META_ACCESS_TOKEN or ""
-    return _ACCESS_TOKEN
+        # Preferir META_WA_TOKEN; si no está, usar META_ACCESS_TOKEN como fallback
+        _WA_TOKEN = (settings.META_WA_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
+    return _WA_TOKEN
 
 
-def _send(url: str, payload: dict) -> bool:
-    token = _get_token()
+def _get_messenger_token() -> str:
+    """Token para Messenger/Instagram (Page Access Token)."""
+    global _MESSENGER_TOKEN
+    if not _MESSENGER_TOKEN:
+        from app.core.config import settings
+        _MESSENGER_TOKEN = (settings.META_ACCESS_TOKEN or "").strip()
+    return _MESSENGER_TOKEN
+
+
+def _send(url: str, payload: dict, token: str) -> bool:
     if not token:
-        logger.error("META_ACCESS_TOKEN no configurado. Mensaje no enviado.")
+        logger.error("Token de Meta no configurado. Mensaje no enviado. URL: %s", url)
         return False
     try:
         resp = requests.post(
@@ -53,17 +70,17 @@ def _send(url: str, payload: dict) -> bool:
 
 def send_whatsapp_message(phone_number_id: str, payload: dict) -> bool:
     url = f"{META_GRAPH_URL}/{phone_number_id}/messages"
-    return _send(url, payload)
+    return _send(url, payload, _get_wa_token())
 
 
 def send_messenger_message(payload: dict) -> bool:
     url = f"{META_GRAPH_URL}/me/messages"
-    return _send(url, payload)
+    return _send(url, payload, _get_messenger_token())
 
 
 def send_instagram_message(payload: dict) -> bool:
     url = f"{META_GRAPH_URL}/me/messages"
-    return _send(url, payload)
+    return _send(url, payload, _get_messenger_token())
 
 
 def dispatch_outbound_messages(
