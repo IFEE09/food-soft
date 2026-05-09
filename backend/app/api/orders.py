@@ -20,7 +20,7 @@ from app.schemas import order as order_schema
 logger = logging.getLogger(__name__)
 
 # Número fijo del repartidor (tercero que lleva la comida)
-_DELIVERY_PHONE = "9993372150"
+_DELIVERY_PHONE = "529993372150"  # México: código 52 requerido por Meta API
 
 router = APIRouter()
 
