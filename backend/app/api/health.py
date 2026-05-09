@@ -88,7 +88,8 @@ def diag_whatsapp(db: Session = Depends(get_db)) -> dict:
 
     # 4. Prueba de envío al repartidor
     if token and orgs:
-        org = orgs[0]
+        # Usar la org que tenga phone_number_id configurado
+        org = next((o for o in orgs if o.whatsapp_phone_number_id), orgs[0])
         pnid = org.whatsapp_phone_number_id
         if pnid:
             try:
