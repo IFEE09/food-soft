@@ -102,7 +102,9 @@ export default function KitchenDashboard() {
     try {
       await apiClient.post(`/orders/${orderId}/mark-ready`);
       await refetch();
-      showNotification(`✅ Pedido #${String(orderId).padStart(4, '0')} listo — WhatsApp enviado al repartidor`, 'success');
+      const order = orders.find(o => o.id === orderId);
+      const total = order ? `$${order.total.toFixed(2)}` : '';
+      showNotification(`✅ Pedido #${String(orderId).padStart(4, '0')} terminado${total ? ` — ${total}` : ''} — WhatsApp enviado al repartidor`, 'success');
     } catch (err) {
       console.error('Error marking order as ready:', err);
       showNotification('⚠️ Error al marcar el pedido como listo', 'error');
@@ -408,8 +410,8 @@ export default function KitchenDashboard() {
                   {isMarking ? (
                     <>⏳ Enviando WhatsApp...</>
                   ) : (
-                    <><CheckCircle2 size={18} /> Listo — Notificar Repartidor</>
-                  )}
+                    <><CheckCircle2 size={18} /> Terminado
+                    </>)}
                 </button>
               </div>
             );
