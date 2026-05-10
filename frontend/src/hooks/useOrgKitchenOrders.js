@@ -1,16 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../api/client';
+import { apiClient, buildWsUrl } from '../api/client';
 
-/** WebSocket URL (sin JWT en query; auth vía primer mensaje JSON en onopen). */
+/** WebSocket URL — delegates to the centralised buildWsUrl helper in client.js.
+ *  Works in browser, Electron (file://), and local dev. */
 export function buildKitchenWsUrl(orgId) {
   const token = localStorage.getItem('token');
   if (!token) return null;
-  const api = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-  const base = api.replace(/\/api\/v1\/?$/, '');
-  const wsBase = base.startsWith('https')
-    ? base.replace(/^https/, 'wss')
-    : base.replace(/^http/, 'ws');
-  return `${wsBase}/ws/${orgId}`;
+  return buildWsUrl(`/ws/${orgId}`);
 }
 
 /**

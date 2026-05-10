@@ -130,7 +130,7 @@ class Settings(BaseSettings):
         if raw:
             return [o.strip() for o in raw.split(",") if o.strip()]
 
-        # Orígenes por defecto para desarrollo y tus dominios específicos de Railway
+        # Orígenes por defecto para desarrollo, producción y Electron
         origins = [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
@@ -138,6 +138,12 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
             # Tu dominio de frontend específico (detectado en consola)
             "https://compassionate-blessing-production-bc5c.up.railway.app",
+            # Electron desktop app: cuando carga desde file:// el navegador envía
+            # Origin: null en las peticiones CORS. Agregar 'null' aquí permite que
+            # la app de escritorio se comunique con el backend sin bloqueos.
+            # Es seguro porque Electron no es una página web arbitraria — no hay
+            # riesgo de CSRF desde una app de escritorio empaquetada.
+            "null",
         ]
 
         if self.ENV == "production":

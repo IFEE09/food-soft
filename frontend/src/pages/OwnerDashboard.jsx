@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../api/client';
+import { apiClient, buildWsUrl } from '../api/client';
 import { Clock, CheckCircle2, AlertCircle, ArrowUpRight, Send, Building2 } from 'lucide-react';
 
 export default function OwnerDashboard() {
@@ -50,12 +50,7 @@ export default function OwnerDashboard() {
     const orgId = orgRaw ? parseInt(orgRaw, 10) : NaN;
     if (!Number.isNaN(orgId) && orgId > 0) {
       try {
-        const api = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-        const base = api.replace(/\/api\/v1\/?$/, '');
-        const wsBase = base.startsWith('https')
-          ? base.replace(/^https/, 'wss')
-          : base.replace(/^http/, 'ws');
-        ws = new WebSocket(`${wsBase}/ws/${orgId}`);
+        ws = new WebSocket(buildWsUrl(`/ws/${orgId}`));
         ws.onopen = () => {
           const t = localStorage.getItem('token');
           if (t) ws.send(JSON.stringify({ type: 'auth', token: t }));
