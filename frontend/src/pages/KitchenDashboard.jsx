@@ -9,10 +9,10 @@ import {
   PlusCircle,
   Monitor,
   Activity,
-  MapPin,
-  DollarSign,
   Send,
-  ChevronDown
+  ChevronDown,
+  Building2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function KitchenDashboard() {
@@ -25,9 +25,10 @@ export default function KitchenDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('kitchen');
   const [newName, setNewName] = useState('');
-  const [markingReady, setMarkingReady] = useState({}); // { [orderId]: true/false }
-  const [notification, setNotification] = useState(null); // { msg, type }
+  const [markingReady, setMarkingReady] = useState({});
+  const [notification, setNotification] = useState(null);
   const [showKitchenDropdown, setShowKitchenDropdown] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null);
 
   useEffect(() => {
     fetchInitialData();
@@ -41,7 +42,6 @@ export default function KitchenDashboard() {
     }
   }, [kitchens.length]);
 
-  // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!e.target.closest('[data-kitchen-dropdown]')) {
@@ -107,17 +107,26 @@ export default function KitchenDashboard() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  /**
-   * Marca el pedido como listo Y envía WhatsApp al repartidor.
-   */
-  const markAsReady = async (orderId) => {
+  const handleTerminadoClick = (order) => {
+    setConfirmModal({
+      orderId: order.id,
+      orderNum: order.id.toString().padStart(4, '0'),
+      total: order.total ? `$${order.total.toFixed(2)}` : '',
+      clientName: order.client_name || 'Sin nombre',
+    });
+  };
+
+  const handleConfirmReady = async () => {
+    const { orderId, orderNum, total } = confirmModal;
+    setConfirmModal(null);
     setMarkingReady(prev => ({ ...prev, [orderId]: true }));
     try {
       await apiClient.post(`/orders/${orderId}/mark-ready`);
       await refetch();
-      const order = orders.find(o => o.id === orderId);
-      const total = order ? `$${order.total.toFixed(2)}` : '';
-      showNotification(`✅ Pedido #${String(orderId).padStart(4, '0')} terminado${total ? ` — ${total}` : ''} — WhatsApp enviado al repartidor`, 'success');
+      showNotification(
+        `✅ Pedido #${orderNum} terminado${total ? ` — ${total}` : ''} — WhatsApp enviado al repartidor`,
+        'success'
+      );
     } catch (err) {
       console.error('Error marking order as ready:', err);
       showNotification('⚠️ Error al marcar el pedido como listo', 'error');
@@ -132,6 +141,9 @@ export default function KitchenDashboard() {
     if (selectedStation) return o.station_id === selectedStation;
     return kitchenStationIds.includes(o.station_id);
   });
+
+  const pendingCount = filteredOrders.filter(o => o.status === 'pending').length;
+  const readyCount   = filteredOrders.filter(o => o.status === 'ready').length;
 
   // ── Vista 1: Selección de cocinas ─────────────────────────────────────────────
   if (!selectedKitchen) {
@@ -197,7 +209,7 @@ export default function KitchenDashboard() {
     );
   }
 
-  // ── Vista 2: Monitor de cocina (contexto activo) ───────────────────────────────
+  // ── Vista 2: Monitor de cocina — tabla RECENT_TRANSACTIONS ────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
@@ -207,296 +219,313 @@ export default function KitchenDashboard() {
           position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 9999,
           padding: '0.9rem 1.4rem',
           background: notification.type === 'success' ? 'rgba(5,150,105,0.95)' : 'rgba(220,38,38,0.95)',
-          color: '#fff',
-          borderRadius: '6px',
-          fontWeight: 700,
-          fontSize: '0.9rem',
+          color: '#fff', borderRadius: '6px', fontWeight: 700, fontSize: '0.9rem',
           boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', gap: '0.6rem',
-          maxWidth: '420px'
+          display: 'flex', alignItems: 'center', gap: '0.6rem', maxWidth: '440px'
         }}>
           <Send size={16} />
           {notification.msg}
         </div>
       )}
 
-      {/* Header con selector de cocina y tabs de estaciones */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-
-          {/* Botón volver */}
-          <button
-            onClick={handleBackToSites}
-            style={{ padding: '0.6rem', borderRadius: '2px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', cursor: 'pointer' }}
-            title="Volver a Sucursales"
-          >
-            ←
-          </button>
-
-          {/* Selector de cocina (dropdown) */}
-          <div data-kitchen-dropdown style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowKitchenDropdown(v => !v)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                padding: '0.6rem 1rem',
-                borderRadius: '2px',
-                border: '1px solid var(--primary-color)',
-                background: 'rgba(204,255,0,0.08)',
-                color: 'var(--primary-color)',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                minWidth: '140px',
-                justifyContent: 'space-between'
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <ChefHat size={15} />
-                {selectedKitchen.name}
-              </span>
-              <ChevronDown size={14} style={{ transform: showKitchenDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-            </button>
-
-            {showKitchenDropdown && kitchens.length > 1 && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
-                background: 'var(--surface-color)',
-                border: '1px solid var(--surface-border)',
-                borderRadius: '4px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                minWidth: '200px',
-                overflow: 'hidden'
-              }}>
-                {kitchens.map(k => (
-                  <button
-                    key={k.id}
-                    onClick={() => handleSelectKitchen(k)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '0.5rem',
-                      width: '100%', padding: '0.75rem 1rem',
-                      background: String(k.id) === String(selectedKitchen.id) ? 'rgba(204,255,0,0.1)' : 'transparent',
-                      border: 'none',
-                      borderBottom: '1px solid var(--surface-border)',
-                      color: String(k.id) === String(selectedKitchen.id) ? 'var(--primary-color)' : 'var(--text-primary)',
-                      fontWeight: String(k.id) === String(selectedKitchen.id) ? 800 : 500,
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <ChefHat size={14} />
-                    {k.name}
-                    {String(k.id) === String(selectedKitchen.id) && (
-                      <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--success-color)', fontWeight: 700 }}>ACTIVA</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
+      {/* Modal de confirmación */}
+      {confirmModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'var(--surface-color)',
+            border: '1px solid var(--surface-border)',
+            borderRadius: '8px', padding: '2rem', maxWidth: '380px', width: '90%',
+            display: 'flex', flexDirection: 'column', gap: '1.5rem'
+          }}>
+            <div>
+              <h3 style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 800 }}>¿Confirmar pedido listo?</h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Pedido <strong style={{ color: 'var(--success-color)' }}>#{confirmModal.orderNum}</strong>
+                {confirmModal.total && <> — <strong style={{ color: 'var(--success-color)' }}>{confirmModal.total}</strong></>}
+                {' '}a nombre de <strong>{confirmModal.clientName}</strong>.
+                <br />Se enviará WhatsApp al repartidor.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => setConfirmModal(null)}
+                style={{
+                  flex: 1, padding: '0.7rem', background: 'transparent',
+                  border: '1px solid var(--surface-border)', borderRadius: '4px',
+                  color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer'
+                }}
+              >Cancelar</button>
+              <button
+                onClick={handleConfirmReady}
+                style={{
+                  flex: 2, padding: '0.7rem', background: '#059669',
+                  border: '1px solid #059669', borderRadius: '4px', color: '#fff',
+                  fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                }}
+              >
+                <CheckCircle2 size={16} /> Sí, está listo
+              </button>
+            </div>
           </div>
-
-          {/* Tabs de estaciones */}
-          <button
-            onClick={() => setSelectedStation(null)}
-            style={{
-              padding: '0.6rem 1rem', borderRadius: '2px',
-              border: selectedStation === null ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
-              background: selectedStation === null ? 'rgba(204,255,0,0.1)' : 'var(--surface-color)',
-              color: selectedStation === null ? 'var(--success-color)' : 'var(--text-secondary)',
-              fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', textTransform: 'uppercase'
-            }}
-          >
-            <Monitor size={14} /> MASTER_SCREEN
-          </button>
-
-          {stations.map(s => (
-            <button
-              key={s.id}
-              onClick={() => setSelectedStation(s.id)}
-              style={{
-                padding: '0.6rem 1rem', borderRadius: '2px',
-                border: selectedStation === s.id ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
-                background: selectedStation === s.id ? 'rgba(204,255,0,0.1)' : 'var(--surface-color)',
-                color: selectedStation === s.id ? 'var(--success-color)' : 'var(--text-secondary)',
-                fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', textTransform: 'uppercase'
-              }}
-            >
-              <Activity size={14} /> {s.name}
-            </button>
-          ))}
-
-          <button
-            onClick={() => { setModalType('station'); setIsModalOpen(true); }}
-            style={{ padding: '0.6rem', borderRadius: '2px', border: '1px dashed var(--success-color)', background: 'transparent', color: 'var(--success-color)', cursor: 'pointer' }}
-            title="Agregar estación"
-          >
-            <Plus size={14} />
-          </button>
         </div>
+      )}
 
-        <div className="mono" style={{ padding: '0.4rem 0.75rem', backgroundColor: 'rgba(255,51,51,0.1)', color: 'var(--danger-color)', border: '1px solid var(--danger-color)', borderRadius: '2px', fontWeight: 700, fontSize: '0.7rem' }}>
-          {filteredOrders.length} PENDING_TASKS
+      {/* Métricas */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: 'var(--surface-border)', border: '1px solid var(--surface-border)' }}>
+        <div style={{ background: 'var(--surface-color)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '2px solid var(--danger-color)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>PENDING_ORDERS</h4>
+            <AlertCircle size={14} style={{ color: 'var(--danger-color)' }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <h3 className="mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1 }}>{pendingCount}</h3>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>In Queue // Real-Time</span>
+          </div>
+        </div>
+        <div style={{ background: 'var(--surface-color)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '2px solid var(--success-color)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>READY_TO_SERVE</h4>
+            <CheckCircle2 size={14} style={{ color: 'var(--success-color)' }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <h3 className="mono" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--success-color)', margin: 0, lineHeight: 1 }}>{readyCount}</h3>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 500, textTransform: 'uppercase' }}>Awaiting Delivery</span>
+          </div>
         </div>
       </div>
 
-      {/* Contenido principal */}
-      {ordersLoading ? (
-        <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          <ChefHat size={40} className="animate-pulse" style={{ marginBottom: '1rem', opacity: 0.3 }} />
-          <p>Sincronizando estaciones de {selectedKitchen.name}...</p>
-        </div>
-      ) : stations.length === 0 ? (
-        <div style={{ padding: '8rem 2rem', textAlign: 'center', backgroundColor: 'var(--surface-color)', border: '1px dashed var(--primary-color)', borderRadius: '12px' }}>
-          <Activity size={48} style={{ color: 'var(--primary-color)', marginBottom: '1.5rem', opacity: 0.4 }} />
-          <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Configuración Inicial Requerida</h3>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '450px', margin: '0 auto 2rem' }}>
-            Esta ubicación aún no tiene estaciones de trabajo registradas. Para empezar a recibir y monitorear pedidos, debes crear al menos una estación.
-          </p>
-          <button
-            onClick={() => { setModalType('station'); setIsModalOpen(true); }}
-            className="btn-primary" style={{ gap: '0.5rem' }}
-          >
-            <Plus size={18} /> Crear Primera Estación
-          </button>
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <div style={{ padding: '8rem 2rem', textAlign: 'center', backgroundColor: 'var(--surface-color)', border: '1px dashed var(--surface-border)', borderRadius: '12px' }}>
-          <CheckCircle2 size={48} style={{ color: 'var(--success-color)', marginBottom: '1.5rem', opacity: 0.2 }} />
-          <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Línea de producción despejada</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>No hay pedidos pendientes en esta configuración.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {filteredOrders.map((order) => {
-            const timeAgo = Math.floor((new Date() - new Date(order.created_at)) / 60000);
-            const isLate = timeAgo > 15;
-            const isMarking = markingReady[order.id];
+      {/* Tabla RECENT_TRANSACTIONS */}
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
 
-            return (
-              <div key={order.id} className="glass-panel" style={{
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.25rem',
-                borderTop: `4px solid ${isLate ? 'var(--danger-color)' : 'var(--primary-color)'}`
-              }}>
-                {/* Header de la tarjeta */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary-color)', margin: 0 }}>
-                      #{order.id.toString().padStart(4, '0')}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: isLate ? 'var(--danger-color)' : 'var(--text-secondary)', fontWeight: 600, marginTop: '0.25rem' }}>
-                      <Clock size={14} /> {timeAgo} min
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{order.client_name || 'Sin nombre'}</div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                      {stations.find(s => s.id === order.station_id)?.name || 'N/A'}
-                    </span>
-                  </div>
-                </div>
+        {/* Header de la tabla */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>RECENT_TRANSACTIONS</h3>
 
-                {/* Productos */}
-                <div style={{ flex: 1 }}>
-                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: 0, padding: 0 }}>
-                    {order.items && order.items.map((item, idx) => (
-                      <li key={idx} style={{
-                        padding: '0.6rem 0.75rem',
-                        backgroundColor: item.note ? 'rgba(240,192,64,0.06)' : 'var(--neutral-bg)',
-                        borderRadius: '4px',
-                        border: item.note ? '1px solid rgba(240,192,64,0.35)' : '1px solid var(--surface-border)'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{item.product_name}</span>
-                          <span style={{ backgroundColor: 'var(--primary-color)', color: 'white', fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '4px', fontWeight: 800, flexShrink: 0, marginLeft: '0.5rem' }}>
-                            x{item.quantity}
-                          </span>
-                        </div>
-                        {item.note && (
-                          <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: '#f0c040', fontWeight: 600 }}>
-                            ✎ {item.note}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Nota especial del pedido */}
-                {order.notes && (
-                  <div style={{
-                    padding: '0.6rem 0.75rem',
-                    backgroundColor: 'rgba(240,192,64,0.1)',
-                    border: '1px solid rgba(240,192,64,0.3)',
-                    borderRadius: '4px',
-                    fontSize: '0.85rem',
-                    color: '#f0c040'
-                  }}>
-                    ✎ {order.notes}
-                  </div>
-                )}
-
-                {/* Dirección de entrega */}
-                {order.delivery_address && (
-                  <div style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
-                    padding: '0.6rem 0.75rem',
-                    backgroundColor: 'rgba(99,102,241,0.08)',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    color: 'var(--text-secondary)'
-                  }}>
-                    <MapPin size={14} style={{ marginTop: '0.1rem', flexShrink: 0, color: '#818cf8' }} />
-                    <span>{order.delivery_address}</span>
-                  </div>
-                )}
-
-                {/* Total */}
-                {order.total > 0 && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                    fontSize: '0.9rem', fontWeight: 700, color: 'var(--success-color)'
-                  }}>
-                    <DollarSign size={14} />
-                    ${order.total.toFixed(2)}
-                  </div>
-                )}
-
-                {/* Botón Listo */}
+            {/* Selector de cocina bajo el título */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+              {/* Dropdown cocina */}
+              <div data-kitchen-dropdown style={{ position: 'relative' }}>
                 <button
-                  onClick={() => markAsReady(order.id)}
-                  disabled={isMarking}
-                  className="btn-primary"
+                  onClick={() => setShowKitchenDropdown(v => !v)}
                   style={{
-                    width: '100%',
-                    gap: '0.5rem',
-                    backgroundColor: isMarking ? '#047857' : '#059669',
-                    borderColor: isMarking ? '#047857' : '#059669',
-                    opacity: isMarking ? 0.7 : 1,
-                    cursor: isMarking ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    padding: '0.75rem'
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                    padding: '0.15rem 0.6rem',
+                    borderRadius: '3px',
+                    border: '1px solid rgba(204,255,0,0.35)',
+                    background: 'rgba(204,255,0,0.08)',
+                    color: 'var(--primary-color)',
+                    fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
                   }}
                 >
-                  {isMarking ? (
-                    <>⏳ Enviando WhatsApp...</>
-                  ) : (
-                    <><CheckCircle2 size={18} /> Terminado</>
-                  )}
+                  <Building2 size={11} />
+                  {selectedKitchen.name}
+                  <ChevronDown size={11} style={{ transform: showKitchenDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </button>
+
+                {showKitchenDropdown && kitchens.length > 1 && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+                    background: 'var(--surface-color)',
+                    border: '1px solid var(--surface-border)',
+                    borderRadius: '4px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    minWidth: '200px', overflow: 'hidden'
+                  }}>
+                    {kitchens.map(k => (
+                      <button
+                        key={k.id}
+                        onClick={() => handleSelectKitchen(k)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          width: '100%', padding: '0.75rem 1rem',
+                          background: String(k.id) === String(selectedKitchen.id) ? 'rgba(204,255,0,0.1)' : 'transparent',
+                          border: 'none', borderBottom: '1px solid var(--surface-border)',
+                          color: String(k.id) === String(selectedKitchen.id) ? 'var(--primary-color)' : 'var(--text-primary)',
+                          fontWeight: String(k.id) === String(selectedKitchen.id) ? 800 : 500,
+                          fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left'
+                        }}
+                      >
+                        <ChefHat size={14} />
+                        {k.name}
+                        {String(k.id) === String(selectedKitchen.id) && (
+                          <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--success-color)', fontWeight: 700 }}>ACTIVA</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            );
-          })}
+
+              {/* Tabs de estaciones */}
+              <button
+                onClick={() => setSelectedStation(null)}
+                style={{
+                  padding: '0.15rem 0.6rem', borderRadius: '3px', fontSize: '0.7rem', fontWeight: 700,
+                  border: selectedStation === null ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
+                  background: selectedStation === null ? 'rgba(204,255,0,0.1)' : 'transparent',
+                  color: selectedStation === null ? 'var(--success-color)' : 'var(--text-secondary)',
+                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', textTransform: 'uppercase'
+                }}
+              >
+                <Monitor size={11} /> ALL
+              </button>
+              {stations.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setSelectedStation(s.id)}
+                  style={{
+                    padding: '0.15rem 0.6rem', borderRadius: '3px', fontSize: '0.7rem', fontWeight: 700,
+                    border: selectedStation === s.id ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
+                    background: selectedStation === s.id ? 'rgba(204,255,0,0.1)' : 'transparent',
+                    color: selectedStation === s.id ? 'var(--success-color)' : 'var(--text-secondary)',
+                    cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', textTransform: 'uppercase'
+                  }}
+                >
+                  <Activity size={11} /> {s.name}
+                </button>
+              ))}
+              <button
+                onClick={() => { setModalType('station'); setIsModalOpen(true); }}
+                style={{
+                  padding: '0.15rem 0.5rem', borderRadius: '3px', fontSize: '0.7rem', fontWeight: 700,
+                  border: '1px dashed var(--success-color)', background: 'transparent',
+                  color: 'var(--success-color)', cursor: 'pointer'
+                }}
+                title="Agregar estación"
+              >
+                <Plus size={11} />
+              </button>
+            </div>
+          </div>
+
+          {/* Botón volver + contador */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button
+              onClick={handleBackToSites}
+              style={{
+                padding: '0.4rem 0.8rem', borderRadius: '2px',
+                border: '1px solid var(--surface-border)', background: 'var(--surface-color)',
+                color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer'
+              }}
+            >
+              ← Cocinas
+            </button>
+            <div className="mono" style={{
+              padding: '0.4rem 0.75rem',
+              backgroundColor: 'rgba(255,51,51,0.1)', color: 'var(--danger-color)',
+              border: '1px solid var(--danger-color)', borderRadius: '2px',
+              fontWeight: 700, fontSize: '0.7rem'
+            }}>
+              {filteredOrders.length} ORDERS
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Tabla */}
+        <div style={{ width: '100%', overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
+                <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}># PEDIDO</th>
+                <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>NEGOCIO</th>
+                <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ORDEN CON NOTA</th>
+                <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>NOMBRE</th>
+                <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ESTATUS</th>
+                <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ACCIÓN</th>
+              </tr>
+            </thead>
+            <tbody className="mono">
+              {ordersLoading ? (
+                <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>FETCHING_DATA...</td></tr>
+              ) : filteredOrders.length === 0 ? (
+                <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>NO_RECORDS_FOUND</td></tr>
+              ) : filteredOrders.map((row, i) => {
+                let badgeColor = 'var(--text-secondary)';
+                if (row.status === 'pending')      badgeColor = 'var(--danger-color)';
+                else if (row.status === 'ready')   badgeColor = 'var(--success-color)';
+                else if (row.status === 'delivered') badgeColor = 'var(--primary-color)';
+
+                const itemsText = row.items && row.items.length > 0
+                  ? row.items.map(it => {
+                      const noteStr = it.note ? ` ✎${it.note}` : '';
+                      return `${it.product_name} x${it.quantity}${noteStr}`;
+                    }).join(', ')
+                  : '—';
+                const notaText = row.notes ? ` ✎ ${row.notes}` : '';
+                const ordenConNota = itemsText + notaText;
+                const hasNote = row.notes || (row.items && row.items.some(it => it.note));
+                const isMarking = markingReady[row.id];
+
+                return (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--surface-border)' }}>
+                    <td style={{ padding: '1rem 0', color: 'var(--success-color)' }}>
+                      #{row.id.toString().padStart(4, '0')}
+                    </td>
+                    <td style={{ padding: '1rem 0' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        fontSize: '0.7rem', fontWeight: 700,
+                        color: 'var(--primary-color)',
+                        background: 'rgba(204,255,0,0.08)',
+                        border: '1px solid rgba(204,255,0,0.25)',
+                        borderRadius: '3px', padding: '0.15rem 0.5rem', whiteSpace: 'nowrap'
+                      }}>
+                        <Building2 size={10} />
+                        {selectedKitchen.name}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 0', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span title={ordenConNota} style={{ color: hasNote ? '#f0c040' : 'var(--text-primary)' }}>
+                        {ordenConNota}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem 0', color: 'var(--text-primary)' }}>
+                      {row.client_name || '—'}
+                    </td>
+                    <td style={{ padding: '1rem 0' }}>
+                      <span style={{
+                        fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontWeight: 700,
+                        border: `1px solid ${badgeColor}44`, color: badgeColor,
+                        whiteSpace: 'nowrap', textTransform: 'uppercase'
+                      }}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem 0' }}>
+                      {row.status === 'pending' ? (
+                        <button
+                          onClick={() => handleTerminadoClick(row)}
+                          disabled={isMarking}
+                          style={{
+                            padding: '0.35rem 0.85rem',
+                            background: isMarking ? '#047857' : '#059669',
+                            border: 'none', borderRadius: '4px', color: '#fff',
+                            fontWeight: 700, fontSize: '0.75rem',
+                            cursor: isMarking ? 'not-allowed' : 'pointer',
+                            opacity: isMarking ? 0.7 : 1,
+                            display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <CheckCircle2 size={13} />
+                          {isMarking ? 'Enviando...' : 'Terminado'}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Modal de estación */}
       {isModalOpen && (
