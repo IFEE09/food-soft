@@ -19,6 +19,9 @@ const Menu                = lazy(() => import('./pages/Menu'));
 const ActivityLogs        = lazy(() => import('./pages/ActivityLogs'));
 const TeamManagement      = lazy(() => import('./pages/TeamManagement'));
 const OrderHistory        = lazy(() => import('./pages/OrderHistory'));
+const POSCounter          = lazy(() => import('./pages/POSCounter'));
+const POSTable            = lazy(() => import('./pages/POSTable'));
+const Reservations        = lazy(() => import('./pages/Reservations'));
 
 import { NotificationProvider } from './components/NotificationProvider';
 import { ThemeProvider } from './components/ThemeContext';
@@ -97,6 +100,15 @@ function App() {
                 } />
                 <Route path="team" element={
                   <RoleRoute allowed={['owner']}><TeamManagement /></RoleRoute>
+                } />
+                <Route path="pos-counter" element={
+                  <RoleRoute allowed={['owner', 'receptionist']}><POSCounter /></RoleRoute>
+                } />
+                <Route path="pos-table" element={
+                  <RoleRoute allowed={['owner', 'receptionist', 'cook']}><POSTable /></RoleRoute>
+                } />
+                <Route path="reservations" element={
+                  <RoleRoute allowed={['owner', 'receptionist']}><Reservations /></RoleRoute>
                 } />
               </Route>
 

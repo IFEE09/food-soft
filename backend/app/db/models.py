@@ -112,6 +112,10 @@ class Order(Base):
 
     station_id = Column(Integer, ForeignKey("stations.id"), nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    # Canal de origen del pedido: whatsapp | messenger | instagram | pos | table | call
+    channel = Column(String, default="whatsapp", nullable=True, index=True)
+    # Mesa asignada (solo para channel='table')
+    table_id = Column(Integer, ForeignKey("restaurant_tables.id"), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     ready_at = Column(DateTime(timezone=True), nullable=True)
@@ -119,6 +123,7 @@ class Order(Base):
 
     items = relationship("OrderItem", back_populates="order")
     station = relationship("Station", back_populates="orders")
+    table = relationship("RestaurantTable", back_populates="orders")
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -253,3 +258,66 @@ class SupplyMovement(Base):
 
     supply = relationship("Supply")
     user = relationship("User")
+
+
+class RestaurantTable(Base):
+    """Mesas físicas de un restaurante."""
+    __tablename__ = "restaurant_tables"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
+    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True)
+
+    number = Column(Integer, nullable=False)          # Número visible: Mesa 1, Mesa 2...
+    name = Column(String, nullable=True)              # Nombre opcional: 'Terraza', 'VIP'
+    capacity = Column(Integer, default=4)             # Personas máximas
+    # Estado: available | occupied | reserved | cleaning
+    status = Column(String, default="available", nullable=False, index=True)
+    # Posición en el plano (para el mapa visual)
+    pos_x = Column(Float, default=0.0)
+    pos_y = Column(Float, default=0.0)
+    shape = Column(String, default="square")          # square | round | rectangle
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    organization = relationship("Organization")
+    orders = relationship("Order", back_populates="table")
+    reservations = relationship("Reservation", back_populates="table")
+
+    __table_args__ = (
+        UniqueConstraint("organization_id", "number", name="uq_table_number_per_org"),
+    )
+
+
+class Reservation(Base):
+    """Reservaciones de mesa hechas online o en persona."""
+    __tablename__ = "reservations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False, index=True)
+    table_id = Column(Integer, ForeignKey("restaurant_tables.id"), nullable=True)
+
+    # Datos del cliente
+    guest_name = Column(String, nullable=False)
+    guest_phone = Column(String, nullable=True)
+    guest_email = Column(String, nullable=True)
+    party_size = Column(Integer, default=2)
+
+    # Fecha y hora de la reserva
+    reserved_at = Column(DateTime(timezone=True), nullable=False)  # Cuándo es la reserva
+    duration_minutes = Column(Integer, default=90)                 # Duración estimada
+
+    # Estado: pending | confirmed | seated | cancelled | no_show
+    status = Column(String, default="pending", nullable=False, index=True)
+    notes = Column(String, nullable=True)
+
+    # Canal de origen: online | phone | walkin | whatsapp
+    source = Column(String, default="online", nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    organization = relationship("Organization")
+    table = relationship("RestaurantTable", back_populates="reservations")

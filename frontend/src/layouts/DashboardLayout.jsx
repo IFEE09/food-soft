@@ -16,7 +16,10 @@ import {
   HeadphonesIcon,
   Building2,
   ChevronDown,
-  FileText
+  FileText,
+  Monitor,
+  TableProperties,
+  CalendarDays
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import { apiClient } from '../api/client';
@@ -135,7 +138,12 @@ export default function DashboardLayout() {
                 </button>
               </div>
               
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontWeight: 800, padding: '0.75rem 0.75rem 0.25rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.5rem' }}>PEDIDOS</div>
               <NavItem path="/dashboard/reception" icon={ShoppingBag} label="Recepción" />
+              <NavItem path="/dashboard/pos-counter" icon={Monitor} label="POS Mostrador" />
+              <NavItem path="/dashboard/pos-table" icon={TableProperties} label="POS Mesas" />
+              <NavItem path="/dashboard/reservations" icon={CalendarDays} label="Reservaciones" />
+              <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontWeight: 800, padding: '0.75rem 0.75rem 0.25rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>GESTIÓN</div>
               <NavItem path="/dashboard/menu" icon={Utensils} label="Menú Platillos" />
               <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
               <NavItem path="/dashboard/team" icon={Users} label="Equipo" />
@@ -172,6 +180,9 @@ export default function DashboardLayout() {
     if (isActive('/dashboard/activity-logs')) return { title: 'Historial', sub: 'Auditoría completa del sistema' };
     if (isActive('/dashboard/settings')) return { title: 'Configuración', sub: 'Ajustes de cuenta y perfil' };
     if (isActive('/dashboard/cook')) return { title: 'Monitor de Estaciones', sub: currentKitchenName };
+    if (isActive('/dashboard/pos-counter')) return { title: 'POS Mostrador', sub: `Toma de pedidos en persona · ${currentKitchenName}` };
+    if (isActive('/dashboard/pos-table')) return { title: 'POS Mesas', sub: `Vista de mesas · ${currentKitchenName}` };
+    if (isActive('/dashboard/reservations')) return { title: 'Reservaciones', sub: `Agenda de reservas · ${currentKitchenName}` };
     return { title: 'OMNIKOOK', sub: 'Dark Kitchen OS' };
   };
 
