@@ -43,6 +43,7 @@ from app.core.bot._constants import (
 from app.core.bot._constants import (
     STATE_ACTIVE,
     STATE_AWAITING_ITEM_CONFIRMATION,
+    STATE_AWAITING_VARIANT,
     STEP_ASKING_ADDRESS,
     STEP_ASKING_NAME,
     STEP_ASKING_NOTE,
@@ -50,9 +51,6 @@ from app.core.bot._constants import (
     STEP_CART_OPTIONS,
     STEP_TYPING_ADDRESS,
     STEP_TYPING_NAME,
-)
-from app.core.bot._formatters import (
-    clean_text as _clean_text,
 )
 from app.core.bot._formatters import (
     format_cart_summary as _format_cart_summary,
@@ -321,7 +319,11 @@ class BotEngine:
         if last_interaction is not None:
             if hasattr(last_interaction, "tzinfo") and last_interaction.tzinfo is not None:
                 last_interaction = last_interaction.replace(tzinfo=None)
-            inactive_states = {"PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION", "CONFIRMANDO_PEDIDO", "CARRITO_PENDIENTE"}
+            inactive_states = {
+                "PIDIENDO_NOTA", "PIDIENDO_NOMBRE", "PIDIENDO_DIRECCION",
+                "CONFIRMANDO_PEDIDO", "CARRITO_PENDIENTE",
+                STATE_AWAITING_ITEM_CONFIRMATION, STATE_AWAITING_VARIANT,
+            }
             has_items = bool(cart.get("items"))
             if (datetime.now(UTC).replace(tzinfo=None) - last_interaction) > _INACTIVITY_TIMEOUT and state in inactive_states and has_items:
                 clean_cart: dict[str, Any] = {"items": [], "total": 0.0, "history": list(cast(list, cart.get("history", [])))}
@@ -670,22 +672,28 @@ class BotEngine:
             return position_result
 
         # ── Handler: AWAITING_ITEM_CONFIRMATION (confirm-before-commit) ─────────────────────
-        # Bypass total de DeepSeek: solo interpretamos la respuesta contra el item pendiente.
+        # Bypass de DeepSeek mientras esperamos que el cliente confirme la propuesta.
+        # Casos:
+        #   • respuesta SÍ pura      → agregar al carrito
+        #   • respuesta NO pura      → limpiar pending y pedir aclaración (canónica)
+        #   • cualquier otra cosa    → limpiar pending y dejar que el flujo normal
+        #                              procese la nueva intención (ej: "mejor un calzone")
         if state == STATE_AWAITING_ITEM_CONFIRMATION:
             pending_item_data = cart.get("pending_item")
             if pending_item_data and user_text:
                 CONFIRM_YES = {
-                    "1", "si", "sí", "yes", "ok", "va", "dale", "claro", "bueno",
-                    "listo", "perfecto", "sale", "orale", "órale", "confirma", "agregar",
-                    "agrégalo", "agregalo", "eso", "ese", "esa", "correcto", "exacto",
+                    "1", "1️⃣", "si", "sí", "yes", "ok", "va", "dale", "claro", "bueno",
+                    "listo", "perfecto", "sale", "orale", "órale", "confirma", "confirmar",
+                    "confirmo", "agregar", "agrégalo", "agregalo", "eso", "ese", "esa",
+                    "correcto", "exacto", "ok dale", "si confirmar", "sí confirmar",
                 }
                 CONFIRM_NO = {
-                    "2", "no", "nop", "nope", "cancel", "cancela", "otro", "otra",
-                    "diferente", "equivocado", "equivocada", "mal", "error",
+                    "2", "2️⃣", "no", "nop", "nope", "cancel", "cancela",
+                    "no gracias", "no quiero",
                 }
                 txt_norm = txt_lower.strip()
-                if txt_norm in CONFIRM_YES or txt_norm.startswith("1 ") or txt_norm == "1":
-                    # Cliente confirmó: agregar al carrito
+                if txt_norm in CONFIRM_YES:
+                    # Cliente confirmó → agregar al carrito.
                     c = dict(session.cart_data)
                     c.pop("pending_item", None)
                     session.cart_data = c
@@ -700,8 +708,8 @@ class BotEngine:
                     BotEngine._append_history(session, "assistant", f"{pending_item_data['name']} agregado.")
                     db.commit()
                     return result
-                elif txt_norm in CONFIRM_NO or txt_norm.startswith("2 ") or txt_norm == "2":
-                    # Cliente rechazó: limpiar y pedir aclaración
+                if txt_norm in CONFIRM_NO:
+                    # Rechazo puro → limpiar y pedir aclaración con frase canónica.
                     c = dict(session.cart_data)
                     c.pop("pending_item", None)
                     session.cart_data = c
@@ -710,93 +718,118 @@ class BotEngine:
                     from app.core.bot._messages import unrecognized_item_msg
                     msg_payload = unrecognized_item_msg(channel, sender_id)
                     BotEngine._append_history(session, "user", user_text)
-                    BotEngine._append_history(session, "assistant", "No entendido, pidiendo aclaración.")
+                    BotEngine._append_history(session, "assistant", "Propuesta rechazada, pidiendo aclaración.")
                     db.commit()
                     return [{"action": "SEND_TEXT", "payload": msg_payload}]
-                else:
-                    # Respuesta ambigua: reenviar la propuesta
-                    from app.core.bot._messages import confirm_item_msg
-                    msg_payload = confirm_item_msg(
-                        channel, sender_id,
-                        pending_item_data["name"],
-                        pending_item_data["price"],
-                        pending_item_data.get("note"),
-                    )
-                    BotEngine._append_history(session, "user", user_text)
-                    BotEngine._append_history(session, "assistant", "Repitiendo propuesta.")
-                    db.commit()
-                    return [{"action": "SEND_TEXT", "payload": msg_payload}]
-
-        # ── Resolver variante pendiente ───────────────────────────────────────────────────────────────────
-        pending_item: str | None = cast(str | None, cart.get("pending_variant_base"))
-        pending_options: list = cast(list, cart.get("pending_variant_options", []))
-        if pending_item and user_text:
-            AFFIRMATIVE_VAGUE = {
-                "damela", "dámela", "esa", "ese", "dale", "ok", "va", "sí", "si",
-                "claro", "bueno", "listo", "perfecto", "sale", "órale", "orale",
-                "la quiero", "lo quiero", "quiero esa", "quiero ese",
-                "de esa", "de ese", "esa misma", "ese mismo",
-            }
-            matched_item = None
-            for mi in menu_items:
-                mi_name_low = mi.name.lower()
-                if pending_item.lower() in mi_name_low and txt_lower in mi_name_low:
-                    matched_item = mi
-                    break
-            if not matched_item and pending_options:
-                for opt in pending_options:
-                    if opt in txt_lower:
-                        for mi in menu_items:
-                            mi_name_low = mi.name.lower()
-                            if pending_item.lower() in mi_name_low and opt in mi_name_low:
-                                matched_item = mi
-                                break
-                        if matched_item:
-                            break
-            if not matched_item and txt_lower in AFFIRMATIVE_VAGUE and len(pending_options) == 1:
-                opt = pending_options[0]
-                for mi in menu_items:
-                    if pending_item.lower() in mi.name.lower() and opt in mi.name.lower():
-                        matched_item = mi
-                        break
-
-            if matched_item:
+                # Cualquier otra respuesta: el cliente dijo algo distinto a sí/no.
+                # Limpiar pending_item y dejar que el flujo normal interprete su mensaje
+                # (ej: "mejor un calzone", "no, quería Canadian"). Evita perder intención.
                 c = dict(session.cart_data)
-                c.pop("pending_variant_base", None)
-                c.pop("pending_variant_options", None)
-                # Recuperar la nota que se guardó cuando el usuario pidió el producto base
-                _resolved_note: str | None = c.pop("pending_variant_note", None)
-                # Eliminar el item base del carrito (fue agregado provisionalmente antes de saber la variante)
-                _base_item_id: int | None = c.pop("pending_variant_base_item_id", None)
-                if _base_item_id is not None:
-                    _items = list(c.get("items", []))
-                    _items = [it for it in _items if it.get("id") != _base_item_id]
-                    c["items"] = _items
+                c.pop("pending_item", None)
                 session.cart_data = c
-                db.commit()
-                result = BotEngine._execute_add_to_cart(
-                    db, channel, sender_id, session, organization_id, matched_item.id,
-                    item_note=_resolved_note,
-                )
-                note_log = f" (nota: {_resolved_note})" if _resolved_note else ""
-                BotEngine._append_history(session, "user", user_text)
-                BotEngine._append_history(session, "assistant", f"{matched_item.name}{note_log} agregado.")
-                db.commit()
-                return result
-            elif txt_lower in AFFIRMATIVE_VAGUE and len(pending_options) > 1:
-                opts_str = " o ".join(f"*{o.capitalize()}*" for o in pending_options)
-                msg = _clean_text(channel, f"¿Cómo la quieres? {opts_str} 😊")
-                BotEngine._append_history(session, "user", user_text)
-                BotEngine._append_history(session, "assistant", msg)
-                db.commit()
-                return [{"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, msg)}]
-            else:
-                c = dict(session.cart_data)
-                c.pop("pending_variant_base", None)
-                c.pop("pending_variant_options", None)
-                session.cart_data = c
+                session.state = STATE_ACTIVE
                 db.commit()
                 cart = dict(session.cart_data)
+                state = STATE_ACTIVE
+                # No retornar — caer al flujo normal (DeepSeek interpreta el nuevo turno).
+
+        # ── Handler: AWAITING_VARIANT (slot filling determinista) ─────────────
+        # El bot preguntó tamaño y guardó las opciones. Bypass total de DeepSeek:
+        # matcheamos la respuesta del cliente contra options[].label exacto.
+        if state == STATE_AWAITING_VARIANT:
+            pending_variant = cart.get("pending_variant") or {}
+            options = pending_variant.get("options") or []
+            base_name = pending_variant.get("base_name", "")
+            saved_note = pending_variant.get("note")
+            if options and user_text:
+                txt_norm = txt_lower.strip()
+                # Cancelación explícita
+                if txt_norm in {"cancelar", "cancel", "olvidalo", "olvídalo", "ya no"}:
+                    c = dict(session.cart_data)
+                    c.pop("pending_variant", None)
+                    session.cart_data = c
+                    session.state = STATE_ACTIVE
+                    db.commit()
+                    return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                        channel, sender_id,
+                        "Listo, lo cancelé. ¿Qué quieres pedir? 😊",
+                    )}]
+                # Match contra options[].label (case-insensitive, contains)
+                matched = None
+                for opt in options:
+                    label_low = str(opt.get("label", "")).lower()
+                    if label_low and (txt_norm == label_low or label_low in txt_norm):
+                        matched = opt
+                        break
+                # Match numérico (1/2/3) por posición
+                if not matched and txt_norm in {"1", "1️⃣", "2", "2️⃣", "3", "3️⃣"}:
+                    idx = {"1": 0, "1️⃣": 0, "2": 1, "2️⃣": 1, "3": 2, "3️⃣": 2}.get(txt_norm)
+                    if idx is not None and idx < len(options):
+                        matched = options[idx]
+                if matched:
+                    # Limpiar slot y proponer el item resuelto (NO agregar directo: confirm-before-commit)
+                    c = dict(session.cart_data)
+                    c.pop("pending_variant", None)
+                    session.cart_data = c
+                    db.commit()
+                    item_id = int(matched["id"])
+                    menu_item = db.query(models.MenuItem).filter(
+                        models.MenuItem.id == item_id,
+                        models.MenuItem.organization_id == organization_id,
+                    ).first()
+                    if not menu_item:
+                        session.state = STATE_ACTIVE
+                        db.commit()
+                        return [{"action": "SEND_TEXT", "payload": BotEngine._text(
+                            channel, sender_id,
+                            "Ese tamaño ya no está disponible. ¿Quieres ver el menú?",
+                        )}]
+                    result = _actions.propose_item(
+                        db, channel, sender_id, session,
+                        item_id=menu_item.id,
+                        item_name=menu_item.name,
+                        item_price=float(menu_item.price),
+                        item_note=saved_note,
+                    )
+                    BotEngine._append_history(session, "user", user_text)
+                    BotEngine._append_history(session, "assistant", f"Variante {matched.get('label')} → propuesta {menu_item.name}.")
+                    db.commit()
+                    return result
+                # Ningún match: si parece un cambio de pedido (texto largo), liberar slot
+                # y dejar que el flujo normal procese el nuevo intent.
+                if len(txt_norm) > 12:
+                    c = dict(session.cart_data)
+                    c.pop("pending_variant", None)
+                    session.cart_data = c
+                    session.state = STATE_ACTIVE
+                    db.commit()
+                    cart = dict(session.cart_data)
+                    state = STATE_ACTIVE
+                    # No retornar — caer al flujo normal.
+                else:
+                    # Respuesta corta sin match: re-preguntar variante con el formato canónico.
+                    from app.core.bot._messages import propose_variant_msg
+                    msg_payload = propose_variant_msg(channel, sender_id, base_name, options)
+                    BotEngine._append_history(session, "user", user_text)
+                    BotEngine._append_history(session, "assistant", "Repitiendo pregunta de variante.")
+                    db.commit()
+                    return [{"action": "SEND_TEXT", "payload": msg_payload}]
+
+        # ── Limpieza de campos legacy de variantes (sesiones antiguas) ────────
+        # El flujo viejo usaba `pending_variant_base` parseando el texto del bot,
+        # lo cual causó el bug Canadian→Molson. Reemplazado por slot filling
+        # explícito vía PROPOSE_VARIANT + STATE_AWAITING_VARIANT.
+        _legacy_variant_keys = (
+            "pending_variant_base", "pending_variant_options",
+            "pending_variant_note", "pending_variant_base_item_id",
+        )
+        if any(k in cart for k in _legacy_variant_keys):
+            _c = dict(session.cart_data)
+            for _k in _legacy_variant_keys:
+                _c.pop(_k, None)
+            session.cart_data = _c
+            db.commit()
+            cart = dict(session.cart_data)
 
         # ── Llamar a DeepSeek ─────────────────────────────────────────────────
         ai_response = ask_deepseek(
@@ -817,8 +850,6 @@ class BotEngine:
         # Si DeepSeek no reconoce el producto, responde con CHAT pidiendo aclaración.
 
         ai_reply_parts = []
-        _pending_item_note: str | None = None  # item_note del turno actual, para sobrevivir la selección de variante
-        _pending_base_item_id: int | None = None  # item_id del producto base, para eliminarlo si se elige variante
 
         for ai_action in actions_list:
             action = ai_action.get("action", "CHAT")
@@ -847,8 +878,6 @@ class BotEngine:
                     item_note = ai_action.get("item_note") or None
                     if item_note and str(item_note).lower() in ("null", "none", ""):
                         item_note = None
-                    _pending_item_note = item_note
-                    _pending_base_item_id = int(item_id)
                     # Obtener nombre y precio del item para la propuesta
                     menu_item = db.query(models.MenuItem).filter(
                         models.MenuItem.id == int(item_id),
@@ -871,6 +900,47 @@ class BotEngine:
                         out.extend(result)
                         note_suffix = f" (✎ {item_note})" if item_note else ""
                         ai_reply_parts.append(f"Propuesta: {display_name}{note_suffix} (conf={confidence:.2f})")
+
+            elif action == "PROPOSE_VARIANT":
+                # Slot filling: guardar opciones y pasar a STATE_AWAITING_VARIANT.
+                # El próximo turno se resuelve sin llamar a DeepSeek.
+                base_name = ai_action.get("base_name", "").strip()
+                raw_options = ai_action.get("options") or []
+                # Validar que las opciones tengan id real del menú de esta organización
+                valid_ids = {mi.id for mi in menu_items}
+                clean_options = []
+                for opt in raw_options:
+                    try:
+                        opt_id = int(opt.get("id"))
+                    except (TypeError, ValueError):
+                        continue
+                    if opt_id not in valid_ids:
+                        continue
+                    label = str(opt.get("label", "")).strip()
+                    try:
+                        price = float(opt.get("price", 0))
+                    except (TypeError, ValueError):
+                        continue
+                    if not label:
+                        continue
+                    clean_options.append({"id": opt_id, "label": label, "price": price})
+                if not clean_options or not base_name:
+                    # DeepSeek devolvió PROPOSE_VARIANT inválido → fallback a aclaración
+                    from app.core.bot._messages import unrecognized_item_msg
+                    out.append({"action": "SEND_TEXT", "payload": unrecognized_item_msg(channel, sender_id)})
+                    ai_reply_parts.append("PROPOSE_VARIANT inválido, pidiendo aclaración.")
+                else:
+                    raw_note = ai_action.get("item_note") or None
+                    if raw_note and str(raw_note).lower() in ("null", "none", ""):
+                        raw_note = None
+                    result = _actions.propose_variant(
+                        db, channel, sender_id, session,
+                        base_name=base_name,
+                        options=clean_options,
+                        item_note=raw_note,
+                    )
+                    out.extend(result)
+                    ai_reply_parts.append(f"Pregunta variante: {base_name} ({len(clean_options)} opciones)")
 
             elif action == "VIEW_CART":
                 result = BotEngine._execute_view_cart(channel, sender_id, session, db)
@@ -927,49 +997,11 @@ class BotEngine:
                 message_text = ai_action.get("message") or _fallback
                 if not message_text.strip():
                     message_text = _fallback
-
-                # ── Solución 2: Interceptar CHAT que confirma un producto ────────
-                # Si DeepSeek dijo "X agregado" en CHAT pero no usó ADD_TO_CART,
-                # buscamos el producto en el menú y lo agregamos automáticamente.
-                _chat_lower = message_text.lower()
-                _is_confirming = any(kw in _chat_lower for kw in [
-                    "agregado", "agregada", "añadido", "añadida",
-                    "listo", "perfecto", "claro", "agregado a tu pedido"
-                ])
-                _intercepted = False
-                if _is_confirming:
-                    # Buscar si el mensaje menciona algún producto del menú
-                    for mi in menu_items:
-                        if mi.name.lower() in _chat_lower:
-                            logger.warning(
-                                "[CHAT-INTERCEPT] DeepSeek usó CHAT para confirmar '%s'. "
-                                "Ejecutando ADD_TO_CART id=%s automáticamente.",
-                                mi.name, mi.id
-                            )
-                            result = BotEngine._execute_add_to_cart(
-                                db, channel, sender_id, session, organization_id, mi.id
-                            )
-                            out.extend(result)
-                            ai_reply_parts.append(f"{mi.name} agregado (interceptado).")
-                            _intercepted = True
-                            break
-
-                if not _intercepted:
-                    out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
-                    ai_reply_parts.append(message_text)
-
-                # Limpiar campos legacy de variante (pending_variant_base) si existen
-                # en sesiones antiguas. El nuevo flujo usa pending_item + AWAITING_ITEM_CONFIRMATION.
-                _legacy_keys = [
-                    "pending_variant_base", "pending_variant_options",
-                    "pending_variant_note", "pending_variant_base_item_id",
-                ]
-                c = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
-                if any(k in c for k in _legacy_keys):
-                    for k in _legacy_keys:
-                        c.pop(k, None)
-                    session.cart_data = c
-                    db.commit()
+                # Confirm-before-commit: el bot NUNCA agrega al carrito desde CHAT.
+                # Si DeepSeek quiere proponer un producto, debe usar PROPOSE_ITEM.
+                # Si quiere preguntar variante, debe usar PROPOSE_VARIANT.
+                out.append({"action": "SEND_TEXT", "payload": BotEngine._text(channel, sender_id, message_text)})
+                ai_reply_parts.append(message_text)
 
         # ── Si hay items en el carrito pero no se mostraron las opciones, forzarlas ──
         cart_now = dict(session.cart_data)

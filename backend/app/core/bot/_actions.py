@@ -328,3 +328,39 @@ def propose_item(
 
     msg = confirm_item_msg(channel, sender_id, item_name, item_price, item_note)
     return [{"action": "SEND_TEXT", "payload": msg}]
+
+
+# ── Propose variant (slot filling) ──────────────────────────────────────────
+
+
+def propose_variant(
+    db: Session,
+    channel: str,
+    sender_id: str,
+    session: models.BotSession,
+    base_name: str,
+    options: list[dict],
+    item_note: str | None = None,
+) -> list:
+    """Pregunta la variante (Grande/Familiar/etc.) y guarda el slot pendiente.
+
+    `options` es lista de dicts con keys: id, label, price.
+    Cuando el cliente responda, el handler de STATE_AWAITING_VARIANT matchea
+    contra `options[].label` y llama a `propose_item` con el match — bypass total
+    de DeepSeek para evitar alucinaciones.
+    """
+    from app.core.bot._constants import STATE_AWAITING_VARIANT
+    from app.core.bot._messages import propose_variant_msg
+
+    cart: dict[str, Any] = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
+    cart["pending_variant"] = {
+        "base_name": base_name,
+        "options": options,
+        "note": item_note,
+    }
+    session.cart_data = cart
+    session.state = STATE_AWAITING_VARIANT
+    db.commit()
+
+    msg = propose_variant_msg(channel, sender_id, base_name, options)
+    return [{"action": "SEND_TEXT", "payload": msg}]

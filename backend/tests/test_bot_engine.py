@@ -437,3 +437,318 @@ def test_isolation_entre_organizaciones(db_session, org_with_menu):
     assert sess_a.id != sess_b.id
     assert cust_a.organization_id == org_a.id
     assert cust_b.organization_id == org_b.id
+
+
+# ─── Tests del patrón confirm-before-commit (PROPOSE_ITEM / PROPOSE_VARIANT) ──
+
+
+@pytest.fixture
+def org_pizzeria_canadian(db_session):
+    """Org con productos que reproducen el bug Canadian→Molson.
+
+    Incluye dos pizzas de variante para validar slot filling:
+    Canadian BBQ Grande/Familiar y Molson Pizza Grande/Familiar.
+    """
+    org = models.Organization(name="Horno 74 Test")
+    db_session.add(org)
+    db_session.flush()
+    items = [
+        models.MenuItem(name="Canadian BBQ Grande", price=289.0, organization_id=org.id),
+        models.MenuItem(name="Canadian BBQ Familiar", price=319.0, organization_id=org.id),
+        models.MenuItem(name="Molson Pizza Grande", price=189.0, organization_id=org.id),
+        models.MenuItem(name="Molson Pizza Familiar", price=219.0, organization_id=org.id),
+        models.MenuItem(name="Calzone", price=149.0, organization_id=org.id),
+    ]
+    db_session.add_all(items)
+    db_session.commit()
+    return org, {it.name: it for it in items}
+
+
+def test_propose_item_no_agrega_directo_al_carrito(db_session, org_with_menu, monkeypatch):
+    """PROPOSE_ITEM nunca debe meter el item al cart hasta confirmación humana."""
+    from app.core.bot.engine import BotEngine
+    org, items = org_with_menu
+    pep = items[0]
+
+    def _fake(**kwargs):
+        return [{"action": "PROPOSE_ITEM", "item_id": pep.id, "confidence": 0.95,
+                 "interpretation": pep.name, "item_note": None}]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215557777771"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="quiero una peperoni")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    cart = session.cart_data
+    assert session.state == "AWAITING_ITEM_CONFIRMATION"
+    assert cart.get("items", []) == [], "PROPOSE_ITEM no debe meter nada al carrito"
+    assert cart.get("pending_item", {}).get("id") == pep.id
+
+
+def test_confirmacion_si_agrega_al_carrito(db_session, org_with_menu, monkeypatch):
+    """Tras PROPOSE_ITEM, responder '1' / 'sí' agrega el item al carrito."""
+    from app.core.bot.engine import BotEngine
+    org, items = org_with_menu
+    pep = items[0]
+
+    def _fake(**kwargs):
+        return [{"action": "PROPOSE_ITEM", "item_id": pep.id, "confidence": 0.95,
+                 "interpretation": pep.name, "item_note": None}]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215557777772"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="quiero una peperoni")
+    # Confirmar
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="sí")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    cart = session.cart_data
+    assert "pending_item" not in cart
+    items_in_cart = cart.get("items", [])
+    assert len(items_in_cart) == 1
+    assert items_in_cart[0]["id"] == pep.id
+
+
+def test_rechazo_no_agrega_y_pide_aclaracion(db_session, org_with_menu, monkeypatch):
+    """Tras PROPOSE_ITEM, responder '2' / 'no' limpia pending y manda mensaje canónico."""
+    from app.core.bot.engine import BotEngine
+    org, items = org_with_menu
+    pep = items[0]
+
+    def _fake(**kwargs):
+        return [{"action": "PROPOSE_ITEM", "item_id": pep.id, "confidence": 0.95,
+                 "interpretation": pep.name, "item_note": None}]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215557777773"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="dame una peperoni")
+    out = BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                                    sender_id=sender, text="no")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    cart = session.cart_data
+    assert session.state == "ACTIVO"
+    assert "pending_item" not in cart
+    assert cart.get("items", []) == []
+    text_payload = " ".join(str(m.get("payload", {})) for m in out)
+    assert "no entend" in text_payload.lower() or "menú" in text_payload.lower() or "menu" in text_payload.lower()
+
+
+def test_confidence_baja_pide_aclaracion(db_session, org_with_menu, monkeypatch):
+    """Si DeepSeek devuelve confidence < 0.5, el bot pide aclaración (no agrega ni propone)."""
+    from app.core.bot.engine import BotEngine
+    org, items = org_with_menu
+    pep = items[0]
+
+    def _fake(**kwargs):
+        return [{"action": "PROPOSE_ITEM", "item_id": pep.id, "confidence": 0.30,
+                 "interpretation": pep.name, "item_note": None}]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215557777774"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="algo de comida")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    cart = session.cart_data
+    assert session.state != "AWAITING_ITEM_CONFIRMATION"
+    assert "pending_item" not in cart
+    assert cart.get("items", []) == [], "Confianza baja no debe proponer ni agregar"
+
+
+def test_canadian_grande_propone_canadian_bbq_no_molson(db_session, org_pizzeria_canadian, monkeypatch):
+    """REGRESIÓN: el bug original. Cliente pide Canadian, responde 'grande' → bot propone
+    Canadian BBQ Grande, NUNCA Molson Pizza, y NO lo agrega hasta que el cliente confirme.
+    """
+    from app.core.bot.engine import BotEngine
+    org, by_name = org_pizzeria_canadian
+    canadian_grande = by_name["Canadian BBQ Grande"]
+    canadian_familiar = by_name["Canadian BBQ Familiar"]
+
+    # Turno 1: DeepSeek detecta variante → PROPOSE_VARIANT
+    def _fake_variant(**kwargs):
+        return [{
+            "action": "PROPOSE_VARIANT",
+            "base_name": "Canadian BBQ",
+            "options": [
+                {"id": canadian_grande.id, "label": "Grande", "price": 289},
+                {"id": canadian_familiar.id, "label": "Familiar", "price": 319},
+            ],
+            "item_note": None,
+        }]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake_variant)
+
+    sender = "+5215558888881"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="una pizza Canadian")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    assert session.state == "AWAITING_VARIANT"
+    assert session.cart_data.get("pending_variant", {}).get("base_name") == "Canadian BBQ"
+
+    # Turno 2: cliente responde "grande" → bypass de DeepSeek, propone Canadian BBQ Grande
+    # (re-mockear DeepSeek con respuesta incorrecta para garantizar que NO se llama)
+    def _fake_should_not_be_called(**kwargs):
+        raise AssertionError("DeepSeek NO debe llamarse en STATE_AWAITING_VARIANT")
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake_should_not_be_called)
+
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="grande")
+
+    db_session.refresh(session)
+    cart = session.cart_data
+    assert session.state == "AWAITING_ITEM_CONFIRMATION"
+    pending = cart.get("pending_item", {})
+    assert pending.get("id") == canadian_grande.id, "Debe proponer Canadian BBQ Grande, NO Molson"
+    assert "molson" not in pending.get("name", "").lower()
+    # Verifica que Canadian BBQ Grande NO esté en el carrito todavía (espera confirmación)
+    assert cart.get("items", []) == [], "No debe agregarse hasta confirmar"
+
+
+def test_propose_variant_match_numerico_funciona(db_session, org_pizzeria_canadian, monkeypatch):
+    """Si el cliente responde '1' o '2' en lugar de Grande/Familiar, también funciona."""
+    from app.core.bot.engine import BotEngine
+    org, by_name = org_pizzeria_canadian
+    canadian_familiar = by_name["Canadian BBQ Familiar"]
+
+    def _fake_variant(**kwargs):
+        return [{
+            "action": "PROPOSE_VARIANT",
+            "base_name": "Canadian BBQ",
+            "options": [
+                {"id": by_name["Canadian BBQ Grande"].id, "label": "Grande", "price": 289},
+                {"id": canadian_familiar.id, "label": "Familiar", "price": 319},
+            ],
+            "item_note": None,
+        }]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake_variant)
+
+    sender = "+5215558888882"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="una pizza Canadian")
+    # Cliente responde "2" → debe matchear la 2da opción (Familiar)
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="2")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    assert session.state == "AWAITING_ITEM_CONFIRMATION"
+    assert session.cart_data["pending_item"]["id"] == canadian_familiar.id
+
+
+def test_propose_variant_invalido_pide_aclaracion(db_session, org_pizzeria_canadian, monkeypatch):
+    """Si DeepSeek devuelve PROPOSE_VARIANT con ids no del menú, fallback a aclaración."""
+    from app.core.bot.engine import BotEngine
+    org, _ = org_pizzeria_canadian
+
+    def _fake(**kwargs):
+        return [{
+            "action": "PROPOSE_VARIANT",
+            "base_name": "Pizza Inventada",
+            "options": [
+                {"id": 99999, "label": "Grande", "price": 100},
+                {"id": 99998, "label": "Familiar", "price": 120},
+            ],
+            "item_note": None,
+        }]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215558888883"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="dame algo raro")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    assert session.state != "AWAITING_VARIANT", "IDs inválidos no deben crear slot"
+    assert "pending_variant" not in session.cart_data
+
+
+def test_chat_no_agrega_silenciosamente_al_carrito(db_session, org_with_menu, monkeypatch):
+    """REGRESIÓN: el bloque CHAT-INTERCEPT eliminado. Aunque DeepSeek diga 'agregado'
+    en CHAT, el bot NO debe meter nada al carrito sin pasar por PROPOSE_ITEM.
+    """
+    from app.core.bot.engine import BotEngine
+    org, items = org_with_menu
+    pep = items[0]
+
+    def _fake(**kwargs):
+        return [{"action": "CHAT", "message": f"Listo, {pep.name} agregado a tu pedido"}]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215557777775"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="dame una peperoni")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    cart = session.cart_data
+    assert cart.get("items", []) == [], "CHAT NUNCA debe agregar al carrito"
+
+
+def test_pending_item_se_libera_si_cliente_pide_otro_producto(db_session, org_with_menu, monkeypatch):
+    """Si tras PROPOSE_ITEM el cliente dice 'mejor un X', no responde sí/no:
+    el bot libera pending_item y procesa la nueva intención.
+    """
+    from app.core.bot.engine import BotEngine
+    org, items = org_with_menu
+    pep = items[0]
+    haw = items[1]
+
+    calls = {"n": 0}
+
+    def _fake(**kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return [{"action": "PROPOSE_ITEM", "item_id": pep.id, "confidence": 0.95,
+                     "interpretation": pep.name, "item_note": None}]
+        return [{"action": "PROPOSE_ITEM", "item_id": haw.id, "confidence": 0.95,
+                 "interpretation": haw.name, "item_note": None}]
+    import app.core.bot.engine as engine_mod
+    monkeypatch.setattr(engine_mod, "ask_deepseek", _fake)
+
+    sender = "+5215557777776"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="hola")
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="dame una peperoni")
+    # Cliente cambia de opinión sin decir explícitamente "no"
+    BotEngine.process_message(db=db_session, organization_id=org.id, channel="whatsapp",
+                              sender_id=sender, text="mejor una hawaiana")
+
+    customer = db_session.query(models.BotCustomer).filter_by(channel_user_id=sender).first()
+    session = db_session.query(models.BotSession).filter_by(customer_id=customer.id).first()
+    cart = session.cart_data
+    assert cart.get("pending_item", {}).get("id") == haw.id, "Nuevo pending debe ser hawaiana"
