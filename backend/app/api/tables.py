@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.security import get_current_user, require_owner
+from app.api.auth import get_current_user, require_owner
 from app.db.models import Reservation, RestaurantTable, User
 from app.db.session import get_db
 
