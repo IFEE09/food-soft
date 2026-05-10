@@ -22,6 +22,7 @@ const OrderHistory        = lazy(() => import('./pages/OrderHistory'));
 const POSCounter          = lazy(() => import('./pages/POSCounter'));
 const POSTable            = lazy(() => import('./pages/POSTable'));
 const Reservations        = lazy(() => import('./pages/Reservations'));
+const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy'));
 
 import { NotificationProvider } from './components/NotificationProvider';
 import { ThemeProvider } from './components/ThemeContext';
@@ -111,6 +112,9 @@ function App() {
                   <RoleRoute allowed={['owner', 'receptionist']}><Reservations /></RoleRoute>
                 } />
               </Route>
+
+              {/* Public static pages — accesibles sin auth */}
+              <Route path="/privacy" element={<PrivacyPolicy />} />
 
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>

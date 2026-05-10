@@ -283,3 +283,67 @@ def process_meta_payload(body: dict):
         logger.exception("Error procesando payload de Meta.")
     finally:
         db.close()
+
+
+# ── Messenger Profile Setup ───────────────────────────────────────────────────
+@router.post("/setup-messenger-profile", summary="Configura Get Started + Greeting en Messenger")
+def setup_messenger_profile():
+    """
+    Configura el Messenger Profile de la página conectada:
+      - Botón 'Empezar' (Get Started) con payload GET_STARTED
+      - Texto de bienvenida personalizado en español
+
+    Requiere META_FB_TOKEN con permisos pages_messaging y pages_show_list.
+    Llamar una vez después de cambiar el Page Access Token o al configurar una nueva página.
+    """
+    import requests as _req
+
+    token = (settings.META_FB_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
+    if not token:
+        raise HTTPException(
+            status_code=503,
+            detail="META_FB_TOKEN no configurado. Agrega el Page Access Token en las variables de entorno."
+        )
+
+    payload = {
+        "get_started": {"payload": "GET_STARTED"},
+        "greeting": [
+            {
+                "locale": "default",
+                "text": "¡Hola {{user_first_name}}! 👋 Bienvenido a Horno 74. Presiona Empezar para ver nuestro menú y hacer tu pedido."
+            },
+            {
+                "locale": "es_LA",
+                "text": "¡Hola {{user_first_name}}! 👋 Bienvenido a Horno 74. Presiona Empezar para ver nuestro menú y hacer tu pedido."
+            }
+        ]
+    }
+
+    try:
+        resp = _req.post(
+            "https://graph.facebook.com/v19.0/me/messenger_profile",
+            params={"access_token": token},
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=15,
+        )
+    except _req.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Error de red al contactar Meta API: {exc}")
+
+    if resp.status_code != 200:
+        logger.error("setup_messenger_profile: Meta API %s: %s", resp.status_code, resp.text[:300])
+        raise HTTPException(
+            status_code=resp.status_code,
+            detail=f"Meta API respondió {resp.status_code}: {resp.text[:300]}"
+        )
+
+    data = resp.json()
+    if data.get("result") != "success":
+        raise HTTPException(status_code=400, detail=f"Meta no confirmó éxito: {data}")
+
+    logger.info("Messenger Profile configurado correctamente (Get Started + Greeting).")
+    return {
+        "status": "ok",
+        "message": "Messenger Profile configurado: botón Empezar + texto de bienvenida activados.",
+        "meta_response": data,
+    }
