@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import { Clock, CheckCircle2, AlertCircle, ArrowUpRight, Send } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, ArrowUpRight, Send, Building2 } from 'lucide-react';
 
 export default function OwnerDashboard() {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ export default function OwnerDashboard() {
   const [markingReady, setMarkingReady] = useState({});
   const [notification, setNotification] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { orderId, orderNum, total }
+  const [orgName, setOrgName] = useState('');
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -30,8 +31,19 @@ export default function OwnerDashboard() {
     }
   }, []);
 
+  const fetchOrgName = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/users/me/organizations');
+      const orgId = localStorage.getItem('organizationId');
+      const active = res.data.find(o => String(o.id) === String(orgId)) || res.data[0];
+      if (active) setOrgName(active.name);
+    } catch (err) {
+      console.error('Error fetching org name:', err);
+    }
+  }, []);
+
   useEffect(() => {
-    Promise.all([fetchOrders(), fetchSupplies()]).finally(() => setIsLoading(false));
+    Promise.all([fetchOrders(), fetchSupplies(), fetchOrgName()]).finally(() => setIsLoading(false));
     const poll = setInterval(fetchOrders, 8000);
     let ws;
     const orgRaw = localStorage.getItem('organizationId');
@@ -60,7 +72,7 @@ export default function OwnerDashboard() {
       clearInterval(poll);
       if (ws && ws.readyState <= 1) ws.close();
     };
-  }, [fetchOrders, fetchSupplies]);
+  }, [fetchOrders, fetchSupplies, fetchOrgName]);
 
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -176,6 +188,24 @@ export default function OwnerDashboard() {
         </div>
       )}
 
+      {/* Header del negocio */}
+      {orgName && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          padding: '0.75rem 1.25rem',
+          background: 'rgba(204,255,0,0.06)',
+          border: '1px solid rgba(204,255,0,0.2)',
+          borderRadius: '6px',
+          borderLeft: '4px solid var(--primary-color)'
+        }}>
+          <Building2 size={18} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>NEGOCIO ACTIVO</div>
+            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary-color)' }}>{orgName}</div>
+          </div>
+        </div>
+      )}
+
       {/* Metrics Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1px', background: 'var(--surface-border)', border: '1px solid var(--surface-border)' }}>
         <div style={{ background: 'var(--surface-color)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '2px solid var(--danger-color)' }}>
@@ -205,7 +235,15 @@ export default function OwnerDashboard() {
 
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>RECENT_TRANSACTIONS</h3>
+            <div>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>RECENT_TRANSACTIONS</h3>
+              {orgName && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.3rem' }}>
+                  <Building2 size={11} style={{ color: 'var(--text-secondary)' }} />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{orgName}</span>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => navigate('/dashboard/kitchen')}
               className="mono"
@@ -220,6 +258,7 @@ export default function OwnerDashboard() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
                   <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}># PEDIDO</th>
+                  <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>NEGOCIO</th>
                   <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ORDEN CON NOTA</th>
                   <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>NOMBRE</th>
                   <th style={{ padding: '1rem 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>ESTATUS</th>
@@ -228,9 +267,9 @@ export default function OwnerDashboard() {
               </thead>
               <tbody className="mono">
                 {isLoading ? (
-                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>FETCHING_DATA...</td></tr>
+                  <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>FETCHING_DATA...</td></tr>
                 ) : orders.length === 0 ? (
-                  <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>NO_RECORDS_FOUND</td></tr>
+                  <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>NO_RECORDS_FOUND</td></tr>
                 ) : orders.map((row, i) => {
                   let badgeColor = 'var(--text-secondary)';
                   if (row.status === 'pending')    badgeColor = 'var(--danger-color)';
@@ -238,7 +277,10 @@ export default function OwnerDashboard() {
                   else if (row.status === 'delivered') badgeColor = 'var(--primary-color)';
 
                   const itemsText = row.items && row.items.length > 0
-                    ? row.items.map(it => `${it.product_name} x${it.quantity}`).join(', ')
+                    ? row.items.map(it => {
+                        const noteStr = it.note ? ` ✎${it.note}` : '';
+                        return `${it.product_name} x${it.quantity}${noteStr}`;
+                      }).join(', ')
                     : '—';
                   const notaText = row.notes ? ` ✎ ${row.notes}` : '';
                   const ordenConNota = itemsText + notaText;
@@ -249,8 +291,25 @@ export default function OwnerDashboard() {
                       <td style={{ padding: '1rem 0', color: 'var(--success-color)' }}>
                         #{row.id.toString().padStart(4, '0')}
                       </td>
-                      <td style={{ padding: '1rem 0', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span title={ordenConNota} style={{ color: row.notes ? '#f0c040' : 'var(--text-primary)' }}>
+                      <td style={{ padding: '1rem 0' }}>
+                        {orgName ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                            fontSize: '0.7rem', fontWeight: 700,
+                            color: 'var(--primary-color)',
+                            background: 'rgba(204,255,0,0.08)',
+                            border: '1px solid rgba(204,255,0,0.25)',
+                            borderRadius: '3px',
+                            padding: '0.15rem 0.5rem',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <Building2 size={10} />
+                            {orgName}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td style={{ padding: '1rem 0', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span title={ordenConNota} style={{ color: (row.notes || (row.items && row.items.some(it => it.note))) ? '#f0c040' : 'var(--text-primary)' }}>
                           {ordenConNota}
                         </span>
                       </td>

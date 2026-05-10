@@ -11,7 +11,8 @@ import {
   Activity,
   MapPin,
   DollarSign,
-  Send
+  Send,
+  ChevronDown
 } from 'lucide-react';
 
 export default function KitchenDashboard() {
@@ -26,6 +27,7 @@ export default function KitchenDashboard() {
   const [newName, setNewName] = useState('');
   const [markingReady, setMarkingReady] = useState({}); // { [orderId]: true/false }
   const [notification, setNotification] = useState(null); // { msg, type }
+  const [showKitchenDropdown, setShowKitchenDropdown] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -38,6 +40,17 @@ export default function KitchenDashboard() {
       if (k) handleSelectKitchen(k, false);
     }
   }, [kitchens.length]);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('[data-kitchen-dropdown]')) {
+        setShowKitchenDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchInitialData = async () => {
     try {
@@ -54,6 +67,7 @@ export default function KitchenDashboard() {
   const handleSelectKitchen = async (kitchen, shouldReload = true) => {
     setSelectedKitchen(kitchen);
     setSelectedStation(null);
+    setShowKitchenDropdown(false);
     localStorage.setItem('kitchenId', kitchen.id);
     localStorage.setItem('kitchenName', kitchen.name);
     try {
@@ -95,7 +109,6 @@ export default function KitchenDashboard() {
 
   /**
    * Marca el pedido como listo Y envía WhatsApp al repartidor.
-   * Usa el nuevo endpoint POST /orders/{id}/mark-ready.
    */
   const markAsReady = async (orderId) => {
     setMarkingReady(prev => ({ ...prev, [orderId]: true }));
@@ -207,9 +220,11 @@ export default function KitchenDashboard() {
         </div>
       )}
 
-      {/* Header con tabs de estaciones */}
+      {/* Header con selector de cocina y tabs de estaciones */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+
+          {/* Botón volver */}
           <button
             onClick={handleBackToSites}
             style={{ padding: '0.6rem', borderRadius: '2px', border: '1px solid var(--surface-border)', background: 'var(--surface-color)', cursor: 'pointer' }}
@@ -217,8 +232,71 @@ export default function KitchenDashboard() {
           >
             ←
           </button>
-          <h2 className="mono" style={{ margin: '0 1rem 0 0.5rem', fontSize: '1rem', fontWeight: 800 }}>{selectedKitchen.name}</h2>
 
+          {/* Selector de cocina (dropdown) */}
+          <div data-kitchen-dropdown style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowKitchenDropdown(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.6rem 1rem',
+                borderRadius: '2px',
+                border: '1px solid var(--primary-color)',
+                background: 'rgba(204,255,0,0.08)',
+                color: 'var(--primary-color)',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                minWidth: '140px',
+                justifyContent: 'space-between'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ChefHat size={15} />
+                {selectedKitchen.name}
+              </span>
+              <ChevronDown size={14} style={{ transform: showKitchenDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {showKitchenDropdown && kitchens.length > 1 && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+                background: 'var(--surface-color)',
+                border: '1px solid var(--surface-border)',
+                borderRadius: '4px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                minWidth: '200px',
+                overflow: 'hidden'
+              }}>
+                {kitchens.map(k => (
+                  <button
+                    key={k.id}
+                    onClick={() => handleSelectKitchen(k)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      width: '100%', padding: '0.75rem 1rem',
+                      background: String(k.id) === String(selectedKitchen.id) ? 'rgba(204,255,0,0.1)' : 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid var(--surface-border)',
+                      color: String(k.id) === String(selectedKitchen.id) ? 'var(--primary-color)' : 'var(--text-primary)',
+                      fontWeight: String(k.id) === String(selectedKitchen.id) ? 800 : 500,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <ChefHat size={14} />
+                    {k.name}
+                    {String(k.id) === String(selectedKitchen.id) && (
+                      <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--success-color)', fontWeight: 700 }}>ACTIVA</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tabs de estaciones */}
           <button
             onClick={() => setSelectedStation(null)}
             style={{
@@ -251,8 +329,9 @@ export default function KitchenDashboard() {
           <button
             onClick={() => { setModalType('station'); setIsModalOpen(true); }}
             style={{ padding: '0.6rem', borderRadius: '2px', border: '1px dashed var(--success-color)', background: 'transparent', color: 'var(--success-color)', cursor: 'pointer' }}
+            title="Agregar estación"
           >
-            <Plus size={16} />
+            <Plus size={14} />
           </button>
         </div>
 
@@ -346,7 +425,7 @@ export default function KitchenDashboard() {
                   </ul>
                 </div>
 
-                {/* Nota especial */}
+                {/* Nota especial del pedido */}
                 {order.notes && (
                   <div style={{
                     padding: '0.6rem 0.75rem',
@@ -410,8 +489,8 @@ export default function KitchenDashboard() {
                   {isMarking ? (
                     <>⏳ Enviando WhatsApp...</>
                   ) : (
-                    <><CheckCircle2 size={18} /> Terminado
-                    </>)}
+                    <><CheckCircle2 size={18} /> Terminado</>
+                  )}
                 </button>
               </div>
             );

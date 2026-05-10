@@ -704,11 +704,23 @@ class BotEngine:
                 c = dict(session.cart_data)
                 c.pop("pending_variant_base", None)
                 c.pop("pending_variant_options", None)
+                # Recuperar la nota que se guardó cuando el usuario pidió el producto base
+                _resolved_note: str | None = c.pop("pending_variant_note", None)
+                # Eliminar el item base del carrito (fue agregado provisionalmente antes de saber la variante)
+                _base_item_id: int | None = c.pop("pending_variant_base_item_id", None)
+                if _base_item_id is not None:
+                    _items = list(c.get("items", []))
+                    _items = [it for it in _items if it.get("id") != _base_item_id]
+                    c["items"] = _items
                 session.cart_data = c
                 db.commit()
-                result = BotEngine._execute_add_to_cart(db, channel, sender_id, session, organization_id, matched_item.id)
+                result = BotEngine._execute_add_to_cart(
+                    db, channel, sender_id, session, organization_id, matched_item.id,
+                    item_note=_resolved_note,
+                )
+                note_log = f" (nota: {_resolved_note})" if _resolved_note else ""
                 BotEngine._append_history(session, "user", user_text)
-                BotEngine._append_history(session, "assistant", f"{matched_item.name} agregado.")
+                BotEngine._append_history(session, "assistant", f"{matched_item.name}{note_log} agregado.")
                 db.commit()
                 return result
             elif txt_lower in AFFIRMATIVE_VAGUE and len(pending_options) > 1:
@@ -779,6 +791,8 @@ class BotEngine:
 
         ai_reply_parts = []
         _variant_was_detected = False  # Se activa si DeepSeek pregunta Grande/Familiar en este turno
+        _pending_item_note: str | None = None  # item_note del turno actual, para sobrevivir la selección de variante
+        _pending_base_item_id: int | None = None  # item_id del producto base, para eliminarlo si se elige variante
 
         for ai_action in actions_list:
             action = ai_action.get("action", "CHAT")
@@ -796,6 +810,8 @@ class BotEngine:
                     ai_reply_parts.append(msg)
                 else:
                     item_note = ai_action.get("item_note") or None
+                    _pending_item_note = item_note  # Guardar para el caso de pregunta de variante
+                    _pending_base_item_id = int(item_id)  # Guardar para eliminar el item base si se elige variante
                     result = BotEngine._execute_add_to_cart(
                         db, channel, sender_id, session, organization_id, int(item_id),
                         item_note=item_note
@@ -984,6 +1000,17 @@ class BotEngine:
                         c["pending_variant_base"] = found_base
                         if detected_opts:
                             c["pending_variant_options"] = detected_opts
+                        # Preservar item_note del turno actual para que sobreviva la selección de variante.
+                        # _pending_item_note se asigna en el bloque ADD_TO_CART de este mismo turno.
+                        if _pending_item_note:
+                            c["pending_variant_note"] = _pending_item_note
+                        elif "pending_variant_note" in c:
+                            c.pop("pending_variant_note", None)
+                        # Guardar el item_id del producto base para eliminarlo cuando se elija la variante.
+                        if _pending_base_item_id is not None:
+                            c["pending_variant_base_item_id"] = _pending_base_item_id
+                        elif "pending_variant_base_item_id" in c:
+                            c.pop("pending_variant_base_item_id", None)
                         session.cart_data = c
                         db.commit()
                     # Marcar siempre que hubo pregunta de variante en este turno
@@ -997,6 +1024,12 @@ class BotEngine:
                         changed = True
                     if "pending_variant_options" in c:
                         c.pop("pending_variant_options", None)
+                        changed = True
+                    if "pending_variant_note" in c:
+                        c.pop("pending_variant_note", None)
+                        changed = True
+                    if "pending_variant_base_item_id" in c:
+                        c.pop("pending_variant_base_item_id", None)
                         changed = True
                     if changed:
                         session.cart_data = c
