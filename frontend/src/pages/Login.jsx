@@ -12,8 +12,6 @@ import {
   ArrowRight,
   UserPlus
 } from 'lucide-react';
-import { useTheme } from '../components/ThemeContext';
-import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -77,7 +75,6 @@ export default function Login() {
     }
   };
 
-  const { theme } = useTheme();
 
   return (
     <div className="login-container">
@@ -89,7 +86,6 @@ export default function Login() {
         position: 'relative'
       }}>
         <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}>
-          <ThemeToggle />
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -97,16 +93,14 @@ export default function Login() {
             src="/src/assets/omnikook-logo.png" 
             alt="OMNIKOOK" 
             style={{ 
-              height: '40px', 
-              marginBottom: '1.5rem',
-              filter: theme === 'dark' ? 'brightness(0) invert(1)' : 'none'
+              marginBottom: '1.5rem'
             }} 
           />
-          <h1 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--success-color)', marginBottom: '0.4rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            OMNIKOOK
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.2rem', letterSpacing: '0.02em' }}>
+            omnikook
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 500, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-            Dark Kitchen OS
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
+            Unify the kitchen. Rule the chat.
           </p>
         </div>
 

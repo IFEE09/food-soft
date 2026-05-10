@@ -25,7 +25,6 @@ const Reservations        = lazy(() => import('./pages/Reservations'));
 const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy'));
 
 import { NotificationProvider } from './components/NotificationProvider';
-import { ThemeProvider } from './components/ThemeContext';
 
 const ROLE_HOME = {
   owner: '/dashboard/owner',
@@ -58,10 +57,9 @@ function PageLoader() {
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <NotificationProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+      <NotificationProvider>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
 
               {/* Public Auth Routes */}
@@ -117,10 +115,9 @@ function App() {
               <Route path="/privacy" element={<PrivacyPolicy />} />
 
               <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </Suspense>
-        </NotificationProvider>
-      </ThemeProvider>
+          </Routes>
+        </Suspense>
+      </NotificationProvider>
     </BrowserRouter>
   );
 }

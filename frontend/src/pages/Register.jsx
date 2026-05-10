@@ -69,11 +69,11 @@ export default function Register() {
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img 
             src="/src/assets/omnikook-logo.png" 
-            alt="OMNIKOOK" 
-            style={{ height: '36px', marginBottom: '1.25rem', filter: 'brightness(0) invert(1)' }} 
+            alt="omnikook" 
+            style={{ height: '36px', marginBottom: '1.25rem' }} 
           />
-          <h1 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--success-color)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>New Registration</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', textTransform: 'uppercase', fontFamily: 'JetBrains Mono, monospace' }}>Management Layer for Dark Kitchens</p>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.4rem', letterSpacing: '0.02em' }}>omnikook</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'Inter, sans-serif' }}>Unify the kitchen. Rule the chat.</p>
         </div>
 
         <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

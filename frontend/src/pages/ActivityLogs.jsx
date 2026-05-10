@@ -31,11 +31,11 @@ const ENTITY_LABELS = {
 
 const actionStyle = (action) => {
   switch (action) {
-    case 'create': return { bg: '#ECFDF5', color: '#10B981', Icon: Plus };
-    case 'update': return { bg: '#EFF6FF', color: '#2563EB', Icon: Pencil };
-    case 'delete': return { bg: '#FEF2F2', color: '#EF4444', Icon: Trash2 };
-    case 'login':  return { bg: '#F5F3FF', color: '#7C3AED', Icon: LogIn };
-    default:       return { bg: '#F1F5F9', color: '#64748B', Icon: Activity };
+    case 'create': return { bg: 'rgba(16, 185, 129, 0.1)', color: '#10B981', Icon: Plus };
+    case 'update': return { bg: 'rgba(37, 99, 235, 0.1)', color: '#3B82F6', Icon: Pencil };
+    case 'delete': return { bg: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', Icon: Trash2 };
+    case 'login':  return { bg: 'rgba(124, 58, 237, 0.1)', color: '#A78BFA', Icon: LogIn };
+    default:       return { bg: 'rgba(100, 116, 139, 0.1)', color: '#94A3B8', Icon: Activity };
   }
 };
 
@@ -210,7 +210,7 @@ export default function ActivityLogs() {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .table-row-hover:hover { background-color: #F8FAFC; }
+        .table-row-hover:hover { background-color: rgba(255, 255, 255, 0.03); }
       `}} />
     </div>
   );

@@ -21,7 +21,6 @@ import {
   TableProperties,
   CalendarDays
 } from 'lucide-react';
-import ThemeToggle from '../components/ThemeToggle';
 import { apiClient } from '../api/client';
 
 const ROLE_LABEL = {
@@ -183,7 +182,7 @@ export default function DashboardLayout() {
     if (isActive('/dashboard/pos-counter')) return { title: 'POS Mostrador', sub: `Toma de pedidos en persona · ${currentKitchenName}` };
     if (isActive('/dashboard/pos-table')) return { title: 'POS Mesas', sub: `Vista de mesas · ${currentKitchenName}` };
     if (isActive('/dashboard/reservations')) return { title: 'Reservaciones', sub: `Agenda de reservas · ${currentKitchenName}` };
-    return { title: 'OMNIKOOK', sub: 'Dark Kitchen OS' };
+    return { title: 'omnikook', sub: 'Unify the kitchen. Rule the chat.' };
   };
 
   const page = getPageTitle();
@@ -197,9 +196,12 @@ export default function DashboardLayout() {
     <div className="dashboard-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div style={{ marginBottom: '2rem', paddingLeft: '0.25rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--success-color)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>OMNIKOOK</h2>
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'JetBrains Mono, monospace' }}>Dark Kitchen OS</span>
+        <div style={{ marginBottom: '2rem', paddingLeft: '0.25rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img src="/src/assets/omnikook-logo.png" alt="logo" style={{ height: '32px' }} />
+          <div>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>omnikook</h2>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>Unify the kitchen. Rule the chat.</span>
+          </div>
         </div>
         
         <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -311,8 +313,6 @@ export default function DashboardLayout() {
                   </div>
                 )}
 
-                <ThemeToggle />
-                
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--surface-color)', padding: '0.5rem 0.75rem 0.5rem 1rem', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
