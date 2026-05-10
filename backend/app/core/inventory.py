@@ -31,7 +31,7 @@ def _send_low_stock_alert(
         owner = db.query(models.User).filter(
             models.User.organization_id == organization_id,
             models.User.role == "owner",
-            models.User.is_active == True,
+            models.User.is_active,
         ).first()
         if not owner:
             return

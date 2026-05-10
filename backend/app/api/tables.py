@@ -11,8 +11,7 @@ Rutas:
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -29,23 +28,23 @@ router = APIRouter(tags=["tables"])
 
 class TableCreate(BaseModel):
     number: int
-    name: Optional[str] = None
+    name: str | None = None
     capacity: int = 4
     pos_x: float = 0.0
     pos_y: float = 0.0
     shape: str = "square"   # square | round | rectangle
-    kitchen_id: Optional[int] = None
+    kitchen_id: int | None = None
 
 
 class TableUpdate(BaseModel):
-    number: Optional[int] = None
-    name: Optional[str] = None
-    capacity: Optional[int] = None
-    pos_x: Optional[float] = None
-    pos_y: Optional[float] = None
-    shape: Optional[str] = None
-    is_active: Optional[bool] = None
-    kitchen_id: Optional[int] = None
+    number: int | None = None
+    name: str | None = None
+    capacity: int | None = None
+    pos_x: float | None = None
+    pos_y: float | None = None
+    shape: str | None = None
+    is_active: bool | None = None
+    kitchen_id: int | None = None
 
 
 class TableStatusPatch(BaseModel):
@@ -53,27 +52,27 @@ class TableStatusPatch(BaseModel):
 
 
 class ReservationCreate(BaseModel):
-    table_id: Optional[int] = None
+    table_id: int | None = None
     guest_name: str
-    guest_phone: Optional[str] = None
-    guest_email: Optional[str] = None
+    guest_phone: str | None = None
+    guest_email: str | None = None
     party_size: int = 2
     reserved_at: datetime
     duration_minutes: int = 90
-    notes: Optional[str] = None
+    notes: str | None = None
     source: str = "online"   # online | phone | walkin | whatsapp
 
 
 class ReservationUpdate(BaseModel):
-    table_id: Optional[int] = None
-    guest_name: Optional[str] = None
-    guest_phone: Optional[str] = None
-    guest_email: Optional[str] = None
-    party_size: Optional[int] = None
-    reserved_at: Optional[datetime] = None
-    duration_minutes: Optional[int] = None
-    notes: Optional[str] = None
-    status: Optional[str] = None
+    table_id: int | None = None
+    guest_name: str | None = None
+    guest_phone: str | None = None
+    guest_email: str | None = None
+    party_size: int | None = None
+    reserved_at: datetime | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+    status: str | None = None
 
 
 class ReservationStatusPatch(BaseModel):
@@ -140,7 +139,7 @@ def _res_to_dict(r: Reservation) -> dict:
 
 @router.get("/tables/")
 def list_tables(
-    kitchen_id: Optional[int] = Query(None),
+    kitchen_id: int | None = Query(None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -233,8 +232,8 @@ def delete_table(
 
 @router.get("/reservations/")
 def list_reservations(
-    date: Optional[str] = Query(None, description="YYYY-MM-DD — filtra por día"),
-    status: Optional[str] = Query(None),
+    date: str | None = Query(None, description="YYYY-MM-DD — filtra por día"),
+    status: str | None = Query(None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -264,7 +263,7 @@ def check_availability(
     """Devuelve las mesas disponibles para la fecha/hora y tamaño de grupo."""
     org_id = _get_org_id(user)
     try:
-        requested_dt = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        requested_dt = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M").replace(tzinfo=UTC)
     except ValueError:
         raise HTTPException(status_code=422, detail="Formato inválido. Usa date=YYYY-MM-DD y time=HH:MM.")
 

@@ -15,7 +15,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if "supply_movements" not in inspector.get_table_names():
+        op.create_table(
         "supply_movements",
         sa.Column("id", sa.Integer(), primary_key=True, index=True),
         sa.Column("supply_id", sa.Integer(), sa.ForeignKey("supplies.id"), nullable=False, index=True),

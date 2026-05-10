@@ -15,9 +15,14 @@ depends_on = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
+
     # ── restaurant_tables ────────────────────────────────────────────────────
-    op.create_table(
-        "restaurant_tables",
+    if "restaurant_tables" not in tables:
+        op.create_table(
+            "restaurant_tables",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("organization_id", sa.Integer, sa.ForeignKey("organizations.id"), nullable=False, index=True),
         sa.Column("kitchen_id", sa.Integer, sa.ForeignKey("kitchens.id"), nullable=True),
@@ -35,8 +40,9 @@ def upgrade() -> None:
     )
 
     # ── reservations ─────────────────────────────────────────────────────────
-    op.create_table(
-        "reservations",
+    if "reservations" not in tables:
+        op.create_table(
+            "reservations",
         sa.Column("id", sa.Integer, primary_key=True, index=True),
         sa.Column("organization_id", sa.Integer, sa.ForeignKey("organizations.id"), nullable=False, index=True),
         sa.Column("table_id", sa.Integer, sa.ForeignKey("restaurant_tables.id"), nullable=True),
@@ -54,8 +60,12 @@ def upgrade() -> None:
     )
 
     # ── orders: nuevas columnas channel y table_id ───────────────────────────
-    op.add_column("orders", sa.Column("channel", sa.String, server_default="whatsapp", nullable=True, index=True))
-    op.add_column("orders", sa.Column("table_id", sa.Integer, sa.ForeignKey("restaurant_tables.id"), nullable=True))
+    if "orders" in tables:
+        columns = [c["name"] for c in inspector.get_columns("orders")]
+        if "channel" not in columns:
+            op.add_column("orders", sa.Column("channel", sa.String, server_default="whatsapp", nullable=True, index=True))
+        if "table_id" not in columns:
+            op.add_column("orders", sa.Column("table_id", sa.Integer, sa.ForeignKey("restaurant_tables.id"), nullable=True))
 
 
 def downgrade() -> None:
