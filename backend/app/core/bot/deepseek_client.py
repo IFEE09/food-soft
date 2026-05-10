@@ -302,29 +302,36 @@ def ask_deepseek(
         raw = response.choices[0].message.content.strip()
         logger.info("DeepSeek raw response: %s", raw)
 
+        def _try_parse(s: str):
+            """Intenta parsear JSON, primero directo, luego escapando saltos de línea literales."""
+            try:
+                return json.loads(s)
+            except json.JSONDecodeError:
+                pass
+            # Escapar saltos de línea literales dentro de strings JSON
+            try:
+                fixed = s.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+                return json.loads(fixed)
+            except json.JSONDecodeError:
+                return None
+
         # Extraer array JSON aunque venga con texto alrededor
         json_start = raw.find("[")
         json_end = raw.rfind("]") + 1
         if json_start != -1 and json_end > json_start:
             json_str = raw[json_start:json_end]
-            try:
-                result = json.loads(json_str)
-                if isinstance(result, list) and len(result) > 0 and "action" in result[0]:
-                    return result
-            except json.JSONDecodeError:
-                pass
+            result = _try_parse(json_str)
+            if result is not None and isinstance(result, list) and len(result) > 0 and "action" in result[0]:
+                return result
 
         # Intentar también objeto JSON simple (compatibilidad)
         json_start = raw.find("{")
         json_end = raw.rfind("}") + 1
         if json_start != -1 and json_end > json_start:
             json_str = raw[json_start:json_end]
-            try:
-                result = json.loads(json_str)
-                if "action" in result:
-                    return [result]  # Envolver en lista
-            except json.JSONDecodeError:
-                pass
+            result = _try_parse(json_str)
+            if result is not None and isinstance(result, dict) and "action" in result:
+                return [result]  # Envolver en lista
 
         # Si no es JSON válido, tratar como respuesta de chat
         return [{"action": "CHAT", "message": raw}]
