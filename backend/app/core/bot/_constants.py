@@ -31,6 +31,9 @@ STATE_PENDING_CART        = "CARRITO_PENDIENTE"
 STATE_ASKING_NAME         = "PIDIENDO_NOMBRE"
 STATE_ASKING_ADDRESS      = "PIDIENDO_DIRECCION"
 STATE_ASKING_NOTE         = "PIDIENDO_NOTA"
+# Nuevos estados del patrón confirm-before-commit
+STATE_AWAITING_ITEM_CONFIRMATION = "AWAITING_ITEM_CONFIRMATION"  # Bot propuso un item, esperando 1/2
+STATE_AWAITING_VARIANT           = "AWAITING_VARIANT"            # Bot preguntó Grande/Familiar, bypass DeepSeek
 
 # Estados que califican como "inactivos" para timeout de sesión.
 INACTIVE_STATES = frozenset({

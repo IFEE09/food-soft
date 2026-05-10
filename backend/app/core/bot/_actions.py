@@ -292,3 +292,39 @@ def cancel_order(
         channel, sender_id,
         "Pedido cancelado. ¡Cuando quieras volver a pedir, aquí estaremos! 😊",
     )]
+
+
+# ── Propose item (confirm-before-commit) ────────────────────────────────────────────
+
+
+def propose_item(
+    db: Session,
+    channel: str,
+    sender_id: str,
+    session: models.BotSession,
+    item_id: int,
+    item_name: str,
+    item_price: float,
+    item_note: str | None = None,
+) -> list:
+    """Propone un item al cliente antes de agregarlo al carrito.
+
+    Guarda en cart_data["pending_item"] el item propuesto y cambia el estado
+    a STATE_AWAITING_ITEM_CONFIRMATION. El engine resolverá la confirmación.
+    """
+    from app.core.bot._constants import STATE_AWAITING_ITEM_CONFIRMATION
+    from app.core.bot._messages import confirm_item_msg
+
+    cart: dict[str, Any] = dict(session.cart_data) if isinstance(session.cart_data, dict) else {}
+    cart["pending_item"] = {
+        "id": item_id,
+        "name": item_name,
+        "price": item_price,
+        "note": item_note,
+    }
+    session.cart_data = cart
+    session.state = STATE_AWAITING_ITEM_CONFIRMATION
+    db.commit()
+
+    msg = confirm_item_msg(channel, sender_id, item_name, item_price, item_note)
+    return [{"action": "SEND_TEXT", "payload": msg}]

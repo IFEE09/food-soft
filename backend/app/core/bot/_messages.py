@@ -83,3 +83,44 @@ def unrecognized_option(channel: str, to: str, options_text: str) -> list:
     """Responde 'Opción no reconocida' + reenvía las opciones disponibles."""
     msg = f"⚠️ Opción no reconocida. Por favor elige una de las siguientes:\n\n{options_text}"
     return [{"action": "SEND_TEXT", "payload": text(channel, to, msg)}]
+
+
+# ── Helpers del patrón confirm-before-commit ────────────────────────────────
+
+
+def confirm_item_msg(channel: str, to: str, item_name: str, price: float, item_note: str | None = None) -> dict:
+    """Propone un item al cliente antes de agregarlo al carrito.
+
+    Formato:
+        Entendí: Peperoni Grande — $149.0. ¿Confirmas?
+        1 Sí, agrégalo
+        2 No, era otra cosa
+    """
+    note_str = f" (\u270e {item_note})" if item_note else ""
+    body = (
+        f"Entendí: *{item_name}*{note_str} \u2014 ${price:.0f}. ¿Confirmas?\n\n"
+        f"1️⃣ Sí, agrégalo\n"
+        f"2️⃣ No, era otra cosa"
+    )
+    return text(channel, to, body)
+
+
+def unrecognized_item_msg(channel: str, to: str) -> dict:
+    """Mensaje canónico cuando el bot no identificó el producto con confianza suficiente."""
+    body = (
+        "Disculpa, no entendí bien 😅 "
+        "¿Me dices el nombre del producto otra vez? "
+        "También puedes escribir *menú* para ver las opciones."
+    )
+    return text(channel, to, body)
+
+
+def propose_variant_msg(channel: str, to: str, base_name: str, options: list[dict]) -> dict:
+    """Pregunta la variante (Grande/Familiar) con precios exactos.
+
+    `options` es una lista de dicts con keys: id, label, price.
+    Ejemplo: [{"id": 12, "label": "Grande", "price": 289}, {"id": 13, "label": "Familiar", "price": 319}]
+    """
+    opts_lines = "\n".join(f"*{o['label']}* (${o['price']:.0f})" for o in options)
+    body = f"¿Cómo la quieres?\n{opts_lines}"
+    return text(channel, to, body)
