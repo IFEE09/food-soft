@@ -5,10 +5,12 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNotification } from '../components/NotificationProvider';
+import { useOfflineQueue } from '../hooks/useOfflineQueue';
+import { OfflineIndicator } from '../components/OfflineIndicator';
 import { apiClient } from '../api/client';
 import {
   ArrowLeft, Users, Plus, Minus, Trash2, Send, Tag,
-  Search, ChevronRight, Grid, List, RefreshCw
+  Search, ChevronRight, Grid, List, RefreshCw, WifiOff
 } from 'lucide-react';
 
 const TABLE_STATUS_CONFIG = {
@@ -20,6 +22,17 @@ const TABLE_STATUS_CONFIG = {
 
 export default function POSTable() {
   const { showAlert, showConfirm } = useNotification();
+
+  // ── Offline queue ──────────────────────────────────────────────────────────
+  const {
+    isOnline, isSyncing, pendingCount, failedCount, queue,
+    lastSyncAt, submitOrder, syncQueue, dequeue, clearQueue,
+  } = useOfflineQueue({
+    onSyncSuccess: (count) =>
+      showAlert('Sincronizado', `${count} pedido(s) enviados a cocina.`, 'success'),
+    onSyncError: () =>
+      showAlert('Error de sincronización', 'Algunos pedidos no se pudieron enviar.', 'error'),
+  });
 
   // ── Estado global ──────────────────────────────────────────────────────────
   const [view, setView]             = useState('floor');   // 'floor' | 'order'
@@ -183,22 +196,29 @@ export default function POSTable() {
 
     setSubmitting(true);
     try {
-      await apiClient.post('/orders/', {
+      const payload = {
         client_name: clientName.trim() || `Mesa ${selectedTable.number}`,
         notes: notes.trim() || undefined,
         station_id: stationId ? parseInt(stationId) : undefined,
         channel: 'table',
         table_id: selectedTable.id,
         items: cart.map(c => ({ menu_item_id: c.id, quantity: c.qty, note: c.note || undefined })),
-      });
-      // Marcar mesa como ocupada
-      await apiClient.patch(`/tables/${selectedTable.id}/status`, { status: 'occupied' });
-      showAlert('¡Pedido enviado!', `Pedido de Mesa ${selectedTable.number} enviado a cocina.`, 'success');
-      // Limpiar carrito de esa mesa
+      };
+      const result = await submitOrder(payload);
+      // Marcar mesa como ocupada (best-effort, puede fallar offline)
+      try { await apiClient.patch(`/tables/${selectedTable.id}/status`, { status: 'occupied' }); } catch { /* offline */ }
+      if (result.offline) {
+        showAlert(
+          '📦 Pedido guardado localmente',
+          `Sin conexión — el pedido de Mesa ${selectedTable.number} se enviará cuando vuelva el internet.`,
+          'warning'
+        );
+      } else {
+        showAlert('✅ Pedido enviado', `Pedido de Mesa ${selectedTable.number} enviado a cocina.`, 'success');
+      }
       setCarts(prev => { const next = { ...prev }; delete next[selectedTable.id]; return next; });
       setClientName('');
       setNotes('');
-      // Actualizar estado de la mesa en el plano
       setTables(prev => prev.map(t => t.id === selectedTable.id ? { ...t, status: 'occupied' } : t));
       backToFloor();
     } catch (err) {
@@ -210,9 +230,18 @@ export default function POSTable() {
   };
 
   // ── Vista: Plano de mesas ──────────────────────────────────────────────────
+  const hasBanner = !isOnline || isSyncing || pendingCount > 0 || failedCount > 0;
+
   if (view === 'floor') {
     return (
-      <div style={{ padding: '1.5rem' }}>
+      <>
+      <OfflineIndicator
+        isOnline={isOnline} isSyncing={isSyncing}
+        pendingCount={pendingCount} failedCount={failedCount}
+        queue={queue} lastSyncAt={lastSyncAt}
+        onSync={syncQueue} onDequeue={dequeue} onClearQueue={clearQueue}
+      />
+      <div style={{ padding: '1.5rem', marginTop: hasBanner ? '34px' : 0, transition: 'margin-top 0.2s' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <div>
@@ -293,17 +322,22 @@ export default function POSTable() {
             })}
           </div>
         )}
-      </div>
+       </div>
+      </>
     );
   }
-
   // ── Vista: Toma de pedido (menú + carrito) ─────────────────────────────────
   const tableCfg = TABLE_STATUS_CONFIG[selectedTable?.status] || TABLE_STATUS_CONFIG.available;
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
-
-      {/* ── Panel izquierdo: Menú ── */}
+    <>
+    <OfflineIndicator
+      isOnline={isOnline} isSyncing={isSyncing}
+      pendingCount={pendingCount} failedCount={failedCount}
+      queue={queue} lastSyncAt={lastSyncAt}
+      onSync={syncQueue} onDequeue={dequeue} onClearQueue={clearQueue}
+    />
+    <div style={{ display: 'flex', height: 'calc(100vh - 80px)', gap: '0', overflow: 'hidden', marginTop: hasBanner ? '34px' : 0, transition: 'margin-top 0.2s' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--surface-border)' }}>
 
         {/* Header */}
@@ -458,5 +492,6 @@ export default function POSTable() {
         </div>
       )}
     </div>
+    </>
   );
 }
