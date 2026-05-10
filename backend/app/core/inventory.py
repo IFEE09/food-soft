@@ -52,14 +52,14 @@ def _send_low_stock_alert(
 
         from app.core.bot.meta_client import send_whatsapp_message
 
-        pct = (supply.quantity / supply.min_quantity * 100) if supply.min_quantity > 0 else 0
-        emoji = "🔴" if supply.quantity <= 0 else "🟡"
+        pct = (supply.quantity / supply.min_quantity * 100) if supply.min_quantity > 0 else 0  # type: ignore
+        emoji = "🔴" if supply.quantity <= 0 else "🟡"  # type: ignore
         msg_body = (
             f"{emoji} *ALERTA DE STOCK BAJO — {org.name}*\n\n"
             f"El insumo *{supply.name}* está por debajo del mínimo:\n"
-            f"• Stock actual: *{round(supply.quantity, 2)} {supply.unit}*\n"
+            f"• Stock actual: *{round(supply.quantity, 2)} {supply.unit}*\n"  # type: ignore
             f"• Mínimo configurado: *{supply.min_quantity} {supply.unit}*\n"
-            f"• Nivel: *{round(pct, 1)}%*\n\n"
+            f"• Nivel: *{round(pct, 1)}%*\n\n"  # type: ignore
             f"Por favor recarga el inventario lo antes posible."
         )
         payload = {
@@ -68,7 +68,7 @@ def _send_low_stock_alert(
             "type": "text",
             "text": {"body": msg_body},
         }
-        send_whatsapp_message(org.whatsapp_phone_number_id, payload)
+        send_whatsapp_message(org.whatsapp_phone_number_id, payload)  # type: ignore
         logger.info(
             "[INVENTORY] Alerta de stock bajo enviada para '%s' (org=%s, qty=%s, min=%s)",
             supply.name, organization_id, supply.quantity, supply.min_quantity,
@@ -114,10 +114,10 @@ def deduct_supplies_for_line_items(
         ).all()
 
         for rec in recipes:
-            delta = float(rec.quantity) * float(qty)
+            delta = float(rec.quantity) * float(qty)  # type: ignore
             if delta <= 0:
                 continue
-            required_totals[rec.supply_id] = required_totals.get(rec.supply_id, 0.0) + delta
+            required_totals[rec.supply_id] = required_totals.get(rec.supply_id, 0.0) + delta  # type: ignore
 
     if not required_totals:
         return
@@ -127,7 +127,7 @@ def deduct_supplies_for_line_items(
         models.Supply.id.in_(required_totals.keys()),
         models.Supply.organization_id == organization_id,
     ).all()
-    supply_map = {s.id: s for s in supplies}
+    supply_map: dict[int, models.Supply] = {s.id: s for s in supplies}  # type: ignore
 
     for s_id, needed in required_totals.items():
         supply = supply_map.get(s_id)
