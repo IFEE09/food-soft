@@ -57,7 +57,20 @@ def _send(url: str, payload: dict, token: str) -> bool:
         return False
 
 
+def _normalize_wa_recipient(phone: str) -> str:
+    """
+    Normaliza números mexicanos: Meta a veces envía 521XXXXXXXXX en el campo 'from',
+    pero la API de envío requiere 52XXXXXXXXX (sin el '1' extra).
+    """
+    if phone and phone.startswith("521") and len(phone) == 13:
+        return "52" + phone[3:]
+    return phone
+
+
 def send_whatsapp_message(phone_number_id: str, payload: dict) -> bool:
+    # Normalizar el número del destinatario si viene con el '1' extra de México
+    if isinstance(payload.get("to"), str):
+        payload = {**payload, "to": _normalize_wa_recipient(payload["to"])}
     url = f"{META_GRAPH_URL}/{phone_number_id}/messages"
     return _send(url, payload, _get_wa_token())
 
