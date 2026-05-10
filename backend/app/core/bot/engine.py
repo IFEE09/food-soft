@@ -752,42 +752,9 @@ class BotEngine:
         actions_list = ai_response if isinstance(ai_response, list) else [ai_response]
         logger.info("DeepSeek actions=%s sender=%s channel=%s", actions_list, sender_id, channel)
 
-        # ── Solución 4: Re-llamar a DeepSeek si solo devolvió CHAT y el usuario pidió un producto ──
-        # SOLO activa si NO hay una variante pendiente (Grande/Familiar) — para no interferir
-        # con el flujo de selección de tamaño.
-        _all_chat = all(a.get("action") == "CHAT" for a in actions_list)
-        _has_pending_variant = bool(cart.get("pending_variant_base"))
-        if _all_chat and not _has_pending_variant:
-            _user_lower = user_text.lower()
-            _product_mentioned = next(
-                (mi for mi in menu_items if mi.name.lower() in _user_lower),
-                None
-            )
-            if _product_mentioned:
-                logger.warning(
-                    "[DEEPSEEK-RETRY] Solo CHAT para '%s' que menciona producto '%s'. Reintentando.",
-                    user_text, _product_mentioned.name
-                )
-                _retry_msg = (
-                    f"SISTEMA: El cliente pidió '{_product_mentioned.name}' (ID:{_product_mentioned.id}). "
-                    f"Debes responder SOLO con: [{{\"action\": \"ADD_TO_CART\", \"item_id\": {_product_mentioned.id}}}]"
-                )
-                _retry_response = ask_deepseek(
-                    message=_retry_msg,
-                    chat_history=history,
-                    menu_items=menu_items,
-                    cart=cart,
-                    state=state,
-                    org_name=org_name,
-                    promotions=promotions,
-                )
-                _retry_list = _retry_response if isinstance(_retry_response, list) else [_retry_response]
-                # Solo usar el retry si devolvió ADD_TO_CART (no forzar si también falla)
-                if any(a.get("action") == "ADD_TO_CART" for a in _retry_list):
-                    logger.info("[DEEPSEEK-RETRY] Éxito. Usando respuesta del retry: %s", _retry_list)
-                    actions_list = _retry_list
-                else:
-                    logger.warning("[DEEPSEEK-RETRY] Retry también falló. Dejando respuesta CHAT original.")
+        # Nota: el retry por coincidencia de texto fue eliminado porque causaba agregar
+        # productos incorrectos (ej: "Canadian BBQ" → "Molson Pizza").
+        # Si DeepSeek no reconoce el producto, responde con CHAT pidiendo aclaración.
 
         ai_reply_parts = []
         _variant_was_detected = False  # Se activa si DeepSeek pregunta Grande/Familiar en este turno
