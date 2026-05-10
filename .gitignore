@@ -6,6 +6,8 @@ venv/
 .venv/
 .env
 .pytest_cache/
+*.db
+
 
 # Node / React
 node_modules/
