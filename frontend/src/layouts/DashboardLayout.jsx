@@ -197,7 +197,7 @@ export default function DashboardLayout() {
       {/* Sidebar */}
       <aside className="sidebar">
         <div style={{ marginBottom: '2rem', paddingLeft: '0.25rem', borderBottom: '1px solid var(--surface-border)', paddingBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/src/assets/omnikook-logo.png" alt="omnikook" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          <img src="/omnikook-logo.png" alt="omnikook" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
           <div>
             <h2 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, letterSpacing: '0.03em', fontFamily: 'Inter, sans-serif' }}>
               <span style={{ color: '#C8FF00' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>

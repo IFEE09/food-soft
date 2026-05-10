@@ -90,7 +90,7 @@ export default function Login() {
 
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img 
-            src="/src/assets/omnikook-logo.png" 
+            src="/omnikook-logo.png" 
             alt="omnikook isotipo" 
             style={{ 
               width: '72px',

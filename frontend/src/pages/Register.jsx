@@ -68,7 +68,7 @@ export default function Register() {
       <div className="glass-card" style={{ padding: '3rem 2.5rem', width: '100%', maxWidth: '420px', margin: 'auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img 
-            src="/src/assets/omnikook-logo.png" 
+            src="/omnikook-logo.png" 
             alt="omnikook isotipo" 
             style={{ width: '64px', height: '64px', objectFit: 'contain', display: 'block', margin: '0 auto 1.25rem auto' }} 
           />

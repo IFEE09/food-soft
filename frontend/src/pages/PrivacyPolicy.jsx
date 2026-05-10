@@ -37,7 +37,7 @@ export default function PrivacyPolicy() {
 
         {/* Logo */}
         <div style={S.logo}>
-          <img src="/src/assets/omnikook-logo.png" alt="omnikook" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+          <img src="/omnikook-logo.png" alt="omnikook" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
           <span style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
             <span style={{ color: B.lime }}>o</span><span style={{ color: B.text }}>mnikook</span>
           </span>
