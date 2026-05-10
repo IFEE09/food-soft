@@ -50,6 +50,7 @@ from app.api import (
     promotions,
     stations,
     supplies,
+    supply_movements,
     users,
 )
 from app.core import security
@@ -256,6 +257,7 @@ app.include_router(activity_logs.router, prefix=f"{settings.API_V1_STR}/activity
 app.include_router(bot.router, prefix=f"{settings.API_V1_STR}/bot", tags=["bot"])
 app.include_router(organizations.router, prefix=f"{settings.API_V1_STR}/organizations", tags=["organizations"])
 app.include_router(promotions.router, prefix=f"{settings.API_V1_STR}/promotions", tags=["promotions"])
+app.include_router(supply_movements.router, prefix=f"{settings.API_V1_STR}/supply-movements", tags=["supply-movements"])
 
 @app.get("/")
 def root():

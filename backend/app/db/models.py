@@ -230,3 +230,26 @@ class Promotion(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     organization = relationship("Organization")
+
+
+class SupplyMovement(Base):
+    """Registro de entradas y salidas de inventario por insumo."""
+    __tablename__ = "supply_movements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    supply_id = Column(Integer, ForeignKey("supplies.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
+
+    # 'in' = entrada (recarga), 'out' = salida (pedido), 'adjust' = ajuste manual
+    movement_type = Column(String, nullable=False, default="in")  # in | out | adjust
+    quantity = Column(Float, nullable=False)  # siempre positivo; el tipo indica dirección
+    notes = Column(String, nullable=True)  # ej: 'Pedido #42', 'Recarga de proveedor'
+
+    # Quién hizo el movimiento (puede ser NULL si fue automático por bot)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)  # si fue por pedido
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    supply = relationship("Supply")
+    user = relationship("User")
