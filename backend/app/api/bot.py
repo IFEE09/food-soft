@@ -8,6 +8,7 @@ import json
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -45,7 +46,7 @@ def verify_webhook(request: Request):
 
     if mode == "subscribe" and token == verify_token:
         logger.info("Webhook verificado correctamente por Meta.")
-        return int(challenge)
+        return PlainTextResponse(content=challenge, status_code=200)
 
     raise HTTPException(status_code=403, detail="Token de verificación inválido.")
 
