@@ -3,8 +3,8 @@ MetaClient — Cliente HTTP para enviar mensajes a Meta Graph API.
 Soporta WhatsApp, Facebook Messenger e Instagram DM.
 
 Tokens por canal:
-  - WhatsApp: usa META_WA_TOKEN si está definido, sino cae a META_ACCESS_TOKEN
-  - Messenger/Instagram: usa META_ACCESS_TOKEN (Page Access Token)
+  - WhatsApp: usa META_WA_TOKEN si está definido, sino cae a META_FB_TOKEN / META_ACCESS_TOKEN
+  - Messenger/Instagram: usa META_FB_TOKEN (Page Access Token); META_ACCESS_TOKEN como fallback legacy
 """
 import logging
 
@@ -17,14 +17,15 @@ META_GRAPH_URL = "https://graph.facebook.com/v19.0"
 def _get_wa_token() -> str:
     """Token para WhatsApp Business API. Lee siempre desde settings (sin caché)."""
     from app.core.config import settings
-    # Preferir META_WA_TOKEN; si no está, usar META_ACCESS_TOKEN como fallback
-    return (settings.META_WA_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
+    # Preferir META_WA_TOKEN; si no está, usar META_FB_TOKEN o META_ACCESS_TOKEN como fallback
+    return (settings.META_WA_TOKEN or settings.META_FB_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
 
 
 def _get_messenger_token() -> str:
     """Token para Messenger/Instagram (Page Access Token). Lee siempre desde settings."""
     from app.core.config import settings
-    return (settings.META_ACCESS_TOKEN or "").strip()
+    # META_FB_TOKEN es el nombre actual; META_ACCESS_TOKEN se mantiene como alias legacy
+    return (settings.META_FB_TOKEN or settings.META_ACCESS_TOKEN or "").strip()
 
 
 def _send(url: str, payload: dict, token: str) -> bool:

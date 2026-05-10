@@ -79,7 +79,8 @@ class Settings(BaseSettings):
 
     # Meta Platform (Bot) — definir en .env (verify token del webhook Meta).
     META_VERIFY_TOKEN: str = ""
-    META_ACCESS_TOKEN: str | None = None   # Page Access Token para Messenger/Facebook
+    META_FB_TOKEN: str | None = None        # Page Access Token para Messenger/Facebook (nombre actual)
+    META_ACCESS_TOKEN: str | None = None   # Legacy alias — usar META_FB_TOKEN; se mantiene por compatibilidad
     META_WA_TOKEN: str | None = None       # Token para WhatsApp Business API (si es diferente al de Messenger)
     META_APP_SECRET: str | None = None
 

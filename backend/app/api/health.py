@@ -45,7 +45,7 @@ def readiness(db: Session = Depends(get_db)) -> dict[str, str]:
 def diag_whatsapp(db: Session = Depends(get_db)) -> dict:
     """
     Endpoint temporal de diagnóstico:
-    1. Verifica META_ACCESS_TOKEN
+    1. Verifica META_FB_TOKEN (o META_ACCESS_TOKEN como fallback)
     2. Consulta Meta API para listar phone numbers de la cuenta
     3. Muestra whatsapp_phone_number_id guardado en la BD
     4. Intenta enviar un mensaje de prueba al repartidor
@@ -55,8 +55,8 @@ def diag_whatsapp(db: Session = Depends(get_db)) -> dict:
 
     result = {}
 
-    # 1. Token
-    token = settings.META_ACCESS_TOKEN or ""
+    # 1. Token (META_FB_TOKEN es el nombre actual; META_ACCESS_TOKEN como alias legacy)
+    token = settings.META_FB_TOKEN or settings.META_ACCESS_TOKEN or ""
     result["token_configurado"] = bool(token)
     result["token_preview"] = token[:12] + "..." if token else "VACÍO"
 
