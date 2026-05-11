@@ -343,3 +343,59 @@ def delete_order(
         description=f"Eliminó orden #{deleted_id} de '{deleted_client}'"
     )
     return order
+
+
+# ── KDS: actualizar estado individual de un ítem ──────────────────────────────
+@router.patch("/items/{item_id}/status", response_model=order_schema.OrderItem)
+@limiter.limit("300/minute")
+def update_order_item_status(
+    request: Request,
+    *,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    item_id: int,
+    payload: order_schema.OrderItemStatusUpdate,
+) -> Any:
+    """
+    KDS: Actualiza el estado de un ítem individual (pending → in_progress → done).
+    Cuando todos los ítems de un pedido están en 'done', el pedido pasa automáticamente
+    a 'ready'.
+    """
+    VALID_STATUSES = {"pending", "in_progress", "done"}
+    if payload.item_status not in VALID_STATUSES:
+        raise HTTPException(status_code=422, detail=f"item_status debe ser uno de: {VALID_STATUSES}")
+
+    # Verificar que el ítem pertenece a la organización del usuario
+    item = (
+        db.query(models.OrderItem)
+        .join(models.Order, models.OrderItem.order_id == models.Order.id)
+        .filter(
+            models.OrderItem.id == item_id,
+            models.Order.organization_id == current_user.organization_id,
+        )
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    item.item_status = payload.item_status
+    db.add(item)
+    db.flush()
+
+    # Auto-completar el pedido si todos sus ítems están en 'done'
+    order = db.query(models.Order).filter(models.Order.id == item.order_id).first()
+    if order and order.status == "pending":
+        all_items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order.id).all()
+        if all(i.item_status == "done" for i in all_items):
+            order.status = "ready"
+            order.ready_at = datetime.utcnow()
+            db.add(order)
+            log_activity(
+                db, current_user,
+                action="update", entity_type="order", entity_id=order.id,
+                description=f"Orden #{order.id} marcada como lista automáticamente (todos los ítems completados)"
+            )
+
+    db.commit()
+    db.refresh(item)
+    return item

@@ -45,6 +45,7 @@ def create_menu_item(
         price=item_in.price,
         category=item_in.category,
         description=item_in.description,
+        station_id=item_in.station_id,
         organization_id=current_user.organization_id
     )
     db.add(new_item)

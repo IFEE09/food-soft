@@ -23,6 +23,7 @@ class MenuItemBase(BaseModel):
     price: float = 0.0
     category: str | None = None
     description: str | None = None
+    station_id: int | None = None  # KDS: estación responsable de preparar este platillo
 
 class MenuItemCreate(MenuItemBase):
     recipe_items: list[RecipeItemCreate] = []
@@ -30,10 +31,12 @@ class MenuItemCreate(MenuItemBase):
 class MenuItemUpdate(MenuItemBase):
     name: str | None = None
     price: float | None = None
+    station_id: int | None = None
     recipe_items: list[RecipeItemCreate] | None = None
 
 class MenuItem(MenuItemBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    station_id: int | None = None
     recipe_items: list[RecipeItem] = []

@@ -138,9 +138,25 @@ export default function KitchenDashboard() {
   const filteredOrders = orders.filter(o => {
     if (!selectedKitchen) return false;
     const kitchenStationIds = stations.map(s => s.id);
-    if (selectedStation) return o.station_id === selectedStation;
-    return kitchenStationIds.includes(o.station_id);
+    if (selectedStation) {
+      // KDS: mostrar pedidos que tengan AL MENOS un ítem de esta estación
+      return o.items && o.items.some(it => it.station_id === selectedStation);
+    }
+    // Vista ALL: mostrar pedidos que tengan ítems de alguna estación de esta cocina
+    // O pedidos sin station_id (compatibilidad con pedidos anteriores)
+    if (kitchenStationIds.length === 0) return true;
+    return o.items && (o.items.some(it => kitchenStationIds.includes(it.station_id)) || o.items.some(it => !it.station_id));
   });
+
+  const handleItemStatusChange = async (itemId, newStatus) => {
+    try {
+      await apiClient.patch(`/orders/items/${itemId}/status`, { item_status: newStatus });
+      await refetch();
+    } catch (err) {
+      console.error('Error updating item status:', err);
+      showNotification('⚠️ Error al actualizar el ítem', 'error');
+    }
+  };
 
   const pendingCount = filteredOrders.filter(o => o.status === 'pending').length;
   const readyCount   = filteredOrders.filter(o => o.status === 'ready').length;
@@ -480,10 +496,43 @@ export default function KitchenDashboard() {
                         {selectedKitchen.name}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem 0', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <span title={ordenConNota} style={{ color: hasNote ? '#f0c040' : 'var(--text-primary)' }}>
-                        {ordenConNota}
-                      </span>
+                    <td style={{ padding: '0.75rem 0', maxWidth: '280px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {row.items && row.items.length > 0 ? row.items
+                          .filter(it => !selectedStation || it.station_id === selectedStation)
+                          .map(it => {
+                            const itemColor = it.item_status === 'done' ? 'var(--success-color)'
+                              : it.item_status === 'in_progress' ? '#f0c040'
+                              : 'var(--text-primary)';
+                            return (
+                              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                <span style={{ color: itemColor, fontWeight: it.item_status === 'done' ? 400 : 700, textDecoration: it.item_status === 'done' ? 'line-through' : 'none', fontSize: '0.8rem' }}>
+                                  {it.product_name} x{it.quantity}{it.note ? ` ✎${it.note}` : ''}
+                                </span>
+                                {row.status === 'pending' && (
+                                  <div style={{ display: 'flex', gap: '0.2rem' }}>
+                                    {it.item_status !== 'in_progress' && it.item_status !== 'done' && (
+                                      <button onClick={() => handleItemStatusChange(it.id, 'in_progress')}
+                                        style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: 'rgba(240,192,64,0.15)', border: '1px solid #f0c040', color: '#f0c040', borderRadius: '2px', cursor: 'pointer', fontWeight: 700 }}
+                                        title="Marcar en preparación">
+                                        EN PREP
+                                      </button>
+                                    )}
+                                    {it.item_status !== 'done' && (
+                                      <button onClick={() => handleItemStatusChange(it.id, 'done')}
+                                        style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem', background: 'rgba(5,150,105,0.15)', border: '1px solid var(--success-color)', color: 'var(--success-color)', borderRadius: '2px', cursor: 'pointer', fontWeight: 700 }}
+                                        title="Marcar listo">
+                                        LISTO
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        : <span style={{ color: 'var(--text-secondary)' }}>{ordenConNota}</span>}
+                        {row.notes && <span style={{ color: '#f0c040', fontSize: '0.7rem' }}>✎ {row.notes}</span>}
+                      </div>
                     </td>
                     <td style={{ padding: '1rem 0', color: 'var(--text-primary)' }}>
                       {row.client_name || '—'}
