@@ -133,8 +133,13 @@ class OrderItem(Base):
     product_name = Column(String, nullable=False)
     quantity = Column(Integer, default=1)
     note = Column(String, nullable=True)  # Modificación del cliente (ej: 'sin cebolla')
+    # KDS: estación responsable de preparar este ítem
+    station_id = Column(Integer, ForeignKey("stations.id"), nullable=True, index=True)
+    # KDS: estado individual del ítem — pending | in_progress | done
+    item_status = Column(String, default="pending", nullable=False)
 
     order = relationship("Order", back_populates="items")
+    station = relationship("Station")
 
 class MenuItem(Base):
     __tablename__ = "menu_items"
@@ -145,7 +150,10 @@ class MenuItem(Base):
     category = Column(String, index=True, nullable=True)
     description = Column(String, nullable=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    # KDS: estación de cocina responsable de preparar este platillo
+    station_id = Column(Integer, ForeignKey("stations.id"), nullable=True, index=True)
 
+    station = relationship("Station")
     recipe_items = relationship("MenuItemRecipe", back_populates="menu_item", cascade="all, delete-orphan")
 
 class MenuItemRecipe(Base):

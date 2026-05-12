@@ -9,14 +9,21 @@ class OrderItemBase(BaseModel):
     quantity: int = 1
 
 class OrderItemCreate(OrderItemBase):
-    pass
+    note: str | None = None
+    station_id: int | None = None  # KDS: se hereda del MenuItem si no se especifica
+
+class OrderItemStatusUpdate(BaseModel):
+    """Payload para actualizar el estado individual de un ítem desde el KDS."""
+    item_status: str  # pending | in_progress | done
 
 class OrderItem(OrderItemBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     order_id: int
-    note: str | None = None  # Modificación del cliente (ej: 'sin cebolla')
+    note: str | None = None
+    station_id: int | None = None   # KDS: estación responsable de este ítem
+    item_status: str = "pending"    # KDS: pending | in_progress | done
 
 # Orders
 class OrderBase(BaseModel):
@@ -43,4 +50,5 @@ class Order(OrderBase):
     delivered_at: datetime | None = None
     delivery_address: str | None = None
     notes: str | None = None
+    channel: str | None = None
     items: list[OrderItem] = []

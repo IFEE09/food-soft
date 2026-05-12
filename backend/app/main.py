@@ -78,6 +78,12 @@ def run_migrations():
         "ALTER TABLE kitchens ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE orders ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE orders ADD COLUMN station_id INTEGER REFERENCES stations(id)",
+        # KDS: station_id en menu_items y order_items, item_status en order_items
+        "ALTER TABLE menu_items ADD COLUMN station_id INTEGER REFERENCES stations(id)",
+        "ALTER TABLE order_items ADD COLUMN station_id INTEGER REFERENCES stations(id)",
+        "ALTER TABLE order_items ADD COLUMN item_status VARCHAR NOT NULL DEFAULT 'pending'",
+        "CREATE INDEX IF NOT EXISTS ix_menu_items_station_id ON menu_items(station_id)",
+        "CREATE INDEX IF NOT EXISTS ix_order_items_station_id ON order_items(station_id)",
         "ALTER TABLE menu_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE supplies ADD COLUMN kitchen_id INTEGER REFERENCES kitchens(id)",

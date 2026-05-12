@@ -18,6 +18,7 @@ export default function Menu() {
   const { showAlert, showConfirm } = useNotification();
   const [menuItems, setMenuItems] = useState([]);
   const [supplies, setSupplies] = useState([]);
+  const [stations, setStations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,12 +34,14 @@ export default function Menu() {
 
   const fetchData = async () => {
     try {
-      const [mRes, sRes] = await Promise.all([
+      const [mRes, sRes, stRes] = await Promise.all([
         apiClient.get('/menu/'),
-        apiClient.get(`/supplies/?kitchen_id=${currentKitchenId}`)
+        apiClient.get(`/supplies/?kitchen_id=${currentKitchenId}`),
+        apiClient.get(`/stations/?kitchen_id=${currentKitchenId}`)
       ]);
       setMenuItems(mRes.data);
       setSupplies(sRes.data);
+      setStations(stRes.data);
     } catch (err) {
       console.error("Error fetching menu data:", err);
     } finally {
@@ -69,6 +72,7 @@ export default function Menu() {
     price: '',
     category: 'Principales',
     description: '',
+    station_id: null,
     recipe_items: [] 
   });
 
@@ -118,6 +122,7 @@ export default function Menu() {
       price: '',
       category: 'Principales',
       description: '',
+      station_id: null,
       recipe_items: []
     });
   };
@@ -251,6 +256,22 @@ export default function Menu() {
                         <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Breve Descripción</label>
                         <input type="text" placeholder="Ej. Sabrosa hamburguesa..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
                     </div>
+               </div>
+
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Estación de Cocina (KDS)</label>
+                    <select
+                      value={formData.station_id ?? ''}
+                      onChange={(e) => setFormData({...formData, station_id: e.target.value ? parseInt(e.target.value) : null})}
+                    >
+                      <option value="">Sin estación asignada</option>
+                      {stations.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                      El pedido aparecerá automáticamente en la pantalla de esta estación.
+                    </span>
                </div>
 
                <div style={{ background: '#F8FAFC', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--surface-border)' }}>

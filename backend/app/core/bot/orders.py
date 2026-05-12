@@ -10,26 +10,40 @@ from app.db import models
 class OrderService:
     @staticmethod
     def send_to_internal_software(db: Session, customer: models.BotCustomer, session: models.BotSession):
-        """Converts the bot session cart into an actual restaurant Order"""
+        """Converts the bot session cart into an actual restaurant Order.
+
+        KDS logic: each OrderItem inherits station_id from its MenuItem.
+        """
         cart = session.cart_data or {}
         items = cart.get("items", [])
 
         if not items:
             return False
 
-        # Get the first active Station for this organization
-        station = db.query(models.Station).filter(
+        # Build station_id lookup: name → station_id from the MenuItem catalogue
+        item_names = [(it.get("name") or "").strip() for it in items if (it.get("name") or "").strip()]
+        station_by_name: dict[str, int | None] = {}
+        if item_names:
+            db_menu = (
+                db.query(models.MenuItem.name, models.MenuItem.station_id)
+                .filter(
+                    models.MenuItem.name.in_(item_names),
+                    models.MenuItem.organization_id == session.organization_id,
+                )
+                .all()
+            )
+            station_by_name = {row.name: row.station_id for row in db_menu}
+
+        # Order-level station: first active station of the org (fallback)
+        default_station = db.query(models.Station).filter(
             models.Station.is_active.is_(True),
             models.Station.organization_id == session.organization_id,
         ).first()
-        station_id = station.id if station else None
+        order_station_id = default_station.id if default_station else None
 
-        # Build the client name including the bot customer name if available
+        # Build client name
         client_name = cart.get("customer_name") or customer.name or None
-        if client_name:
-            display_name = client_name
-        else:
-            display_name = f"Bot ({customer.channel_user_id})"
+        display_name = client_name if client_name else f"Bot ({customer.channel_user_id})"
 
         delivery_address = (cart.get("address") or "").strip() or None
         notes            = (cart.get("notes")   or "").strip() or None
@@ -38,7 +52,7 @@ class OrderService:
             client_name=display_name,
             status="pending",
             total=cart.get("total", 0.0),
-            station_id=station_id,
+            station_id=order_station_id,
             organization_id=session.organization_id,
             delivery_address=delivery_address,
             notes=notes,
@@ -53,12 +67,15 @@ class OrderService:
                 continue
             qty = int(it.get("qty") or 1)
             item_note = (it.get("note") or "").strip() or None
+            item_station_id = station_by_name.get(name)  # None si no tiene estación asignada
             db.add(
                 models.OrderItem(
                     order_id=new_order.id,
                     product_name=name,
                     quantity=qty,
                     note=item_note,
+                    station_id=item_station_id,
+                    item_status="pending",
                 )
             )
             lines.append((name, qty))

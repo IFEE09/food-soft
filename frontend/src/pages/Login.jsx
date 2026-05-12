@@ -90,14 +90,19 @@ export default function Login() {
 
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img 
-            src="/src/assets/omnikook-logo.png" 
-            alt="OMNIKOOK" 
+            src="/omnikook-logo.png" 
+            alt="omnikook isotipo" 
             style={{ 
-              marginBottom: '1.5rem'
+              width: '72px',
+              height: '72px',
+              objectFit: 'contain',
+              marginBottom: '1.25rem',
+              display: 'block',
+              margin: '0 auto 1.25rem auto'
             }} 
           />
-          <h1 style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.2rem', letterSpacing: '0.02em' }}>
-            omnikook
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.2rem', letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif' }}>
+            <span style={{ color: '#C8FF00' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
             Unify the kitchen. Rule the chat.
