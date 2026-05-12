@@ -1,229 +1,317 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Trash2 } from 'lucide-react';
+import { Send, Bot, User, RefreshCw, Zap } from 'lucide-react';
 import { apiClient } from '../api/client';
 
-export default function ChatSimulator() {
-  const [messages, setMessages] = useState([
-    { role: 'system', text: 'Simulador iniciado. Escribe un mensaje para interactuar con el BotEngine de omnikook.' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-  
-  const organizationId = localStorage.getItem('organizationId') || 1;
+// ── Extrae texto legible de cualquier mensaje del engine ──────────────────
+// El engine devuelve: { action: 'SEND_TEXT', payload: { type, text/image/... } }
+function parseEngineMessage(msg) {
+  const payload = msg.payload || msg;
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Texto WhatsApp: { type: 'text', text: { body: '...' } }
+  if (payload.type === 'text' && payload.text?.body)
+    return { type: 'text', text: payload.text.body };
+
+  // Texto Messenger: { message: { text: '...' } }
+  if (payload.message?.text)
+    return { type: 'text', text: payload.message.text };
+
+  // Imagen WhatsApp: { type: 'image', image: { link, caption } }
+  if (payload.type === 'image' && payload.image?.link)
+    return { type: 'image', url: payload.image.link, caption: payload.image.caption || '' };
+
+  // Imagen Messenger: { message: { attachment: { type: 'image', payload: { url } } } }
+  if (payload.message?.attachment?.type === 'image')
+    return { type: 'image', url: payload.message.attachment.payload?.url, caption: '' };
+
+  // Interactivo WhatsApp: { type: 'interactive', interactive: { body: { text }, action: { buttons } } }
+  if (payload.type === 'interactive') {
+    const body = payload.interactive?.body?.text || '';
+    const buttons = payload.interactive?.action?.buttons?.map(b => b.reply?.title || b.title) || [];
+    const list = payload.interactive?.action?.sections?.flatMap(s => s.rows?.map(r => r.title) || []) || [];
+    const opts = [...buttons, ...list];
+    return {
+      type: 'text',
+      text: body + (opts.length ? '\n\n' + opts.map((o, i) => `[${i + 1}] ${o}`).join('\n') : '')
+    };
+  }
+
+  // Fallback
+  return { type: 'text', text: JSON.stringify(payload, null, 2) };
+}
+
+// ── Burbuja de mensaje ────────────────────────────────────────────────────
+function MessageBubble({ msg }) {
+  if (msg.role === 'system') {
+    return (
+      <div style={{ textAlign: 'center', padding: '0.25rem 0' }}>
+        <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+          {msg.text}
+        </span>
+      </div>
+    );
+  }
+
+  const isUser = msg.role === 'user';
+  return (
+    <div style={{ display: 'flex', flexDirection: isUser ? 'row-reverse' : 'row', gap: '0.75rem', alignItems: 'flex-end' }}>
+      <div style={{
+        width: '30px', height: '30px', borderRadius: '3px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: isUser ? 'var(--surface-color)' : 'rgba(200,255,0,0.1)',
+        border: `1px solid ${isUser ? 'var(--surface-border)' : 'rgba(200,255,0,0.3)'}`,
+        color: isUser ? 'var(--text-secondary)' : 'var(--success-color)'
+      }}>
+        {isUser ? <User size={14} /> : <Bot size={14} />}
+      </div>
+
+      <div style={{
+        maxWidth: '72%',
+        background: isUser ? 'var(--surface-color)' : '#111',
+        border: `1px solid ${isUser ? 'var(--surface-border)' : 'rgba(200,255,0,0.15)'}`,
+        borderRadius: isUser ? '8px 2px 8px 8px' : '2px 8px 8px 8px',
+        padding: '0.7rem 0.9rem',
+        color: 'var(--text-primary)',
+        fontSize: '0.88rem',
+        lineHeight: 1.55,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word'
+      }}>
+        {msg.type === 'image' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <img src={msg.url} alt="menu" style={{ maxWidth: '100%', borderRadius: '4px', border: '1px solid var(--surface-border)' }} />
+            {msg.caption && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{msg.caption}</span>}
+          </div>
+        ) : msg.text}
+        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.35rem', textAlign: isUser ? 'left' : 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+          {msg.time}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────
+function TypingIndicator() {
+  return (
+    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+      <div style={{
+        width: '30px', height: '30px', borderRadius: '3px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)', color: 'var(--success-color)'
+      }}>
+        <Bot size={14} />
+      </div>
+      <div style={{
+        padding: '0.7rem 1rem', background: '#111', border: '1px solid rgba(200,255,0,0.15)',
+        borderRadius: '2px 8px 8px 8px', display: 'flex', gap: '0.3rem', alignItems: 'center'
+      }}>
+        {[0, 0.2, 0.4].map((delay, i) => (
+          <span key={i} style={{
+            width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)',
+            animation: `dotBounce 1.2s ${delay}s ease-in-out infinite`
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────
+export default function ChatSimulator() {
+  const organizationId = parseInt(localStorage.getItem('organizationId') || '1', 10);
+  const now = () => new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+  const [messages, setMessages] = useState([
+    { role: 'system', text: `SIMULATOR_READY · org_id=${organizationId} · channel=whatsapp` }
+  ]);
+  const [input, setInput]         = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId]               = useState(() => `sim-${Date.now()}`);
+  const messagesEndRef            = useRef(null);
+  const inputRef                  = useRef(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
+  const addMessage = (role, text, extra = {}) => {
+    setMessages(prev => [...prev, { role, text, time: now(), ...extra }]);
+  };
 
   const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
+    e?.preventDefault();
     const userText = input.trim();
+    if (!userText || isLoading) return;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+    addMessage('user', userText);
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post('/bot/mock', {
+      const res = await apiClient.post('/bot/mock', {
         channel: 'whatsapp',
-        channel_user_id: 'simulator-user-01',
-        organization_id: parseInt(organizationId, 10),
-        text: userText
+        channel_user_id: sessionId,
+        organization_id: organizationId,
+        text: userText,
       });
 
-      // Response contains a list of messages sent back by the bot
-      // e.g. { messages: [{ type: 'text', text: { body: 'Hola' } }, ... ] }
-      const botReplies = response.data.messages || [];
-      
-      if (botReplies.length === 0) {
-        setMessages(prev => [...prev, { role: 'bot', text: 'Silencio (no hubo respuesta del bot)' }]);
+      // Backend devuelve { outbound_messages: [ { action, payload } ] }
+      const outbound = res.data?.outbound_messages || res.data?.messages || [];
+
+      if (outbound.length === 0) {
+        addMessage('bot', '…');
       } else {
-        botReplies.forEach(reply => {
-          let replyText = '';
-          if (reply.type === 'text') {
-            replyText = reply.text.body;
-          } else if (reply.type === 'interactive') {
-            replyText = `[Interactivo: ${reply.interactive?.type}] ` + 
-                        (reply.interactive?.body?.text || '') + 
-                        "\nBotones: " + (reply.interactive?.action?.buttons?.map(b => b.reply.title).join(', ') || '');
-          } else if (reply.type === 'image') {
-            replyText = `[Imagen enviada: ${reply.image.link}]`;
-          } else if (reply.type === 'document') {
-            replyText = `[Documento enviado: ${reply.document.link}]`;
+        outbound.forEach(msg => {
+          const parsed = parseEngineMessage(msg);
+          if (parsed.type === 'image') {
+            setMessages(prev => [...prev, { role: 'bot', type: 'image', url: parsed.url, caption: parsed.caption, time: now() }]);
           } else {
-            replyText = `[Mensaje tipo: ${reply.type}]`;
+            addMessage('bot', parsed.text);
           }
-          setMessages(prev => [...prev, { role: 'bot', text: replyText }]);
         });
       }
-    } catch (error) {
-      console.error("Error calling mock endpoint:", error);
-      setMessages(prev => [...prev, { 
-        role: 'system', 
-        text: `Error de conexión: ${error.response?.data?.detail || error.message}` 
-      }]);
+    } catch (err) {
+      const detail = err.response?.data?.detail || err.message;
+      addMessage('system', `⚠ Error: ${detail}`);
     } finally {
       setIsLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
   const clearChat = () => {
-    setMessages([{ role: 'system', text: 'Chat limpiado.' }]);
+    setMessages([{ role: 'system', text: `Chat reiniciado · org_id=${organizationId} · nueva sesión` }]);
   };
 
+  const quickReplies = ['Hola', 'Ver menú', 'Quiero pedir', 'Mi carrito', 'Cancelar'];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)', background: 'var(--bg-primary)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 52px - 3.5rem)', maxHeight: '820px', minHeight: '500px' }}>
+
       {/* Header */}
-      <div style={{ 
-        padding: '1rem 1.5rem', 
-        background: 'var(--surface-color)', 
-        border: '1px solid var(--surface-border)', 
-        borderRadius: '2px 2px 0 0',
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center'
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0.85rem 1.25rem',
+        background: 'var(--surface-color)', border: '1px solid var(--surface-border)',
+        borderRadius: '6px 6px 0 0'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ padding: '0.4rem', background: 'var(--success-bg)', color: 'var(--success-color)', borderRadius: '2px' }}>
-            <Bot size={20} />
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '4px',
+            background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)'
+          }}>
+            <Zap size={18} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Simulator</h2>
-            <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace' }}>Bypassing META API</p>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Bot Simulator</div>
+            <div className="mono" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
+              channel=whatsapp · org_id={organizationId}
+            </div>
           </div>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+            padding: '0.15rem 0.5rem', borderRadius: '20px',
+            background: 'rgba(200,255,0,0.1)', border: '1px solid rgba(200,255,0,0.3)',
+            color: 'var(--success-color)', fontSize: '0.62rem', fontWeight: 700
+          }}>
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success-color)', animation: 'pulse-accent 2s infinite' }} />
+            ONLINE
+          </span>
         </div>
-        <button 
-          onClick={clearChat}
-          style={{ 
-            background: 'none', border: '1px solid var(--surface-border)', 
-            color: 'var(--text-secondary)', padding: '0.5rem 0.75rem', 
-            borderRadius: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem',
-            fontSize: '0.75rem', fontWeight: 600, transition: 'all 0.15s'
-          }}
-          onMouseOver={e => { e.currentTarget.style.color = 'var(--danger-color)'; e.currentTarget.style.borderColor = 'var(--danger-color)'; }}
-          onMouseOut={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--surface-border)'; }}
+        <button onClick={clearChat} style={{
+          display: 'flex', alignItems: 'center', gap: '0.35rem',
+          padding: '0.35rem 0.75rem', borderRadius: '4px',
+          border: '1px solid var(--surface-border)', background: 'transparent',
+          color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
+        }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger-color)'; e.currentTarget.style.borderColor = 'var(--danger-color)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--surface-border)'; }}
         >
-          <Trash2 size={14} /> Clear
+          <RefreshCw size={13} /> Reset
         </button>
       </div>
 
-      {/* Messages */}
-      <div style={{ 
-        flex: 1, 
-        overflowY: 'auto', 
-        padding: '1.5rem', 
-        borderLeft: '1px solid var(--surface-border)',
-        borderRight: '1px solid var(--surface-border)',
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '1.25rem' 
+      {/* Messages area */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '1.25rem',
+        background: 'var(--bg-color)',
+        border: '1px solid var(--surface-border)', borderTop: 'none', borderBottom: 'none',
+        display: 'flex', flexDirection: 'column', gap: '1rem'
       }}>
-        {messages.map((msg, idx) => (
-          <div key={idx} style={{ 
-            display: 'flex', 
-            flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-            gap: '1rem',
-            alignItems: 'flex-start'
-          }}>
-            {/* Avatar */}
-            {msg.role !== 'system' && (
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '2px', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: msg.role === 'user' ? 'var(--surface-color)' : 'var(--success-bg)',
-                border: '1px solid',
-                borderColor: msg.role === 'user' ? 'var(--surface-border)' : 'var(--success-border)',
-                color: msg.role === 'user' ? 'var(--text-secondary)' : 'var(--success-color)'
-              }}>
-                {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
-              </div>
-            )}
-            
-            {/* Bubble */}
-            <div style={{ 
-              maxWidth: '75%',
-              background: msg.role === 'user' ? 'var(--surface-color)' : (msg.role === 'system' ? 'transparent' : '#141414'),
-              border: msg.role === 'system' ? 'none' : '1px solid var(--surface-border)',
-              padding: msg.role === 'system' ? '0' : '0.85rem 1rem',
-              borderRadius: '2px',
-              color: msg.role === 'system' ? 'var(--text-secondary)' : 'var(--text-primary)',
-              fontSize: '0.9rem',
-              fontFamily: msg.role === 'system' ? 'JetBrains Mono, monospace' : 'Inter, sans-serif',
-              textAlign: msg.role === 'system' ? 'center' : 'left',
-              width: msg.role === 'system' ? '100%' : 'auto',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {msg.text}
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div style={{ 
-              width: '32px', height: '32px', borderRadius: '2px', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--success-bg)', border: '1px solid var(--success-border)', color: 'var(--success-color)'
-            }}>
-              <Bot size={16} />
-            </div>
-            <div style={{ 
-              padding: '0.85rem 1rem', background: '#141414', border: '1px solid var(--surface-border)',
-              borderRadius: '2px', color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', gap: '0.4rem'
-            }}>
-              <span className="dot-typing" />
-              Procesando...
-            </div>
-          </div>
-        )}
+        {messages.map((msg, idx) => <MessageBubble key={idx} msg={msg} />)}
+        {isLoading && <TypingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div style={{ 
-        padding: '1.25rem', 
-        background: 'var(--surface-color)', 
-        border: '1px solid var(--surface-border)', 
-        borderRadius: '0 0 2px 2px'
+      {/* Quick replies */}
+      <div style={{
+        display: 'flex', gap: '0.4rem', flexWrap: 'wrap', padding: '0.6rem 1rem',
+        background: 'var(--surface-color)',
+        borderLeft: '1px solid var(--surface-border)', borderRight: '1px solid var(--surface-border)'
       }}>
-        <form onSubmit={handleSend} style={{ display: 'flex', gap: '0.75rem' }}>
-          <input 
-            type="text" 
+        {quickReplies.map(q => (
+          <button key={q} onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 0); }} style={{
+            padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 600,
+            border: '1px solid var(--surface-border)', background: 'transparent',
+            color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.15s'
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--success-color)'; e.currentTarget.style.color = 'var(--success-color)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--surface-border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div style={{
+        padding: '0.85rem 1rem',
+        background: 'var(--surface-color)',
+        border: '1px solid var(--surface-border)', borderTop: 'none',
+        borderRadius: '0 0 6px 6px'
+      }}>
+        <form onSubmit={handleSend} style={{ display: 'flex', gap: '0.6rem' }}>
+          <input
+            ref={inputRef}
+            type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Escribe un mensaje al bot (ej. 'Quiero pedir una pizza')..."
-            style={{ 
-              flex: 1, height: '48px', padding: '0 1.25rem', fontSize: '0.9rem',
-              background: 'var(--bg-primary)', border: '1px solid var(--surface-border)', borderRadius: '2px',
-              color: 'var(--text-primary)'
-            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Escribe un mensaje al bot… (Enter para enviar)"
             disabled={isLoading}
+            autoFocus
+            style={{
+              flex: 1, height: '44px', padding: '0 1rem', fontSize: '0.88rem',
+              background: 'var(--bg-color)', border: '1px solid var(--surface-border)',
+              borderRadius: '4px', color: 'var(--text-primary)', outline: 'none'
+            }}
           />
-          <button 
-            type="submit" 
-            className="btn-primary" 
-            style={{ width: '48px', height: '48px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            disabled={isLoading || !input.trim()}
-          >
-            <Send size={18} />
+          <button type="submit" disabled={isLoading || !input.trim()} style={{
+            width: '44px', height: '44px', borderRadius: '4px',
+            background: input.trim() && !isLoading ? 'var(--success-color)' : 'var(--surface-color)',
+            color: input.trim() && !isLoading ? '#000' : 'var(--text-secondary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+            transition: 'all 0.2s', border: '1px solid var(--surface-border)', flexShrink: 0
+          }}>
+            <Send size={16} />
           </button>
         </form>
       </div>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .dot-typing {
-          animation: dotTyping 1.5s infinite linear;
+
+      <style>{`
+        @keyframes dotBounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-5px); opacity: 1; }
         }
-        @keyframes dotTyping {
-          0% { opacity: 0.2; }
-          20% { opacity: 1; }
-          100% { opacity: 0.2; }
-        }
-      `}} />
+      `}</style>
     </div>
   );
 }
