@@ -19,7 +19,8 @@ import {
   FileText,
   Monitor,
   TableProperties,
-  CalendarDays
+  CalendarDays,
+  MessageSquare
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -142,6 +143,7 @@ export default function DashboardLayout() {
               <NavItem path="/dashboard/pos-counter" icon={Monitor} label="POS Mostrador" />
               <NavItem path="/dashboard/pos-table" icon={TableProperties} label="POS Mesas" />
               <NavItem path="/dashboard/reservations" icon={CalendarDays} label="Reservaciones" />
+              <NavItem path="/dashboard/chat-simulator" icon={MessageSquare} label="Bot Simulator" />
               <div style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontWeight: 800, padding: '0.75rem 0.75rem 0.25rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>GESTIÓN</div>
               <NavItem path="/dashboard/menu" icon={Utensils} label="Menú Platillos" />
               <NavItem path="/dashboard/supplies" icon={Package} label="Stock de Cocina" />
@@ -182,6 +184,7 @@ export default function DashboardLayout() {
     if (isActive('/dashboard/pos-counter')) return { title: 'POS Mostrador', sub: `Toma de pedidos en persona · ${currentKitchenName}` };
     if (isActive('/dashboard/pos-table')) return { title: 'POS Mesas', sub: `Vista de mesas · ${currentKitchenName}` };
     if (isActive('/dashboard/reservations')) return { title: 'Reservaciones', sub: `Agenda de reservas · ${currentKitchenName}` };
+    if (isActive('/dashboard/chat-simulator')) return { title: 'Chat Simulator', sub: 'Prueba la lógica del BotEngine localmente' };
     return { title: 'omnikook', sub: 'Unify the kitchen. Rule the chat.' };
   };
 

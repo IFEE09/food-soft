@@ -23,6 +23,7 @@ const POSCounter          = lazy(() => import('./pages/POSCounter'));
 const POSTable            = lazy(() => import('./pages/POSTable'));
 const Reservations        = lazy(() => import('./pages/Reservations'));
 const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy'));
+const ChatSimulator       = lazy(() => import('./pages/ChatSimulator'));
 
 import { NotificationProvider } from './components/NotificationProvider';
 
@@ -108,6 +109,9 @@ function App() {
                 } />
                 <Route path="reservations" element={
                   <RoleRoute allowed={['owner', 'receptionist']}><Reservations /></RoleRoute>
+                } />
+                <Route path="chat-simulator" element={
+                  <RoleRoute allowed={['owner', 'receptionist', 'cook']}><ChatSimulator /></RoleRoute>
                 } />
               </Route>
 
