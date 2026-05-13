@@ -24,7 +24,7 @@ const ENTITY_LABELS = {
   supply: 'Insumo',
   menu_item: 'Platillo',
   order: 'Orden',
-  kitchen: 'Cocina',
+  kitchen: 'Sucursal',
   user: 'Usuario',
   auth: 'Autenticación',
 };
@@ -127,7 +127,7 @@ export default function ActivityLogs() {
               <option value="supply">Insumos</option>
               <option value="menu_item">Platillos</option>
               <option value="order">Órdenes</option>
-              <option value="kitchen">Cocinas</option>
+              <option value="kitchen">Sucursales</option>
               <option value="user">Usuarios</option>
               <option value="auth">Autenticación</option>
             </select>

@@ -56,10 +56,10 @@ export default function ReceptionDashboard() {
     return (
       <div className="empty-state" style={{ minHeight: '60vh' }}>
         <Building2 size={48} className="empty-state-icon" />
-        <p className="empty-state-title">Selecciona una cocina</p>
-        <p className="empty-state-desc">Para gestionar la recepción, primero elige una sucursal desde el Panel de Cocinas.</p>
+        <p className="empty-state-title">Selecciona una sucursal</p>
+        <p className="empty-state-desc">Para gestionar la recepción, primero elige una sucursal activa.</p>
         <button onClick={() => navigate('/dashboard/kitchen')} className="btn-primary" style={{ marginTop: '0.5rem' }}>
-          Ir al Panel de Cocinas
+          Ir a Sucursales
         </button>
       </div>
     );
@@ -69,10 +69,10 @@ export default function ReceptionDashboard() {
     return (
       <div className="empty-state" style={{ minHeight: '60vh' }}>
         <AlertCircle size={48} className="empty-state-icon" />
-        <p className="empty-state-title">Sin estaciones configuradas</p>
-        <p className="empty-state-desc">Esta cocina no tiene estaciones (ej. Cocina Caliente, Fríos). Configúralas primero.</p>
+        <p className="empty-state-title">Sin áreas configuradas</p>
+        <p className="empty-state-desc">Esta sucursal no tiene áreas de trabajo (ej. Parrilla, Barra, Fríos). Confúguralas primero.</p>
         <button onClick={() => navigate('/dashboard/kitchen')} className="btn-primary" style={{ marginTop: '0.5rem' }}>
-          Configurar Estaciones
+          Configurar Áreas
         </button>
       </div>
     );
@@ -112,7 +112,7 @@ export default function ReceptionDashboard() {
         station_id: selectedStation ? parseInt(selectedStation) : null,
         items: orderItems.map(i => ({ product_name: i.product_name, quantity: i.quantity }))
       });
-      showAlert('Orden enviada', `Orden de "${clientName || 'Sin nombre'}" enviada a cocina.`, 'success');
+      showAlert('Orden enviada', `Orden de "${clientName || 'Sin nombre'}" enviada a la sucursal.`, 'success');
       fetchData();
       resetOrderForm();
       setIsModalOpen(false);
@@ -449,7 +449,7 @@ export default function ReceptionDashboard() {
               )}
 
               <button type="submit" className="btn-primary" style={{ height: '48px', gap: '0.5rem' }}>
-                <Send size={16} /> Enviar a Cocina
+                <Send size={16} /> Enviar orden
               </button>
             </form>
           </div>

@@ -11,9 +11,9 @@ const STEPS = [
   {
     id: 'kitchen',
     icon: ChefHat,
-    title: 'Crea tu primera cocina',
-    desc: 'Configura las sucursales o cocinas de tu restaurante.',
-    cta: 'Ir a Cocinas',
+    title: 'Crea tu primera sucursal',
+    desc: 'Registra la ubicación física de tu negocio y sus áreas de trabajo.',
+    cta: 'Ir a Sucursales',
     path: '/dashboard/kitchen',
   },
   {
@@ -72,7 +72,7 @@ export default function OnboardingChecklist({ completedSteps = [] }) {
           </h2>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
             {allDone
-              ? 'Tu restaurante está completamente configurado.'
+              ? 'Tu negocio está completamente configurado.'
               : `${completedSteps.length} de ${STEPS.length} pasos completados`}
           </p>
         </div>

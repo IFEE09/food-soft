@@ -301,31 +301,95 @@ export default function KitchenDashboard() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="mono" style={{ fontSize: '1.1rem', fontWeight: 800 }}>PRODUCTION_SITES</h2>
-          <button onClick={() => { setModalType('kitchen'); setIsModalOpen(true); }} className="btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
-            + REGISTRAR COCINA
+          <div>
+            <h1 className="page-title">Mis Sucursales</h1>
+            <p className="page-subtitle">Selecciona una sucursal para gestionar sus áreas y pedidos</p>
+          </div>
+          <button onClick={() => { setModalType('kitchen'); setIsModalOpen(true); }} className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
+            + Nueva Sucursal
           </button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
           {kitchens.map(k => (
-            <div key={k.id} onClick={() => handleSelectKitchen(k)} className="glass-panel"
-              style={{ padding: '1.75rem', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', borderLeft: '4px solid var(--primary-color)' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(26, 86, 219, 0.12)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+            <div
+              key={k.id}
+              onClick={() => handleSelectKitchen(k)}
+              style={{
+                background: 'var(--surface-color)',
+                border: '1px solid var(--surface-border)',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent-border)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--surface-border)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              <ChefHat size={28} style={{ marginBottom: '0.75rem', color: 'var(--primary-color)' }} />
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>{k.name}</h3>
-              <p style={{ margin: '0.4rem 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{k.address || 'Ubicación remota activa'}</p>
-              <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success-color)' }}></span>
-                <span className="mono" style={{ fontSize: '0.65rem', fontWeight: 700 }}>STATE::ONLINE</span>
+              {/* Ícono de sucursal */}
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px',
+                background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: '1rem',
+              }}>
+                <Building2 size={22} color="var(--accent-blue)" />
+              </div>
+              {/* Jerarquía: etiqueta Sucursal */}
+              <div style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-tertiary)', marginBottom: '0.25rem' }}>Sucursal</div>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{k.name}</h3>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{k.address || 'Sin dirección registrada'}</p>
+              {/* Estado online */}
+              <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success-color)', boxShadow: '0 0 0 2px var(--success-bg)' }} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success-color)' }}>En línea</span>
               </div>
             </div>
           ))}
           {kitchens.length === 0 && !loading && (
-            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
-              <p>No hay cocinas registradas para este restaurante.</p>
+            <div style={{ gridColumn: '1/-1' }} className="empty-state">
+              {/* Diagrama de jerarquía */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                marginBottom: '1.5rem', padding: '1rem 1.5rem',
+                background: 'var(--neutral-bg)', borderRadius: '12px',
+                border: '1px solid var(--surface-border)',
+              }}>
+                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.25rem' }}>
+                    <Building2 size={18} color="var(--accent-blue)" />
+                  </div>
+                  <span style={{ fontWeight: 600 }}>Marca</span>
+                </div>
+                <div style={{ color: 'var(--text-tertiary)', fontSize: '1rem' }}>→</div>
+                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.25rem' }}>
+                    <Building2 size={18} color="var(--warning-color)" />
+                  </div>
+                  <span style={{ fontWeight: 600 }}>Sucursal</span>
+                </div>
+                <div style={{ color: 'var(--text-tertiary)', fontSize: '1rem' }}>→</div>
+                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--success-bg)', border: '1px solid var(--success-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.25rem' }}>
+                    <ChefHat size={18} color="var(--success-color)" />
+                  </div>
+                  <span style={{ fontWeight: 600 }}>Área</span>
+                </div>
+              </div>
+              <p className="empty-state-title">Aún no tienes sucursales</p>
+              <p className="empty-state-desc">Crea tu primera sucursal para empezar a gestionar pedidos, menú y equipo.</p>
+              <button onClick={() => { setModalType('kitchen'); setIsModalOpen(true); }} className="btn-primary" style={{ marginTop: '0.5rem' }}>
+                + Crear primera sucursal
+              </button>
             </div>
           )}
         </div>
@@ -334,13 +398,13 @@ export default function KitchenDashboard() {
           <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '400px' }}>
               <div className="modal-header">
-                <h2 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Nueva Cocina</h2>
+                <h2 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Nueva Sucursal</h2>
                 <button onClick={() => setIsModalOpen(false)} className="modal-close">×</button>
               </div>
               <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nombre de Cocina</label>
-                  <input type="text" placeholder="Ej. Cocina Caliente" value={newName} onChange={e => setNewName(e.target.value)} required autoFocus />
+                  <label htmlFor="kitchen-name" style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nombre de la sucursal</label>
+                  <input id="kitchen-name" type="text" placeholder="Ej. Sucursal Centro, Polanco, Plaza..." value={newName} onChange={e => setNewName(e.target.value)} required autoFocus />
                 </div>
                 <button type="submit" className="btn-primary" style={{ width: '100%' }}>Guardar</button>
               </form>
@@ -393,7 +457,7 @@ export default function KitchenDashboard() {
       {/* Header bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
         <button onClick={handleBackToSites} style={{ padding: '0.35rem 0.75rem', borderRadius: '3px', border: '1px solid var(--surface-border)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
-          ← Cocinas
+  ← Sucursales
         </button>
         <h2 className="mono" style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>{selectedKitchen.name}</h2>
 
@@ -423,7 +487,7 @@ export default function KitchenDashboard() {
             padding: '0.25rem 0.5rem', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 700,
             border: '1px dashed var(--success-color)', background: 'transparent',
             color: 'var(--success-color)', cursor: 'pointer'
-          }} title="Agregar estación"><Plus size={11} /></button>
+          }} title="Agregar área"><Plus size={11} /></button>
         </div>
 
         {/* Counters */}
@@ -495,13 +559,13 @@ export default function KitchenDashboard() {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
-              <h2 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Nueva Estación</h2>
+              <h2 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlusCircle size={18} /> Nueva Área</h2>
               <button onClick={() => setIsModalOpen(false)} className="modal-close">×</button>
             </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nombre de Estación</label>
-                <input type="text" placeholder="Ej. Cocina Caliente" value={newName} onChange={e => setNewName(e.target.value)} required autoFocus />
+                <label htmlFor="station-name" style={{ fontSize: '0.85rem', fontWeight: 600 }}>Nombre del área</label>
+                <input id="station-name" type="text" placeholder="Ej. Parrilla, Barra, Empaque, Fríos..." value={newName} onChange={e => setNewName(e.target.value)} required autoFocus />
               </div>
               <button type="submit" className="btn-primary" style={{ width: '100%' }}>Guardar</button>
             </form>

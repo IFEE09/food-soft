@@ -17,7 +17,7 @@ import {
 const ROLE_CONFIG = {
   owner: { label: 'SYSTEM_OWNER', color: '#0044FF', bg: 'rgba(0,68,255,0.1)', icon: ShieldCheck },
   receptionist: { label: 'RECEPTION_OFFICER', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: HeadphonesIcon },
-  cook: { label: 'KITCHEN_STAFF', color: 'var(--success-color)', bg: 'rgba(204,255,0,0.1)', icon: ChefHat },
+  cook: { label: 'Personal', color: 'var(--success-color)', bg: 'rgba(204,255,0,0.1)', icon: ChefHat },
 };
 
 export default function TeamManagement() {

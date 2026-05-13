@@ -196,7 +196,7 @@ export default function OwnerDashboard() {
           className="btn-secondary"
           style={{ gap: '0.375rem', fontSize: '0.875rem', padding: '0.5rem 1rem', minHeight: '38px' }}
         >
-          Ver cocinas <ArrowUpRight size={14} />
+          Ver sucursales <ArrowUpRight size={14} />
         </button>
       </div>
 

@@ -103,7 +103,7 @@ export default function DashboardLayout() {
     if (role === 'owner') {
       return [
         { path: '/dashboard/owner',          icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/dashboard/kitchen',        icon: Building2,       label: 'Cocinas' },
+        { path: '/dashboard/kitchen',        icon: Building2,       label: 'Sucursales' },
         { path: '/dashboard/chat-simulator', icon: MessageSquare,   label: 'Bot Simulator' },
         { path: '/dashboard/order-history',  icon: FileText,        label: 'Historial' },
         { path: '/dashboard/activity-logs',  icon: Activity,        label: 'Actividad' },
@@ -121,7 +121,7 @@ export default function DashboardLayout() {
       ];
     }
     return [
-      { path: '/dashboard/kitchen',          icon: Building2,    label: 'Cocinas' },
+      { path: '/dashboard/kitchen',          icon: Building2,    label: 'Sucursales' },
       { path: '/dashboard/chat-simulator',   icon: MessageSquare,label: 'Bot Simulator' },
       ...(isKitchenSelected ? [
         { path: '/dashboard/reception',      icon: ShoppingBag,  label: 'Recepción' },
@@ -312,26 +312,45 @@ export default function DashboardLayout() {
         </div>
       )}
 
-      {/* Kitchen context badge */}
+      {/* Sucursal activa badge — jerarquía visual Marca → Sucursal */}
       {currentKitchenId && (
-        <button
-          onClick={clearKitchenContext}
-          title="Cambiar sucursal"
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.375rem',
-            padding: '0.375rem 0.625rem', marginBottom: '0.5rem',
-            borderRadius: '8px',
-            border: '1px solid var(--accent-border)', background: 'var(--accent-subtle)',
-            color: 'var(--accent-blue)', fontSize: '0.75rem', fontWeight: 600,
-            cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit',
-          }}
-        >
-          <Building2 size={12} style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {currentKitchenName}
-          </span>
-          <X size={11} style={{ flexShrink: 0, opacity: 0.6 }} />
-        </button>
+        <div style={{ marginBottom: '0.5rem' }}>
+          {/* Etiqueta de jerarquía */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.3rem',
+            padding: '0 0.25rem 0.25rem',
+            fontSize: '0.625rem', fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            color: 'var(--text-tertiary)',
+          }}>
+            <ChevronRight size={9} />
+            Sucursal activa
+          </div>
+          <button
+            onClick={clearKitchenContext}
+            title="Cambiar sucursal"
+            aria-label={`Sucursal activa: ${currentKitchenName}. Clic para cambiar.`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.375rem',
+              padding: '0.4375rem 0.625rem',
+              borderRadius: '8px',
+              border: '1px solid var(--accent-border)', background: 'var(--accent-subtle)',
+              color: 'var(--accent-blue)', fontSize: '0.8125rem', fontWeight: 600,
+              cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            <div style={{
+              width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+              background: 'var(--success-color)',
+              boxShadow: '0 0 0 2px var(--success-bg)',
+            }} />
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {currentKitchenName}
+            </span>
+            <X size={11} style={{ flexShrink: 0, opacity: 0.5 }} />
+          </button>
+        </div>
       )}
 
       {/* Nav links */}

@@ -318,7 +318,7 @@ export default function Settings() {
                   ))}
                   <button 
                     onClick={async () => {
-                      const name = prompt('Nombre de la nueva estación:');
+                      const name = prompt('Nombre de la nueva área:');
                       if (name) {
                         await apiClient.post('/stations/', { name, kitchen_id: k.id });
                         fetchData();
@@ -334,13 +334,13 @@ export default function Settings() {
 
             {kitchens.length === 0 && (
               <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
-                <p>No has registrado ninguna cocina física todavía.</p>
+                <p>Aún no tienes sucursales registradas.</p>
               </div>
             )}
             
             <button 
               onClick={async () => {
-                const name = prompt('Nombre de la sucursal/cocina:');
+                const name = prompt('Nombre de la sucursal:');
                 if (name) {
                   await apiClient.post('/kitchens/', { name });
                   fetchData();
@@ -356,7 +356,7 @@ export default function Settings() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div>
               <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, marginBottom: '0.5rem' }}>Mis Restaurantes / Marcas</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Gestiona tu holding de dark kitchens desde un solo lugar.</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Gestiona todas tus sucursales desde un solo lugar.</p>
             </div>
 
             <form onSubmit={handleCreateOrg} style={{ 

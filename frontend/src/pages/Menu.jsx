@@ -57,10 +57,10 @@ export default function Menu() {
         </div>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Gestión de Menú Bloqueada</h2>
         <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0' }}>
-          Para configurar platillos y recetas, primero debes seleccionar una <b>sucursal activa</b> en el panel de cocinas.
+          Para configurar platillos y recetas, primero debes seleccionar una <b>sucursal activa</b> en el panel de sucursales.
         </p>
         <button onClick={() => navigate('/dashboard/kitchen')} className="btn-primary" style={{ marginTop: '1rem' }}>
-          Ir al Panel de Cocinas
+          Ir a Sucursales
         </button>
       </div>
     );
@@ -259,18 +259,18 @@ export default function Menu() {
                </div>
 
                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Estación de Cocina (KDS)</label>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Área de trabajo (KDS)</label>
                     <select
                       value={formData.station_id ?? ''}
                       onChange={(e) => setFormData({...formData, station_id: e.target.value ? parseInt(e.target.value) : null})}
                     >
-                      <option value="">Sin estación asignada</option>
+                      <option value="">Sin área asignada</option>
                       {stations.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
                     </select>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      El pedido aparecerá automáticamente en la pantalla de esta estación.
+                      El pedido aparecerá automáticamente en la pantalla de esta área.
                     </span>
                </div>
 
