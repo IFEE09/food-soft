@@ -200,14 +200,14 @@ export default function POSCounter() {
         onSync={syncQueue} onDequeue={dequeue} onClearQueue={clearQueue}
       />
 
-      <div style={{
+      <div className="pos-layout" style={{
         display: 'flex', height: 'calc(100vh - 80px)', gap: '0', overflow: 'hidden',
         marginTop: hasBanner ? '34px' : 0,
         transition: 'margin-top 0.2s',
       }}>
 
         {/* ── Panel izquierdo: Menú ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--surface-border)' }}>
+        <div className="pos-menu-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--surface-border)' }}>
 
           {/* Header */}
           <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -250,7 +250,7 @@ export default function POSCounter() {
             {isLoading ? (
               <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '3rem' }}>Cargando menú...</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
+              <div className="pos-menu-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
                 {filtered.map(item => {
                   const inCart = cart.filter(c => c.id === item.id).reduce((a, c) => a + c.qty, 0);
                   return (
@@ -286,7 +286,7 @@ export default function POSCounter() {
         </div>
 
         {/* ── Panel derecho: Carrito ── */}
-        <div style={{ width: '340px', display: 'flex', flexDirection: 'column', background: 'var(--surface-color)' }}>
+        <div className="pos-cart-panel" style={{ width: '340px', display: 'flex', flexDirection: 'column', background: 'var(--surface-color)' }}>
 
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <ShoppingCart size={16} style={{ color: 'var(--primary-color)' }} />

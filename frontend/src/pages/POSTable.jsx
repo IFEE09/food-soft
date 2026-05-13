@@ -337,8 +337,8 @@ export default function POSTable() {
       queue={queue} lastSyncAt={lastSyncAt}
       onSync={syncQueue} onDequeue={dequeue} onClearQueue={clearQueue}
     />
-    <div style={{ display: 'flex', height: 'calc(100vh - 80px)', gap: '0', overflow: 'hidden', marginTop: hasBanner ? '34px' : 0, transition: 'margin-top 0.2s' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--surface-border)' }}>
+    <div className="pos-layout" style={{ display: 'flex', height: 'calc(100vh - 80px)', gap: '0', overflow: 'hidden', marginTop: hasBanner ? '34px' : 0, transition: 'margin-top 0.2s' }}>
+      <div className="pos-menu-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--surface-border)' }}>
 
         {/* Header */}
         <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -371,7 +371,7 @@ export default function POSTable() {
 
         {/* Grid productos */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.25rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.65rem' }}>
+          <div className="pos-menu-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.65rem' }}>
             {filteredMenu.map(item => {
               const inCart = cart.filter(c => c.id === item.id).reduce((a, c) => a + c.qty, 0);
               return (
@@ -397,7 +397,7 @@ export default function POSTable() {
       </div>
 
       {/* ── Panel derecho: Carrito ── */}
-      <div style={{ width: '320px', display: 'flex', flexDirection: 'column', background: 'var(--surface-color)' }}>
+      <div className="pos-cart-panel" style={{ width: '320px', display: 'flex', flexDirection: 'column', background: 'var(--surface-color)' }}>
         <div style={{ padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)' }}>PEDIDO</span>
           {itemCount > 0 && (

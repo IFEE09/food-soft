@@ -1372,3 +1372,200 @@ button:active:not(:disabled) {
     animation: none !important;
   }
 }
+
+/* ==========================================
+   RESPONSIVE — MOBILE (≤ 768px)
+   Cubre: page-content, grids, tablas, modales,
+   stat-cards, POS layout, OnboardingChecklist
+   ========================================== */
+@media (max-width: 768px) {
+
+  /* ── Contenido principal ── */
+  .page-content {
+    padding: 1rem !important;
+  }
+
+  /* ── Grids de stat-cards: 1 columna en móvil ── */
+  .grid-4,
+  .grid-3,
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Stat card: valor más pequeño en móvil ── */
+  .stat-card-value {
+    font-size: 1.5rem;
+  }
+
+  /* ── Tablas: scroll horizontal en lugar de romper el layout ── */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Modales: full-width en móvil ── */
+  .modal-content {
+    max-width: 100% !important;
+    width: calc(100vw - 2rem) !important;
+    margin: 1rem !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  /* ── Grids de 2 columnas dentro de modales → 1 columna ── */
+  .modal-content .grid-2-col,
+  .modal-content [style*="gridTemplateColumns: '1fr 1fr'"],
+  .modal-content [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Botones de acción en modales: stack vertical ── */
+  .modal-actions {
+    flex-direction: column !important;
+  }
+
+  /* ── OnboardingChecklist: padding reducido ── */
+  .onboarding-checklist {
+    padding: 1rem !important;
+  }
+
+  /* ── Tabs con scroll horizontal ── */
+  .tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* ── Barra de búsqueda + acciones: stack vertical ── */
+  .toolbar-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .toolbar-row input[type="text"],
+  .toolbar-row input[type="search"] {
+    width: 100% !important;
+  }
+
+  /* ── POS layout: columna única (menú arriba, carrito abajo) ── */
+  .pos-layout {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .pos-menu-panel {
+    flex: none !important;
+    height: 55vh !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--surface-border) !important;
+  }
+
+  .pos-cart-panel {
+    width: 100% !important;
+    height: 45vh !important;
+  }
+
+  /* ── Grids de tarjetas de menú en POS: 2 columnas ── */
+  .pos-menu-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* ── Reservaciones: buscador full-width ── */
+  .reservations-search {
+    width: 100% !important;
+  }
+
+  /* ── OrderHistory: filtros en columna ── */
+  .order-history-filters {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  /* ── Gráfica de barras: scroll horizontal ── */
+  .bar-chart-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Tabla de historial de pedidos: scroll ── */
+  .order-history-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Toast: full-width en móvil ── */
+  .toast {
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: 1rem !important;
+    max-width: none !important;
+  }
+
+  /* ── Botones de acción en filas de tabla: más pequeños ── */
+  .table-actions {
+    gap: 0.25rem !important;
+  }
+
+  /* ── Header de página: stack vertical ── */
+  .page-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE — SMALL MOBILE (≤ 480px)
+   ========================================== */
+@media (max-width: 480px) {
+
+  /* ── POS: 1 columna en pantallas muy pequeñas ── */
+  .pos-menu-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Stat-card value: aún más compacto ── */
+  .stat-card-value {
+    font-size: 1.25rem;
+  }
+
+  /* ── Reducir padding en glass-panel ── */
+  .glass-panel {
+    padding: 1rem !important;
+  }
+
+  /* ── Modales: sin margen lateral ── */
+  .modal-content {
+    width: 100vw !important;
+    margin: 0 !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  .modal-overlay {
+    align-items: flex-end !important;
+  }
+}
+
+/* ==========================================
+   SAFE AREA — iPhone notch / Dynamic Island
+   ========================================== */
+.page-content {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+@supports (padding: max(0px)) {
+  .mobile-topbar {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  .pos-cart-panel,
+  .pos-menu-panel {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

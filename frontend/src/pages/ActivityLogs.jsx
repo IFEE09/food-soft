@@ -151,7 +151,7 @@ export default function ActivityLogs() {
           </div>
         </div>
 
-        <div style={{ width: '100%', overflowX: 'auto' }}>
+        <div className="table-responsive" style={{ width: '100%', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
             <thead>
               <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>

@@ -228,7 +228,7 @@ export default function Supplies() {
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
               <thead>
                 <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>
@@ -308,7 +308,7 @@ export default function Supplies() {
               <RefreshCw size={16} />
             </button>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
               <thead>
                 <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>

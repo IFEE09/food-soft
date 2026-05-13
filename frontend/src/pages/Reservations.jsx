@@ -238,7 +238,7 @@ export default function Reservations() {
 
         <div style={{ position: 'relative' }}>
           <Search size={13} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input type="text" placeholder="Buscar cliente..." style={{ paddingLeft: '28px', fontSize: '0.78rem', width: '200px' }} value={searchText} onChange={e => setSearchText(e.target.value)} />
+          <input type="text" placeholder="Buscar cliente..." className="reservations-search" style={{ paddingLeft: '28px', fontSize: '0.78rem', width: '200px' }} value={searchText} onChange={e => setSearchText(e.target.value)} />
         </div>
 
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem' }}>
@@ -269,7 +269,7 @@ export default function Reservations() {
           <p style={{ fontSize: '0.85rem' }}>Sin reservaciones para este día.</p>
         </div>
       ) : (
-        <div style={{ background: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: '4px', overflow: 'hidden' }}>
+        <div className="table-responsive" style={{ background: 'var(--surface-color)', border: '1px solid var(--surface-border)', borderRadius: '4px', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>
