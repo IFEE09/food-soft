@@ -39,6 +39,12 @@ class Organization(Base):
     facebook_page_id = Column(String, unique=True, index=True, nullable=True)
     # Meta Instagram: entry[].id del webhook de Instagram DM → organización
     instagram_page_id = Column(String, unique=True, index=True, nullable=True)
+    # Teléfono del repartidor que recibe el WhatsApp cuando un pedido está listo.
+    # Formato E.164 sin '+' (ej: '529993372150'). Nullable: si no está, no notifica.
+    delivery_phone = Column(String, nullable=True)
+    # URL pública de la imagen del menú que el bot envía a clientes nuevos.
+    # Si vacío, no se envía imagen y solo el texto del menú llega.
+    menu_image_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     users = relationship("User", secondary=user_organization_link, back_populates="organizations")
@@ -111,6 +117,7 @@ class Order(Base):
     notes = Column(String, nullable=True)              # notas especiales del pedido
 
     station_id = Column(Integer, ForeignKey("stations.id"), nullable=True)
+    kitchen_id = Column(Integer, ForeignKey("kitchens.id"), nullable=True, index=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     # Canal de origen del pedido: whatsapp | messenger | instagram | pos | table | call
     channel = Column(String, default="whatsapp", nullable=True, index=True)
@@ -123,6 +130,7 @@ class Order(Base):
 
     items = relationship("OrderItem", back_populates="order")
     station = relationship("Station", back_populates="orders")
+    kitchen = relationship("Kitchen")
     table = relationship("RestaurantTable", back_populates="orders")
 
 class OrderItem(Base):

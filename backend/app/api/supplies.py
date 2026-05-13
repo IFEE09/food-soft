@@ -26,7 +26,7 @@ def read_supplies(
     limit: int = 100,
 ) -> Any:
     """ Retrieve supplies for the user's organization. Optional filter by kitchen. """
-    query = db.query(models.Supply).filter(models.Supply.organization_id == current_user.organization_id)
+    query = db.query(models.Supply).filter(models.Supply.organization_id == current_user.active_organization_id)
     if kitchen_id:
         query = query.filter(models.Supply.kitchen_id == kitchen_id)
     return query.offset(skip).limit(limit).all()
@@ -41,7 +41,7 @@ def create_supply(
     supply_in: supply_schema.SupplyCreate,
 ) -> Any:
     """ Create new supply for the user's organization. """
-    if not current_user.organization_id:
+    if not current_user.active_organization_id:
         raise HTTPException(status_code=400, detail="Tu usuario no tiene una organización asignada. Por favor, contacta a soporte.")
 
     try:
@@ -53,7 +53,7 @@ def create_supply(
             min_quantity=supply_in.min_quantity,
             category=supply_in.category,
             kitchen_id=supply_in.kitchen_id,
-            organization_id=current_user.organization_id
+            organization_id=current_user.active_organization_id
         )
         db.add(supply)
         db.commit()

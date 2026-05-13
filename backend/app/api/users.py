@@ -23,7 +23,7 @@ def list_team_members(
 ) -> Any:
     """ List users in organization. Optional filter by kitchen. """
     query = db.query(models.User).filter(
-        models.User.organization_id == current_user.organization_id
+        models.User.organization_id == current_user.active_organization_id
     )
     if kitchen_id:
         query = query.filter(models.User.kitchen_id == kitchen_id)
@@ -52,7 +52,7 @@ def create_team_member(
         hashed_password=security.get_password_hash(user_in.password),
         role=user_in.role,
         is_active=True,
-        organization_id=current_user.organization_id,
+        organization_id=current_user.active_organization_id,
         kitchen_id=user_in.kitchen_id
     )
     db.add(new_user)
@@ -77,7 +77,7 @@ def delete_team_member(
     """ Owner deletes a team member from their organization. """
     user = db.query(models.User).filter(
         models.User.id == user_id,
-        models.User.organization_id == current_user.organization_id
+        models.User.organization_id == current_user.active_organization_id
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

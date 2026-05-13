@@ -25,7 +25,7 @@ def read_activity_logs(
 ) -> Any:
     """ Retrieve activity logs for the user's organization. """
     logs_query = db.query(models.ActivityLog)\
-              .filter(models.ActivityLog.organization_id == current_user.organization_id)
+              .filter(models.ActivityLog.organization_id == current_user.active_organization_id)
 
     if entity_type:
         logs_query = logs_query.filter(models.ActivityLog.entity_type == entity_type)

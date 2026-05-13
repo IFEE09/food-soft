@@ -78,6 +78,8 @@ def run_migrations():
         "ALTER TABLE kitchens ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE orders ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
         "ALTER TABLE orders ADD COLUMN station_id INTEGER REFERENCES stations(id)",
+        "ALTER TABLE orders ADD COLUMN kitchen_id INTEGER REFERENCES kitchens(id)",
+        "CREATE INDEX IF NOT EXISTS ix_orders_kitchen_id ON orders(kitchen_id)",
         # KDS: station_id en menu_items y order_items, item_status en order_items
         "ALTER TABLE menu_items ADD COLUMN station_id INTEGER REFERENCES stations(id)",
         "ALTER TABLE order_items ADD COLUMN station_id INTEGER REFERENCES stations(id)",
@@ -94,6 +96,8 @@ def run_migrations():
         "ALTER TABLE organizations ADD COLUMN whatsapp_phone_number_id VARCHAR UNIQUE",
         "ALTER TABLE organizations ADD COLUMN facebook_page_id VARCHAR UNIQUE",
         "ALTER TABLE organizations ADD COLUMN instagram_page_id VARCHAR UNIQUE",
+        "ALTER TABLE organizations ADD COLUMN delivery_phone VARCHAR",
+        "ALTER TABLE organizations ADD COLUMN menu_image_url VARCHAR",
         "ALTER TABLE bot_customers ADD COLUMN saved_name VARCHAR",
         "ALTER TABLE bot_customers ADD COLUMN saved_address VARCHAR",
         "ALTER TABLE orders ADD COLUMN delivery_address VARCHAR",

@@ -25,7 +25,7 @@ def read_stations(
 ) -> Any:
     """ Get stations for current organization. Optional filter by kitchen. """
     query = db.query(models.Station).filter(
-        models.Station.organization_id == current_user.organization_id
+        models.Station.organization_id == current_user.active_organization_id
     )
     if kitchen_id:
         query = query.filter(models.Station.kitchen_id == kitchen_id)
@@ -45,7 +45,7 @@ def create_station(
         name=station_in.name,
         is_active=station_in.is_active,
         kitchen_id=station_in.kitchen_id,
-        organization_id=current_user.organization_id
+        organization_id=current_user.active_organization_id
     )
     db.add(station)
     db.commit()

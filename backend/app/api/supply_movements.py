@@ -32,7 +32,7 @@ def list_movements(
 ) -> Any:
     """Lista movimientos de inventario de la organización, con filtros opcionales."""
     query = db.query(models.SupplyMovement).filter(
-        models.SupplyMovement.organization_id == current_user.organization_id
+        models.SupplyMovement.organization_id == current_user.active_organization_id
     )
     if supply_id:
         query = query.filter(models.SupplyMovement.supply_id == supply_id)
@@ -67,7 +67,7 @@ def restock_supply(
 
     supply = db.query(models.Supply).filter(
         models.Supply.id == data.supply_id,
-        models.Supply.organization_id == current_user.organization_id,
+        models.Supply.organization_id == current_user.active_organization_id,
     ).first()
     if not supply:
         raise HTTPException(status_code=404, detail="Insumo no encontrado.")
@@ -76,7 +76,7 @@ def restock_supply(
     supply.quantity = round(supply.quantity + data.quantity, 4)
     movement = models.SupplyMovement(
         supply_id=supply.id,
-        organization_id=current_user.organization_id,
+        organization_id=current_user.active_organization_id,
         movement_type="in",
         quantity=data.quantity,
         notes=data.notes or f"Recarga manual por {current_user.full_name}",
@@ -115,7 +115,7 @@ def adjust_supply(
 
     supply = db.query(models.Supply).filter(
         models.Supply.id == data.supply_id,
-        models.Supply.organization_id == current_user.organization_id,
+        models.Supply.organization_id == current_user.active_organization_id,
     ).first()
     if not supply:
         raise HTTPException(status_code=404, detail="Insumo no encontrado.")
@@ -124,7 +124,7 @@ def adjust_supply(
     supply.quantity = round(data.quantity, 4)
     movement = models.SupplyMovement(
         supply_id=supply.id,
-        organization_id=current_user.organization_id,
+        organization_id=current_user.active_organization_id,
         movement_type="adjust",
         quantity=abs(data.quantity - old_qty),
         notes=data.notes or f"Ajuste manual: {old_qty} → {data.quantity} {supply.unit}",

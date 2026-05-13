@@ -24,7 +24,7 @@ def read_kitchens(
 ) -> Any:
     """ Get all physical kitchens (locations) for current organization. """
     return db.query(models.Kitchen)\
-             .filter(models.Kitchen.organization_id == current_user.organization_id)\
+             .filter(models.Kitchen.organization_id == current_user.active_organization_id)\
              .offset(skip).limit(limit).all()
 
 @router.post("/", response_model=kitchen_schema.Kitchen)
@@ -41,7 +41,7 @@ def create_kitchen(
         name=kitchen_in.name,
         address=kitchen_in.address,
         is_active=kitchen_in.is_active,
-        organization_id=current_user.organization_id
+        organization_id=current_user.active_organization_id
     )
     db.add(kitchen)
     db.commit()

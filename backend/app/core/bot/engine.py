@@ -158,7 +158,10 @@ class BotEngine:
         session: models.BotSession, organization_id: int,
         greeting: str | None = None,
     ) -> list:
-        return _actions.show_menu(channel, sender_id, greeting=greeting)
+        # Cada organización puede tener su propia imagen del menú.
+        org = db.query(models.Organization).filter_by(id=organization_id).first()
+        menu_image_url = (getattr(org, "menu_image_url", None) or None) if org else None
+        return _actions.show_menu(channel, sender_id, greeting=greeting, menu_image_url=menu_image_url)
 
     @staticmethod
     def _execute_add_to_cart(

@@ -19,9 +19,12 @@ def get_owned_or_404(
     Fetch a record by id scoped to the current user's organization.
     Raises 404 if not found or not owned by the caller's org.
     """
+    # Usar active_organization_id (override via X-Organization-ID) si está disponible;
+    # cae a organization_id si el caller no pasó por get_current_user.
+    org_id = getattr(current_user, "active_organization_id", None) or current_user.organization_id
     obj = db.query(model).filter(
         model.id == entity_id,
-        model.organization_id == current_user.organization_id,
+        model.organization_id == org_id,
     ).first()
     if not obj:
         raise HTTPException(status_code=404, detail=not_found_detail)

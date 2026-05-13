@@ -32,7 +32,7 @@ def get_my_organization(
     current_user: models.User = Depends(require_owner),
 ) -> Any:
     # Usamos el organization_id "efectivo" resuelto por get_current_user
-    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.active_organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
     return org
@@ -75,7 +75,7 @@ def rotate_api_key(
 ) -> Any:
     """ Rotates the organization's API key for integrations. """
     # Usamos el ID efectivo
-    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.active_organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
 
@@ -105,7 +105,7 @@ def bind_whatsapp_phone_number_id(
 ):
     """Vincula el número de WhatsApp Business (multi-tenant en webhook Meta)."""
     # Usamos el ID efectivo
-    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.active_organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
 
@@ -164,7 +164,7 @@ def bind_facebook_page_id(
     current_user: models.User = Depends(require_owner),
 ):
     """Vincula el page_id de Facebook Messenger a esta organización."""
-    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.active_organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
 
@@ -204,7 +204,7 @@ def bind_instagram_page_id(
     current_user: models.User = Depends(require_owner),
 ):
     """Vincula el ig_id de Instagram DM a esta organización."""
-    org = db.query(models.Organization).filter(models.Organization.id == current_user.organization_id).first()
+    org = db.query(models.Organization).filter(models.Organization.id == current_user.active_organization_id).first()
     if not org:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
 

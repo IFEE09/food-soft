@@ -19,9 +19,6 @@ from app.schemas import order as order_schema
 
 logger = logging.getLogger(__name__)
 
-# Número fijo del repartidor (tercero que lleva la comida)
-_DELIVERY_PHONE = "529993372150"  # México: código 52 requerido por Meta API
-
 router = APIRouter()
 
 @router.get("/", response_model=list[order_schema.Order])
@@ -38,7 +35,7 @@ def read_orders(
     date_to: date | None = None,
 ) -> Any:
     """ Retrieve orders for organization with optional date filters. """
-    query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
+    query = db.query(models.Order).filter(models.Order.organization_id == current_user.active_organization_id)
     if status:
         query = query.filter(models.Order.status == status)
     if kitchen_id is not None:
@@ -63,7 +60,7 @@ def export_orders_csv(
     status: str | None = None,
 ) -> Any:
     """ Export orders as CSV with optional date and status filters. """
-    query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
+    query = db.query(models.Order).filter(models.Order.organization_id == current_user.active_organization_id)
     if status:
         query = query.filter(models.Order.status == status)
     if date_from:
@@ -109,7 +106,7 @@ def orders_summary(
     status: str | None = None,
 ) -> Any:
     """ Return daily breakdown of orders for charting. """
-    query = db.query(models.Order).filter(models.Order.organization_id == current_user.organization_id)
+    query = db.query(models.Order).filter(models.Order.organization_id == current_user.active_organization_id)
     if status:
         query = query.filter(models.Order.status == status)
     if date_from:
@@ -153,7 +150,7 @@ async def create_order(
     order_in: order_schema.OrderCreate,
 ) -> Any:
     """ Create new order for organization. """
-    assert_kitchen_in_organization(db, order_in.kitchen_id, current_user.organization_id)
+    assert_kitchen_in_organization(db, order_in.kitchen_id, current_user.active_organization_id)
 
     if not order_in.items:
         raise HTTPException(status_code=400, detail="La orden debe contener al menos un platillo.")
@@ -163,7 +160,7 @@ async def create_order(
         total=order_in.total,
         status=order_in.status,
         kitchen_id=order_in.kitchen_id,
-        organization_id=current_user.organization_id
+        organization_id=current_user.active_organization_id
     )
     db.add(order)
     db.flush()
@@ -180,7 +177,7 @@ async def create_order(
         lines.append((item_in.product_name, item_in.quantity))
 
     try:
-        deduct_supplies_for_line_items(db, current_user.organization_id, lines)
+        deduct_supplies_for_line_items(db, current_user.active_organization_id, lines)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -205,7 +202,7 @@ def update_order(
 ) -> Any:
     """ Update an order (e.g., mark as ready). """
     order = db.query(models.Order)\
-              .filter(models.Order.id == id, models.Order.organization_id == current_user.organization_id)\
+              .filter(models.Order.id == id, models.Order.organization_id == current_user.active_organization_id)\
               .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -213,7 +210,7 @@ def update_order(
     update_data = order_in.model_dump(exclude_unset=True)
     if "kitchen_id" in update_data and update_data["kitchen_id"] is not None:
         assert_kitchen_in_organization(
-            db, update_data["kitchen_id"], current_user.organization_id
+            db, update_data["kitchen_id"], current_user.active_organization_id
         )
     for field in update_data:
         setattr(order, field, update_data[field])
@@ -249,7 +246,7 @@ def mark_order_ready(
     con el número de pedido, monto, nombre y dirección.
     """
     order = db.query(models.Order)\
-              .filter(models.Order.id == id, models.Order.organization_id == current_user.organization_id)\
+              .filter(models.Order.id == id, models.Order.organization_id == current_user.active_organization_id)\
               .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -266,19 +263,23 @@ def mark_order_ready(
     try:
         from app.core.notifier import schedule_notify_organization
         schedule_notify_organization(
-            current_user.organization_id,
+            current_user.active_organization_id,
             {"type": "order_ready", "order_id": order.id}
         )
     except Exception as e:
         logger.warning("No se pudo notificar por WS: %s", e)
 
-    # Enviar WhatsApp al repartidor
+    # Enviar WhatsApp al repartidor (cada organización tiene su propio teléfono).
+    # Si la org no tiene delivery_phone o whatsapp_phone_number_id configurados,
+    # se logea warning pero no falla el flow — el pedido sí se marca como listo.
     try:
         org = db.query(models.Organization)\
-                .filter(models.Organization.id == current_user.organization_id)\
+                .filter(models.Organization.id == current_user.active_organization_id)\
                 .first()
         phone_number_id = org.whatsapp_phone_number_id if org else None
-        if phone_number_id:
+        delivery_phone = (org.delivery_phone or "").strip() if org else ""
+        org_name = (org.name if org else "el restaurante").strip()
+        if phone_number_id and delivery_phone:
             from app.core.bot.meta_client import send_whatsapp_message
             pedido_num = str(order.id).zfill(4)
             nombre = order.client_name or "Sin nombre"
@@ -290,11 +291,11 @@ def mark_order_ready(
                 f"\U0001f464 Cliente: *{nombre}*\n"
                 f"\U0001f4cd Dirección: {direccion}\n"
                 f"\U0001f4b0 Monto: *{monto}*\n\n"
-                f"Ya puedes pasar al restaurante *Horno 74* a recoger el pedido. \U0001f354"
+                f"Ya puedes pasar al restaurante *{org_name}* a recoger el pedido. \U0001f354"
             )
             payload = {
                 "messaging_product": "whatsapp",
-                "to": _DELIVERY_PHONE,
+                "to": delivery_phone,
                 "type": "text",
                 "text": {"body": msg_text}
             }
@@ -302,7 +303,10 @@ def mark_order_ready(
             if not ok:
                 logger.warning("WhatsApp al repartidor no enviado (order #%s)", order.id)
         else:
-            logger.warning("No hay whatsapp_phone_number_id configurado para org %s", current_user.organization_id)
+            if not phone_number_id:
+                logger.warning("Org %s sin whatsapp_phone_number_id configurado.", current_user.active_organization_id)
+            if not delivery_phone:
+                logger.warning("Org %s sin delivery_phone configurado.", current_user.active_organization_id)
     except Exception as e:
         logger.error("Error enviando WhatsApp al repartidor: %s", e)
 
@@ -325,7 +329,7 @@ def delete_order(
 ) -> Any:
     """ Delete an order. """
     order = db.query(models.Order)\
-              .filter(models.Order.id == id, models.Order.organization_id == current_user.organization_id)\
+              .filter(models.Order.id == id, models.Order.organization_id == current_user.active_organization_id)\
               .first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -371,7 +375,7 @@ def update_order_item_status(
         .join(models.Order, models.OrderItem.order_id == models.Order.id)
         .filter(
             models.OrderItem.id == item_id,
-            models.Order.organization_id == current_user.organization_id,
+            models.Order.organization_id == current_user.active_organization_id,
         )
         .first()
     )

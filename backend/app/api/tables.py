@@ -82,9 +82,11 @@ class ReservationStatusPatch(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_org_id(user: User) -> int:
-    if not user.organization_id:
+    # Preferir el override activo (vía X-Organization-ID); fallback al primario.
+    org_id = getattr(user, "active_organization_id", None) or user.organization_id
+    if not org_id:
         raise HTTPException(status_code=400, detail="Usuario sin organización activa.")
-    return user.organization_id
+    return org_id
 
 
 def _table_or_404(db: Session, table_id: int, org_id: int) -> RestaurantTable:

@@ -50,7 +50,7 @@ def list_promotions(
     """Listar todas las promociones de la organización."""
     return (
         db.query(models.Promotion)
-        .filter(models.Promotion.organization_id == current_user.organization_id)
+        .filter(models.Promotion.organization_id == current_user.active_organization_id)
         .order_by(models.Promotion.created_at.desc())
         .all()
     )
@@ -66,7 +66,7 @@ def create_promotion(
 ) -> Any:
     """Crear una nueva promoción."""
     promo = models.Promotion(
-        organization_id=current_user.organization_id,
+        organization_id=current_user.active_organization_id,
         title=payload.title.strip(),
         description=payload.description.strip() if payload.description else None,
         is_active=payload.is_active,
@@ -74,7 +74,7 @@ def create_promotion(
     db.add(promo)
     db.commit()
     db.refresh(promo)
-    invalidate_promotions(current_user.organization_id)
+    invalidate_promotions(current_user.active_organization_id)
     return promo
 
 
@@ -92,7 +92,7 @@ def update_promotion(
         db.query(models.Promotion)
         .filter(
             models.Promotion.id == promo_id,
-            models.Promotion.organization_id == current_user.organization_id,
+            models.Promotion.organization_id == current_user.active_organization_id,
         )
         .first()
     )
@@ -106,7 +106,7 @@ def update_promotion(
         promo.is_active = payload.is_active
     db.commit()
     db.refresh(promo)
-    invalidate_promotions(current_user.organization_id)
+    invalidate_promotions(current_user.active_organization_id)
     return promo
 
 
@@ -123,7 +123,7 @@ def delete_promotion(
         db.query(models.Promotion)
         .filter(
             models.Promotion.id == promo_id,
-            models.Promotion.organization_id == current_user.organization_id,
+            models.Promotion.organization_id == current_user.active_organization_id,
         )
         .first()
     )
@@ -131,4 +131,4 @@ def delete_promotion(
         raise HTTPException(status_code=404, detail="Promoción no encontrada")
     db.delete(promo)
     db.commit()
-    invalidate_promotions(current_user.organization_id)
+    invalidate_promotions(current_user.active_organization_id)

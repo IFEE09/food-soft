@@ -56,11 +56,25 @@ def _recompute_total(items_list: list) -> float:
 # ── Show menu ─────────────────────────────────────────────────────────────────
 
 
-def show_menu(channel: str, sender_id: str, greeting: str | None = None) -> list:
+def show_menu(
+    channel: str,
+    sender_id: str,
+    greeting: str | None = None,
+    menu_image_url: str | None = None,
+) -> list:
+    """Envía la imagen del menú al cliente.
+
+    Cada organización puede tener su propia `menu_image_url`. Si la org no
+    configuró ninguna, se usa MENU_IMG como fallback global.
+    Si menu_image_url se pasa explícitamente como None (no string vacío),
+    se cae al global; pasar '' explícitamente evita enviar imagen.
+    """
     out = []
     if greeting:
         out.append(_send_text(channel, sender_id, greeting))
-    out.append(_send_image(channel, sender_id, MENU_IMG))
+    img_url = menu_image_url if menu_image_url is not None else MENU_IMG
+    if img_url:
+        out.append(_send_image(channel, sender_id, img_url))
     out.append(_send_text(
         channel, sender_id,
         "Dime qué quieres pedir y con gusto te lo agrego 😊",

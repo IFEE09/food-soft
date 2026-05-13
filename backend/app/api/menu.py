@@ -25,7 +25,7 @@ def read_menu_items(
     Retrieve all dishes for current organization.
     """
     return db.query(models.MenuItem)\
-             .filter(models.MenuItem.organization_id == current_user.organization_id)\
+             .filter(models.MenuItem.organization_id == current_user.active_organization_id)\
              .all()
 
 @router.post("/", response_model=menu_schemas.MenuItem)
@@ -46,7 +46,7 @@ def create_menu_item(
         category=item_in.category,
         description=item_in.description,
         station_id=item_in.station_id,
-        organization_id=current_user.organization_id
+        organization_id=current_user.active_organization_id
     )
     db.add(new_item)
     db.flush() # To get ID
@@ -54,7 +54,7 @@ def create_menu_item(
     # Add recipe items (insumos solo de la misma organización)
     for recipe_in in item_in.recipe_items:
         assert_supply_in_organization(
-            db, recipe_in.supply_id, current_user.organization_id
+            db, recipe_in.supply_id, current_user.active_organization_id
         )
         recipe_entry = models.MenuItemRecipe(
             menu_item_id=new_item.id,
@@ -65,7 +65,7 @@ def create_menu_item(
 
     db.commit()
     db.refresh(new_item)
-    invalidate_menu(current_user.organization_id)
+    invalidate_menu(current_user.active_organization_id)
     log_activity(
         db, current_user,
         action="create", entity_type="menu_item", entity_id=new_item.id,
@@ -94,7 +94,7 @@ def update_menu_item(
         db.query(models.MenuItemRecipe).filter(models.MenuItemRecipe.menu_item_id == item_id).delete()
         for recipe_in in item_in.recipe_items:
             assert_supply_in_organization(
-                db, recipe_in.supply_id, current_user.organization_id
+                db, recipe_in.supply_id, current_user.active_organization_id
             )
             recipe_entry = models.MenuItemRecipe(
                 menu_item_id=item_id,
@@ -109,7 +109,7 @@ def update_menu_item(
 
     db.commit()
     db.refresh(db_item)
-    invalidate_menu(current_user.organization_id)
+    invalidate_menu(current_user.active_organization_id)
     log_activity(
         db, current_user,
         action="update", entity_type="menu_item", entity_id=db_item.id,
@@ -134,7 +134,7 @@ def delete_menu_item(
     deleted_id = db_item.id
     db.delete(db_item)
     db.commit()
-    invalidate_menu(current_user.organization_id)
+    invalidate_menu(current_user.active_organization_id)
     log_activity(
         db, current_user,
         action="delete", entity_type="menu_item", entity_id=deleted_id,

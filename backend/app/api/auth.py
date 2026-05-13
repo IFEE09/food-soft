@@ -44,21 +44,26 @@ def get_current_user(
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Usuario inactivo")
 
-    # Manejo de Multi-tenancy dinámico
-    # Si viene el header X-Organization-ID, verificamos si el usuario tiene acceso
+    # Multi-tenancy dinámico vía header X-Organization-ID.
+    # IMPORTANTE: NO mutar `user.organization_id` (columna SQLAlchemy). Hacerlo
+    # provoca que cualquier db.commit() durante la request persista el override
+    # en la tabla `users`. Bug: un PUT /users/me con X-Organization-ID cambiaba
+    # la organización primaria del usuario en DB.
+    # Solución: setear un atributo NO-mapeado (`active_organization_id`) y que
+    # los endpoints lean ese campo en lugar de `organization_id`.
     requested_org_id = request.headers.get("X-Organization-ID") if request else None
+    effective_org_id = user.organization_id
     if requested_org_id:
         try:
-            requested_org_id = int(requested_org_id)
-            # Verificar si el usuario pertenece a esa organización
-            if any(org.id == requested_org_id for org in user.organizations):
-                # Sobreescribimos temporalmente para esta petición
-                user.organization_id = requested_org_id
+            req_id = int(requested_org_id)
+            if any(org.id == req_id for org in user.organizations):
+                effective_org_id = req_id
             else:
-                # Si no tiene acceso, lanzamos error o ignoramos? Mejor error por seguridad.
                 raise HTTPException(status_code=403, detail="No tienes acceso a este restaurante.")
         except ValueError:
-            pass # Header malformado, ignorar
+            pass  # Header malformado, ignorar
+    # Atributo dinámico: no es Column, así que no entra al UPDATE de SQLAlchemy.
+    user.active_organization_id = effective_org_id
 
     return user
 
@@ -210,6 +215,10 @@ def register_user(
         organization_id=new_org.id
     )
     db.add(new_user)
+    # Vincular al user con la organización vía la tabla M:M.
+    # Sin esto, GET /users/me/organizations devuelve [] y el selector de
+    # restaurantes del navbar queda vacío para usuarios recién registrados.
+    new_user.organizations.append(new_org)
     try:
         db.commit()
     except IntegrityError:

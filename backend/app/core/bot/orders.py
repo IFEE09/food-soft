@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -5,6 +7,8 @@ from app.core.activity import log_activity
 from app.core.inventory import deduct_supplies_for_line_items
 from app.core.notifier import schedule_notify_organization
 from app.db import models
+
+logger = logging.getLogger(__name__)
 
 
 class OrderService:
@@ -83,7 +87,12 @@ class OrderService:
         try:
             deduct_supplies_for_line_items(db, session.organization_id, lines)
         except Exception:
-            pass  # Don't block order creation if inventory deduction fails
+            # No bloqueamos la creación del pedido si el inventario falla, pero
+            # logueamos para detectar deudas silenciosas (pérdidas no descontadas).
+            logger.exception(
+                "Falla al descontar inventario para order #%s (org=%s, lines=%s)",
+                new_order.id, session.organization_id, lines,
+            )
 
         db.commit()
         db.refresh(new_order)
