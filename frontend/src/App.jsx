@@ -7,8 +7,12 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// Dashboards y páginas pesadas: lazy. Cada una en su propio chunk → primer load
-// del usuario solo trae lo que su rol necesita.
+// ── Páginas contenedor nuevas (arquitectura consolidada) ──────────────────
+const POS             = lazy(() => import('./pages/POS'));
+const Metricas        = lazy(() => import('./pages/Metricas'));
+const MenuStock       = lazy(() => import('./pages/MenuStock'));
+
+// ── Páginas individuales (siguen existiendo para deep-links) ─────────────
 const OwnerDashboard      = lazy(() => import('./pages/OwnerDashboard'));
 const KitchenDashboard    = lazy(() => import('./pages/KitchenDashboard'));
 const CookDashboard       = lazy(() => import('./pages/CookDashboard'));
@@ -28,15 +32,16 @@ const ChatSimulator       = lazy(() => import('./pages/ChatSimulator'));
 import { NotificationProvider } from './components/NotificationProvider';
 import { ThemeProvider } from './context/ThemeContext';
 
+// ── Redirección por rol al entrar al dashboard ────────────────────────────
 const ROLE_HOME = {
-  owner: '/dashboard/owner',
-  receptionist: '/dashboard/reception',
-  cook: '/dashboard/kitchen',
+  owner:        '/dashboard/metricas',
+  receptionist: '/dashboard/pedidos',
+  cook:         '/dashboard/cook',
 };
 
 function RoleRoute({ allowed, children }) {
   const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+  const role  = localStorage.getItem('role');
   if (!token) return <Navigate to="/login" replace />;
   if (allowed && !allowed.includes(role)) {
     return <Navigate to={ROLE_HOME[role] || '/login'} replace />;
@@ -44,7 +49,7 @@ function RoleRoute({ allowed, children }) {
   return children;
 }
 
-// Spinner mínimo para Suspense — evita flash en cargas rápidas.
+// Spinner mínimo para Suspense
 function PageLoader() {
   return (
     <div style={{
@@ -63,80 +68,107 @@ function App() {
       <NotificationProvider>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-              <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-              {/* Public Auth Routes */}
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-              </Route>
+            {/* Rutas públicas de autenticación */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login"    element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Route>
 
-              {/* Protected Dashboard Routes */}
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route path="owner" element={
-                  <RoleRoute allowed={['owner']}><OwnerDashboard /></RoleRoute>
-                } />
-                <Route path="kitchen" element={
-                  <RoleRoute allowed={['owner', 'cook']}><KitchenDashboard /></RoleRoute>
-                } />
-                <Route path="supplies" element={
-                  <RoleRoute allowed={['owner']}><Supplies /></RoleRoute>
-                } />
-                <Route path="activity-logs" element={
-                  <RoleRoute allowed={['owner']}><ActivityLogs /></RoleRoute>
-                } />
-                <Route path="settings" element={
-                  <RoleRoute><Settings /></RoleRoute>
-                } />
-                <Route path="menu" element={
-                  <RoleRoute allowed={['owner', 'receptionist']}><Menu /></RoleRoute>
-                } />
-                <Route path="cook" element={
-                  <RoleRoute allowed={['cook', 'owner']}><CookDashboard /></RoleRoute>
-                } />
-                <Route path="reception" element={
-                  <RoleRoute allowed={['owner', 'receptionist']}><ReceptionDashboard /></RoleRoute>
-                } />
-                <Route path="order-history" element={
-                  <RoleRoute allowed={['owner']}><OrderHistory /></RoleRoute>
-                } />
-                <Route path="team" element={
-                  <RoleRoute allowed={['owner']}><TeamManagement /></RoleRoute>
-                } />
-                <Route path="pos-counter" element={
-                  <RoleRoute allowed={['owner', 'receptionist']}><POSCounter /></RoleRoute>
-                } />
-                <Route path="pos-table" element={
-                  <RoleRoute allowed={['owner', 'receptionist', 'cook']}><POSTable /></RoleRoute>
-                } />
-                <Route path="reservations" element={
-                  <RoleRoute allowed={['owner', 'receptionist']}><Reservations /></RoleRoute>
-                } />
-                <Route path="chat-simulator" element={
-                  <RoleRoute allowed={['owner', 'receptionist', 'cook']}><ChatSimulator /></RoleRoute>
-                } />
-              </Route>
+            {/* Rutas protegidas del dashboard */}
+            <Route path="/dashboard" element={<DashboardLayout />}>
 
-              {/* Public static pages — accesibles sin auth */}
-              <Route path="/privacy" element={<PrivacyPolicy />} />
+              {/* ── NUEVAS RUTAS CONSOLIDADAS (arquitectura 5 destinos) ── */}
 
-              {/* Bot público: el cliente entra a /bot (o /bot?org=N) y chatea sin login.
-                  El ChatSimulator detecta automáticamente el org_id por query string,
-                  localStorage, o fallback a 1 (Horno 74). */}
-              <Route path="/bot" element={
-                <div style={{
-                  minHeight: '100vh',
-                  background: 'var(--bg-color)',
-                  padding: '1rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'stretch',
-                }}>
-                  <ChatSimulator />
-                </div>
+              {/* Pedidos: Recepción (vista unificada de pedidos) */}
+              <Route path="pedidos" element={
+                <RoleRoute allowed={['owner', 'receptionist', 'cook']}>
+                  <ReceptionDashboard />
+                </RoleRoute>
               } />
 
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              {/* Punto de Venta: Mostrador + Mesas en tabs */}
+              <Route path="pos" element={
+                <RoleRoute allowed={['owner', 'receptionist']}>
+                  <POS />
+                </RoleRoute>
+              } />
+
+              {/* Métricas: Dashboard + Historial + Actividad en tabs */}
+              <Route path="metricas" element={
+                <RoleRoute allowed={['owner']}>
+                  <Metricas />
+                </RoleRoute>
+              } />
+
+              {/* Menú & Stock: Menú + Supplies en tabs */}
+              <Route path="menu-stock" element={
+                <RoleRoute allowed={['owner', 'receptionist']}>
+                  <MenuStock />
+                </RoleRoute>
+              } />
+
+              {/* Mi Negocio: Sucursales + Equipo en tabs */}
+              <Route path="negocio" element={
+                <RoleRoute allowed={['owner', 'receptionist', 'cook']}>
+                  <KitchenDashboard />
+                </RoleRoute>
+              } />
+
+              {/* Bot Simulator */}
+              <Route path="bot" element={
+                <RoleRoute allowed={['owner', 'receptionist', 'cook']}>
+                  <ChatSimulator />
+                </RoleRoute>
+              } />
+
+              {/* ── RUTAS INDIVIDUALES (siguen funcionando como deep-links) ── */}
+              <Route path="cook" element={
+                <RoleRoute allowed={['cook', 'owner']}><CookDashboard /></RoleRoute>
+              } />
+              <Route path="reservations" element={
+                <RoleRoute allowed={['owner', 'receptionist']}><Reservations /></RoleRoute>
+              } />
+              <Route path="settings" element={
+                <RoleRoute><Settings /></RoleRoute>
+              } />
+              <Route path="team" element={
+                <RoleRoute allowed={['owner']}><TeamManagement /></RoleRoute>
+              } />
+
+              {/* ── ALIASES LEGACY (redirigen a las nuevas rutas) ── */}
+              <Route path="owner"         element={<Navigate to="/dashboard/metricas"   replace />} />
+              <Route path="kitchen"       element={<Navigate to="/dashboard/negocio"    replace />} />
+              <Route path="reception"     element={<Navigate to="/dashboard/pedidos"    replace />} />
+              <Route path="pos-counter"   element={<Navigate to="/dashboard/pos"        replace />} />
+              <Route path="pos-table"     element={<Navigate to="/dashboard/pos"        replace />} />
+              <Route path="menu"          element={<Navigate to="/dashboard/menu-stock" replace />} />
+              <Route path="supplies"      element={<Navigate to="/dashboard/menu-stock" replace />} />
+              <Route path="order-history" element={<Navigate to="/dashboard/metricas"   replace />} />
+              <Route path="activity-logs" element={<Navigate to="/dashboard/metricas"   replace />} />
+              <Route path="chat-simulator" element={<Navigate to="/dashboard/bot"       replace />} />
+
+            </Route>
+
+            {/* Página pública de privacidad */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+
+            {/* Bot público sin login */}
+            <Route path="/bot" element={
+              <div style={{
+                minHeight: '100vh',
+                background: 'var(--bg-color)',
+                padding: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+              }}>
+                <ChatSimulator />
+              </div>
+            } />
+
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
       </NotificationProvider>

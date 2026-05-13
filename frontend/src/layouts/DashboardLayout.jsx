@@ -2,30 +2,25 @@ import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
   ChefHat,
-  Package,
   ClipboardList,
   LogOut,
   Settings as SettingsIcon,
   Utensils,
-  Activity,
   ShoppingBag,
   Users,
   ShieldCheck,
   HeadphonesIcon,
   Building2,
   ChevronDown,
-  FileText,
   Monitor,
-  TableProperties,
   CalendarDays,
   MessageSquare,
   Menu,
   X,
   Sun,
   Moon,
-  ChevronRight
+  BarChart2,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -92,77 +87,127 @@ export default function DashboardLayout() {
   const clearKitchenContext = () => {
     localStorage.removeItem('kitchenId');
     localStorage.removeItem('kitchenName');
-    navigate('/dashboard/kitchen');
+    navigate('/dashboard/negocio');
     window.location.reload();
   };
 
-  // ── Nav items by role ─────────────────────────────────────────────────────
-  const getNavItems = () => {
-    const isKitchenSelected = !!currentKitchenId;
-
+  // ── Nav sections by role ──────────────────────────────────────────────────
+  const getNavSections = () => {
     if (role === 'owner') {
       return [
-        { path: '/dashboard/owner',          icon: LayoutDashboard, label: 'Dashboard' },
-        { path: '/dashboard/kitchen',        icon: Building2,       label: 'Sucursales' },
-        { path: '/dashboard/chat-simulator', icon: MessageSquare,   label: 'Bot Simulator' },
-        { path: '/dashboard/order-history',  icon: FileText,        label: 'Historial' },
-        { path: '/dashboard/activity-logs',  icon: Activity,        label: 'Actividad' },
-        { path: '/dashboard/settings',       icon: SettingsIcon,    label: 'Configuración' },
-        ...(isKitchenSelected ? [
-          { divider: true, label: currentKitchenName },
-          { path: '/dashboard/reception',    icon: ShoppingBag,     label: 'Recepción' },
-          { path: '/dashboard/pos-counter',  icon: Monitor,         label: 'POS Mostrador' },
-          { path: '/dashboard/pos-table',    icon: TableProperties, label: 'POS Mesas' },
-          { path: '/dashboard/reservations', icon: CalendarDays,    label: 'Reservas' },
-          { path: '/dashboard/menu',         icon: Utensils,        label: 'Menú' },
-          { path: '/dashboard/supplies',     icon: Package,         label: 'Stock' },
-          { path: '/dashboard/team',         icon: Users,           label: 'Equipo' },
-        ] : []),
+        {
+          label: 'Operación',
+          items: [
+            { path: '/dashboard/pedidos',      icon: ShoppingBag,   label: 'Pedidos' },
+            { path: '/dashboard/pos',          icon: Monitor,       label: 'Punto de Venta' },
+            { path: '/dashboard/reservations', icon: CalendarDays,  label: 'Reservas' },
+          ],
+        },
+        {
+          label: 'Gestión',
+          items: [
+            { path: '/dashboard/menu-stock',   icon: Utensils,      label: 'Menú & Stock' },
+            { path: '/dashboard/negocio',      icon: Building2,     label: 'Mi Negocio' },
+          ],
+        },
+        {
+          label: 'Resultados',
+          items: [
+            { path: '/dashboard/metricas',     icon: BarChart2,     label: 'Métricas' },
+          ],
+        },
+        {
+          label: 'Herramientas',
+          items: [
+            { path: '/dashboard/bot',          icon: MessageSquare, label: 'Bot' },
+          ],
+        },
+        {
+          label: 'Cuenta',
+          items: [
+            { path: '/dashboard/settings',     icon: SettingsIcon,  label: 'Ajustes' },
+          ],
+        },
       ];
     }
+    if (role === 'receptionist') {
+      return [
+        {
+          label: 'Operación',
+          items: [
+            { path: '/dashboard/pedidos',      icon: ShoppingBag,   label: 'Pedidos' },
+            { path: '/dashboard/pos',          icon: Monitor,       label: 'Punto de Venta' },
+            { path: '/dashboard/reservations', icon: CalendarDays,  label: 'Reservas' },
+          ],
+        },
+        {
+          label: 'Gestión',
+          items: [
+            { path: '/dashboard/menu-stock',   icon: Utensils,      label: 'Menú' },
+            { path: '/dashboard/negocio',      icon: Building2,     label: 'Sucursales' },
+          ],
+        },
+        {
+          label: 'Herramientas',
+          items: [
+            { path: '/dashboard/bot',          icon: MessageSquare, label: 'Bot' },
+          ],
+        },
+        {
+          label: 'Cuenta',
+          items: [
+            { path: '/dashboard/settings',     icon: SettingsIcon,  label: 'Ajustes' },
+          ],
+        },
+      ];
+    }
+    // cook
     return [
-      { path: '/dashboard/kitchen',          icon: Building2,    label: 'Sucursales' },
-      { path: '/dashboard/chat-simulator',   icon: MessageSquare,label: 'Bot Simulator' },
-      ...(isKitchenSelected ? [
-        { path: '/dashboard/reception',      icon: ShoppingBag,  label: 'Recepción' },
-        { path: '/dashboard/cook',           icon: ClipboardList,label: 'Monitor' },
-      ] : []),
-      { path: '/dashboard/settings',         icon: SettingsIcon, label: 'Perfil' },
+      {
+        label: 'Operación',
+        items: [
+          { path: '/dashboard/cook',           icon: ClipboardList, label: 'Mi Área' },
+          { path: '/dashboard/pedidos',        icon: ShoppingBag,   label: 'Pedidos' },
+        ],
+      },
+      {
+        label: 'Gestión',
+        items: [
+          { path: '/dashboard/negocio',        icon: Building2,     label: 'Sucursales' },
+        ],
+      },
+      {
+        label: 'Herramientas',
+        items: [
+          { path: '/dashboard/bot',            icon: MessageSquare, label: 'Bot' },
+        ],
+      },
+      {
+        label: 'Cuenta',
+        items: [
+          { path: '/dashboard/settings',       icon: SettingsIcon,  label: 'Ajustes' },
+        ],
+      },
     ];
   };
 
-  const navItems = getNavItems();
-  const roleLabel = ROLE_LABEL[role] || 'Usuario';
-  const initials  = userName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const navSections = getNavSections();
+  const roleLabel   = ROLE_LABEL[role] || 'Usuario';
+  const RoleIcon    = ROLE_ICON[role] || ShieldCheck;
+  const initials    = userName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   // ── Sidebar nav link ──────────────────────────────────────────────────────
   const NavLink = ({ item }) => {
-    if (item.divider) {
-      return (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '0.35rem',
-          padding: '0.25rem 0.75rem',
-          marginTop: '0.75rem',
-          color: 'var(--text-tertiary)',
-          fontSize: '0.625rem', fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: '0.1em',
-        }}>
-          <Building2 size={9} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {item.label}
-          </span>
-        </div>
-      );
-    }
-
     const active = isActive(item.path);
+    const Icon   = item.icon;
     return (
       <button
         onClick={() => navigate(item.path)}
+        aria-current={active ? 'page' : undefined}
         style={{
           display: 'flex', alignItems: 'center', gap: '0.625rem',
           padding: '0.5rem 0.75rem',
-          borderRadius: '8px',
+          borderRadius: '10px',
           border: 'none',
           background: active ? 'var(--accent-subtle)' : 'transparent',
           color: active ? 'var(--accent-blue)' : 'var(--text-secondary)',
@@ -189,7 +234,6 @@ export default function DashboardLayout() {
           }
         }}
       >
-        {/* Active indicator bar */}
         {active && (
           <span style={{
             position: 'absolute', left: 0, top: '20%', bottom: '20%',
@@ -197,7 +241,7 @@ export default function DashboardLayout() {
             background: 'var(--accent-blue)',
           }} />
         )}
-        <item.icon size={16} strokeWidth={active ? 2.5 : 2} style={{ flexShrink: 0 }} />
+        <Icon size={17} strokeWidth={active ? 2.5 : 2} style={{ flexShrink: 0 }} />
         {item.label}
       </button>
     );
@@ -353,9 +397,23 @@ export default function DashboardLayout() {
         </div>
       )}
 
-      {/* Nav links */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-        {navItems.map((item, i) => <NavLink key={i} item={item} />)}
+      {/* Nav sections */}
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+        {navSections.map((section, si) => (
+          <div key={si} style={{ marginBottom: '0.375rem' }}>
+            <div style={{
+              padding: '0.25rem 0.75rem 0.25rem',
+              fontSize: '0.625rem', fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              color: 'var(--text-tertiary)', userSelect: 'none',
+            }}>
+              {section.label}
+            </div>
+            {section.items.map(item => (
+              <NavLink key={item.path} item={item} />
+            ))}
+          </div>
+        ))}
       </nav>
 
       {/* Bottom section */}
@@ -383,9 +441,13 @@ export default function DashboardLayout() {
               fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)',
               letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{userName}</div>
-            <div style={{
-              fontSize: '0.6875rem', color: 'var(--text-secondary)', fontWeight: 500,
-            }}>{roleLabel}</div>
+          <div style={{
+            fontSize: '0.6875rem', color: 'var(--text-secondary)', fontWeight: 500,
+            display: 'flex', alignItems: 'center', gap: '0.25rem',
+          }}>
+            <RoleIcon size={10} />
+            {roleLabel}
+          </div>
           </div>
         </div>
 
