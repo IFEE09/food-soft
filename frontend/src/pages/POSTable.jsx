@@ -14,9 +14,9 @@ import {
 } from 'lucide-react';
 
 const TABLE_STATUS_CONFIG = {
-  available: { label: 'Disponible', color: '#ccff00',  bg: 'rgba(204,255,0,0.12)',  border: 'rgba(204,255,0,0.4)' },
-  occupied:  { label: 'Ocupada',    color: '#ff4444',  bg: 'rgba(255,68,68,0.12)',  border: 'rgba(255,68,68,0.4)' },
-  reserved:  { label: 'Reservada',  color: '#ffaa00',  bg: 'rgba(255,170,0,0.12)', border: 'rgba(255,170,0,0.4)' },
+  available: { label: 'Disponible', color: 'var(--success-color)',  bg: 'var(--success-bg)',  border: 'var(--success-border)' },
+  occupied:  { label: 'Ocupada',    color: 'var(--danger-color)',   bg: 'var(--danger-bg)',   border: 'var(--danger-border)' },
+  reserved:  { label: 'Reservada',  color: 'var(--orange-color)',   bg: 'var(--orange-bg)',   border: 'var(--orange-border)' },
   cleaning:  { label: 'Limpieza',   color: '#888',     bg: 'rgba(136,136,136,0.1)', border: 'rgba(136,136,136,0.3)' },
 };
 
@@ -299,7 +299,7 @@ export default function POSTable() {
                   {hasItems && (
                     <span style={{
                       position: 'absolute', top: '-6px', right: '-6px',
-                      background: '#ffaa00', color: '#000', borderRadius: '50%',
+                      background: 'var(--orange-color)', color: 'var(--text-primary)', borderRadius: '50%',
                       width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.6rem', fontWeight: 800,
                     }}>{cartItems.reduce((a, c) => a + c.qty, 0)}</span>
@@ -382,7 +382,7 @@ export default function POSTable() {
                   transition: 'all 0.15s', position: 'relative',
                 }}>
                   {inCart > 0 && (
-                    <span style={{ position: 'absolute', top: '6px', right: '6px', background: 'var(--primary-color)', color: '#000', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800 }}>{inCart}</span>
+                    <span style={{ position: 'absolute', top: '6px', right: '6px', background: 'var(--primary-color)', color: 'var(--text-primary)', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 800 }}>{inCart}</span>
                   )}
                   <p style={{ margin: '0 0 0.3rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>{item.name}</p>
                   <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-color)', fontFamily: 'monospace' }}>${item.price}</p>
@@ -401,7 +401,7 @@ export default function POSTable() {
         <div style={{ padding: '0.9rem 1.1rem', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)' }}>PEDIDO</span>
           {itemCount > 0 && (
-            <span style={{ marginLeft: 'auto', background: 'var(--primary-color)', color: '#000', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800 }}>{itemCount}</span>
+            <span style={{ marginLeft: 'auto', background: 'var(--primary-color)', color: 'var(--text-primary)', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800 }}>{itemCount}</span>
           )}
         </div>
 

@@ -26,6 +26,7 @@ const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy'));
 const ChatSimulator       = lazy(() => import('./pages/ChatSimulator'));
 
 import { NotificationProvider } from './components/NotificationProvider';
+import { ThemeProvider } from './context/ThemeContext';
 
 const ROLE_HOME = {
   owner: '/dashboard/owner',
@@ -57,6 +58,7 @@ function PageLoader() {
 
 function App() {
   return (
+    <ThemeProvider>
     <BrowserRouter>
       <NotificationProvider>
         <Suspense fallback={<PageLoader />}>
@@ -123,6 +125,7 @@ function App() {
         </Suspense>
       </NotificationProvider>
     </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

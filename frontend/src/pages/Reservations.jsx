@@ -13,11 +13,11 @@ import {
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  pending:   { label: 'Pendiente',   color: '#ffaa00', icon: '⏳' },
-  confirmed: { label: 'Confirmada',  color: '#ccff00', icon: '✅' },
-  seated:    { label: 'En Mesa',     color: '#00ccff', icon: '🪑' },
-  cancelled: { label: 'Cancelada',   color: '#ff4444', icon: '❌' },
-  no_show:   { label: 'No Show',     color: '#888',    icon: '👻' },
+  pending:   { label: 'Pendiente',   color: 'var(--orange-color)', icon: '⏳' },
+  confirmed: { label: 'Confirmada',  color: 'var(--success-color)', icon: '✅' },
+  seated:    { label: 'En Mesa',     color: 'var(--cyan-color)', icon: '🪑' },
+  cancelled: { label: 'Cancelada',   color: 'var(--danger-color)', icon: '❌' },
+  no_show:   { label: 'No Show',     color: 'var(--text-secondary)',    icon: '👻' },
 };
 
 const SOURCE_CONFIG = {
@@ -314,16 +314,16 @@ export default function Reservations() {
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                         {res.status === 'pending' && (
-                          <button onClick={() => handleStatusChange(res, 'confirmed')} title="Confirmar" style={{ background: 'rgba(204,255,0,0.1)', border: '1px solid rgba(204,255,0,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: '#ccff00', fontSize: '0.65rem', fontWeight: 700 }}>✓ Confirmar</button>
+                          <button onClick={() => handleStatusChange(res, 'confirmed')} title="Confirmar" style={{ background: 'rgba(204,255,0,0.1)', border: '1px solid rgba(204,255,0,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: 'var(--success-color)', fontSize: '0.65rem', fontWeight: 700 }}>✓ Confirmar</button>
                         )}
                         {(res.status === 'pending' || res.status === 'confirmed') && (
-                          <button onClick={() => handleStatusChange(res, 'seated')} title="Sentar" style={{ background: 'rgba(0,204,255,0.1)', border: '1px solid rgba(0,204,255,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: '#00ccff', fontSize: '0.65rem', fontWeight: 700 }}>🪑 Sentar</button>
+                          <button onClick={() => handleStatusChange(res, 'seated')} title="Sentar" style={{ background: 'rgba(0,204,255,0.1)', border: '1px solid rgba(0,204,255,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: 'var(--cyan-color)', fontSize: '0.65rem', fontWeight: 700 }}>🪑 Sentar</button>
                         )}
                         {!['cancelled', 'no_show', 'seated'].includes(res.status) && (
-                          <button onClick={() => handleStatusChange(res, 'cancelled')} title="Cancelar" style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: '#ff4444', fontSize: '0.65rem', fontWeight: 700 }}>✕ Cancelar</button>
+                          <button onClick={() => handleStatusChange(res, 'cancelled')} title="Cancelar" style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: 'var(--danger-color)', fontSize: '0.65rem', fontWeight: 700 }}>✕ Cancelar</button>
                         )}
                         <button onClick={() => openEdit(res)} title="Editar" style={{ background: 'none', border: '1px solid var(--surface-border)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}><Edit2 size={12} /></button>
-                        <button onClick={() => handleDelete(res)} title="Eliminar" style={{ background: 'none', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: '#ff4444', display: 'flex', alignItems: 'center' }}><Trash2 size={12} /></button>
+                        <button onClick={() => handleDelete(res)} title="Eliminar" style={{ background: 'none', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '2px', padding: '0.3rem 0.5rem', cursor: 'pointer', color: 'var(--danger-color)', display: 'flex', alignItems: 'center' }}><Trash2 size={12} /></button>
                       </div>
                     </td>
                   </tr>

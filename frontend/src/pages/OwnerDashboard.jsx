@@ -168,7 +168,7 @@ export default function OwnerDashboard() {
                 onClick={handleConfirmReady}
                 style={{
                   flex: 2, padding: '0.7rem',
-                  background: '#059669',
+                  background: 'var(--ready-color)',
                   border: '1px solid #059669',
                   borderRadius: '4px',
                   color: '#fff',

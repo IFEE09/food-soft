@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,7 +22,9 @@ import {
   CalendarDays,
   MessageSquare,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 
@@ -39,6 +42,7 @@ export default function DashboardLayout() {
   const [activeOrg, setActiveOrg]           = useState(null);
   const [showOrgSelector, setShowOrgSelector] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const orgRef  = useRef(null);
 
   useEffect(() => {
@@ -279,6 +283,19 @@ export default function DashboardLayout() {
               fontWeight: 700, fontSize: '0.7rem', fontFamily: 'JetBrains Mono, monospace', flexShrink: 0
             }}>{initials}</div>
           </div>
+
+          {/* Theme toggle */}
+          <button onClick={toggleTheme} title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '0.35rem', borderRadius: '3px',
+            border: '1px solid var(--surface-border)', background: 'transparent',
+            color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--success-color)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--surface-border)'; }}
+          >
+            {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
 
           {/* Logout */}
           <button onClick={handleLogout} title="Cerrar sesión" style={{

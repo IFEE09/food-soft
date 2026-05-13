@@ -2,47 +2,153 @@
 
 /* ==========================================
    OMNIKOOK — Design System Tokens
+   Dark Mode (default data-theme="dark")
    ========================================== */
-:root {
-  /* Branding Colors */
-  --bg-primary: #0D0D0D;      /* Eerie Black */
-  --bg-surface: #141414;      /* Slightly lighter for cards */
-  --text-primary: #FFFFFF;    /* Pure White */
-  --text-secondary: #808080;  /* Smoke Gray */
-  --border: #333333;          
-  
-  --accent-success: #C8FF00;  /* Cyber Lime */
-  --accent-error: #FF3333;
-  --accent-action: #C8FF00;   /* Use Cyber Lime as primary action */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-color:       #0D0D0D;
+  --surface-color:  #141414;
+  --surface-border: #333333;
 
-  /* Aliases for compatibility */
-  --bg-color: var(--bg-primary);
-  --surface-color: var(--bg-surface);
-  --surface-border: var(--border);
-  --success-color: var(--accent-success);
-  --danger-color: var(--accent-error);
-  --primary-color: var(--accent-action);
+  /* Text */
+  --text-primary:   #FFFFFF;
+  --text-secondary: #808080;
+  --text-tertiary:  #555555;
 
-  /* Transparent variants */
-  --success-bg: rgba(200, 255, 0, 0.08);
+  /* Cyber Lime — primary accent */
+  --success-color:  #C8FF00;
+  --success-bg:     rgba(200, 255, 0, 0.08);
   --success-border: rgba(200, 255, 0, 0.3);
-  --primary-bg: rgba(200, 255, 0, 0.08);
-  --primary-border: rgba(200, 255, 0, 0.3);
-  --danger-bg: rgba(255, 51, 51, 0.08);
-  --danger-border: rgba(255, 51, 51, 0.3);
-  --neutral-bg: rgba(255, 255, 255, 0.04);
-  
+
+  /* Semantic state colors */
+  --danger-color:   #FF3333;
+  --danger-bg:      rgba(255, 51, 51, 0.08);
+  --danger-border:  rgba(255, 51, 51, 0.3);
+
   --warning-color:  #FFD600;
   --warning-bg:     rgba(255, 214, 0, 0.08);
   --warning-border: rgba(255, 214, 0, 0.3);
 
+  --info-color:     #3b82f6;
+  --info-bg:        rgba(59, 130, 246, 0.08);
+  --info-border:    rgba(59, 130, 246, 0.3);
+
+  --ready-color:    #059669;
+  --ready-bg:       rgba(5, 150, 105, 0.08);
+  --ready-border:   rgba(5, 150, 105, 0.3);
+
+  --orange-color:   #F59E0B;
+  --orange-bg:      rgba(245, 158, 11, 0.08);
+  --orange-border:  rgba(245, 158, 11, 0.3);
+
+  --cyan-color:     #00ccff;
+  --cyan-bg:        rgba(0, 204, 255, 0.08);
+  --cyan-border:    rgba(0, 204, 255, 0.3);
+
+  --purple-color:   #A78BFA;
+  --purple-bg:      rgba(167, 139, 250, 0.08);
+  --purple-border:  rgba(167, 139, 250, 0.3);
+
+  --indigo-color:   #0044FF;
+  --indigo-bg:      rgba(0, 68, 255, 0.08);
+  --indigo-border:  rgba(0, 68, 255, 0.3);
+
+  /* Navbar — always dark in both themes */
+  --navbar-bg:      #0D0D0D;
+  --navbar-border:  #222222;
+  --navbar-text:    #FFFFFF;
+
   /* Utility */
-  --accent: var(--accent-success);
-  
-  /* Transition rule */
-  --theme-transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  --neutral-bg:     rgba(255, 255, 255, 0.04);
+  --primary-color:  var(--success-color);
+  --primary-bg:     var(--success-bg);
+  --primary-border: var(--success-border);
+  --bg-primary:     var(--bg-color);
+  --bg-surface:     var(--surface-color);
+  --border:         var(--surface-border);
+  --accent:         var(--success-color);
+  --accent-success: var(--success-color);
+  --accent-error:   var(--danger-color);
+  --accent-action:  var(--success-color);
+
+  --theme-transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
+/* ==========================================
+   LIGHT MODE TOKENS
+   ========================================== */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-color:       #F4F4EF;
+  --surface-color:  #FFFFFF;
+  --surface-border: #D4D4CC;
+
+  /* Text */
+  --text-primary:   #0D0D0D;
+  --text-secondary: #5A5A55;
+  --text-tertiary:  #888884;
+
+  /* Cyber Lime — only used as button background in light mode */
+  --success-color:  #C8FF00;
+  --success-bg:     rgba(100, 140, 0, 0.08);
+  --success-border: rgba(100, 140, 0, 0.25);
+
+  /* Semantic state colors — darkened for light bg contrast */
+  --danger-color:   #CC2222;
+  --danger-bg:      rgba(204, 34, 34, 0.08);
+  --danger-border:  rgba(204, 34, 34, 0.25);
+
+  --warning-color:  #B07800;
+  --warning-bg:     rgba(176, 120, 0, 0.08);
+  --warning-border: rgba(176, 120, 0, 0.25);
+
+  --info-color:     #1D4ED8;
+  --info-bg:        rgba(29, 78, 216, 0.08);
+  --info-border:    rgba(29, 78, 216, 0.25);
+
+  --ready-color:    #166534;
+  --ready-bg:       rgba(22, 101, 52, 0.08);
+  --ready-border:   rgba(22, 101, 52, 0.25);
+
+  --orange-color:   #C2410C;
+  --orange-bg:      rgba(194, 65, 12, 0.08);
+  --orange-border:  rgba(194, 65, 12, 0.25);
+
+  --cyan-color:     #0369A1;
+  --cyan-bg:        rgba(3, 105, 161, 0.08);
+  --cyan-border:    rgba(3, 105, 161, 0.25);
+
+  --purple-color:   #6D28D9;
+  --purple-bg:      rgba(109, 40, 217, 0.08);
+  --purple-border:  rgba(109, 40, 217, 0.25);
+
+  --indigo-color:   #1E3A8A;
+  --indigo-bg:      rgba(30, 58, 138, 0.08);
+  --indigo-border:  rgba(30, 58, 138, 0.25);
+
+  /* Navbar — always dark regardless of theme */
+  --navbar-bg:      #0D0D0D;
+  --navbar-border:  #222222;
+  --navbar-text:    #FFFFFF;
+
+  /* Utility */
+  --neutral-bg:     rgba(0, 0, 0, 0.04);
+  --primary-color:  var(--success-color);
+  --primary-bg:     var(--success-bg);
+  --primary-border: var(--success-border);
+  --bg-primary:     var(--bg-color);
+  --bg-surface:     var(--surface-color);
+  --border:         var(--surface-border);
+  --accent:         var(--success-color);
+  --accent-success: var(--success-color);
+  --accent-error:   var(--danger-color);
+  --accent-action:  var(--success-color);
+}
+
+/* ==========================================
+   GLOBAL RESET
+   ========================================== */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -60,7 +166,7 @@ body {
 }
 
 * {
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
 }
 
 /* Monospace for data/IDs/times */
@@ -84,7 +190,7 @@ input, select, textarea {
   outline: none;
   font-family: inherit;
   font-size: 0.95rem;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 200ms ease;
   width: 100%;
   appearance: none;
 }
@@ -96,13 +202,19 @@ input::placeholder {
 
 input:focus, select:focus, textarea:focus {
   border-color: var(--success-color);
-  box-shadow: 0 0 0 1px rgba(204, 255, 0, 0.15);
+  box-shadow: 0 0 0 1px rgba(200, 255, 0, 0.15);
   background: var(--surface-color);
 }
 
 select option {
   background: var(--surface-color);
   color: var(--text-primary);
+}
+
+/* Light mode select options */
+[data-theme="light"] select option {
+  background: #FFFFFF;
+  color: #0D0D0D;
 }
 
 /* Hide number input arrows */
@@ -147,8 +259,8 @@ input[type=number] {
 }
 
 .btn-primary:hover {
-  background: #E0FF4D;
-  border-color: #E0FF4D;
+  background: #D4FF26;
+  border-color: #D4FF26;
 }
 
 .btn-primary:disabled {
@@ -175,7 +287,7 @@ input[type=number] {
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -227,7 +339,7 @@ input[type=number] {
 }
 
 /* ==========================================
-   SIDEBAR & NAVIGATION
+   NAVIGATION LINKS
    ========================================== */
 .sidebar-link {
   padding: 0.65rem 0.75rem;
@@ -242,16 +354,23 @@ input[type=number] {
 }
 
 .sidebar-link:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--neutral-bg);
   color: var(--text-primary);
   border-color: var(--surface-border);
 }
 
 .sidebar-link.active {
-  background-color: rgba(204, 255, 0, 0.08);
+  background-color: var(--success-bg);
   color: var(--success-color);
-  border-color: rgba(204, 255, 0, 0.25);
+  border-color: var(--success-border);
   font-weight: 600;
+}
+
+/* Light mode: active link uses dark text since lime is too bright */
+[data-theme="light"] .sidebar-link.active {
+  color: #3A5200;
+  background-color: rgba(100, 140, 0, 0.1);
+  border-color: rgba(100, 140, 0, 0.3);
 }
 
 /* ==========================================
@@ -261,6 +380,24 @@ input[type=number] {
   color: var(--success-color) !important;
   background: none !important;
   -webkit-text-fill-color: var(--success-color) !important;
+}
+
+/* ==========================================
+   SCROLLBAR
+   ========================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 /* ==========================================

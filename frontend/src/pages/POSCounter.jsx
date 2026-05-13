@@ -217,7 +217,7 @@ export default function POSCounter() {
                 POS — {kitchenName}
               </span>
               {!isOnline && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,68,68,0.12)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '2px', padding: '0.15rem 0.5rem', fontSize: '0.6rem', fontWeight: 800, color: '#ff4444', textTransform: 'uppercase' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', borderRadius: '2px', padding: '0.15rem 0.5rem', fontSize: '0.6rem', fontWeight: 800, color: 'var(--danger-color)', textTransform: 'uppercase' }}>
                   <WifiOff size={10} /> OFFLINE
                 </span>
               )}
@@ -387,7 +387,7 @@ export default function POSCounter() {
             </button>
 
             {pendingCount > 0 && (
-              <p style={{ margin: 0, fontSize: '0.62rem', color: '#ffaa00', textAlign: 'center', fontWeight: 700 }}>
+              <p style={{ margin: 0, fontSize: '0.62rem', color: 'var(--orange-color)', textAlign: 'center', fontWeight: 700 }}>
                 ⏳ {pendingCount} pedido(s) en cola esperando conexión
               </p>
             )}

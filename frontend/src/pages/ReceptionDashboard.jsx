@@ -193,7 +193,7 @@ export default function ReceptionDashboard() {
         </div>
         <div style={{ padding: '1.25rem', background: 'var(--surface-color)', borderLeft: '2px solid #F59E0B' }}>
           <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>AWAITING_DELIVERY</p>
-          <h3 className="mono" style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#F59E0B' }}>{readyCount}</h3>
+          <h3 className="mono" style={{ margin: '0.25rem 0 0', fontSize: '1.8rem', fontWeight: 700, color: 'var(--orange-color)' }}>{readyCount}</h3>
         </div>
         <div style={{ padding: '1.25rem', background: 'var(--surface-color)', borderLeft: '2px solid var(--success-color)' }}>
           <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>DAILY_THROUGHPUT</p>
@@ -206,7 +206,7 @@ export default function ReceptionDashboard() {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {[
             { key: 'pending', label: 'IN_QUEUE', color: 'var(--danger-color)' },
-            { key: 'ready', label: 'READY_STATION', color: '#F59E0B' },
+            { key: 'ready', label: 'READY_STATION', color: 'var(--orange-color)' },
             { key: 'delivered', label: 'FULFILLED', color: 'var(--success-color)' }
           ].map(tab => (
             <button

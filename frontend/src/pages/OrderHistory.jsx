@@ -3,9 +3,9 @@ import { apiClient } from '../api/client';
 import { Download, Search, RefreshCw, BarChart2, TrendingUp, ShoppingBag, Clock } from 'lucide-react';
 
 const STATUS_LABELS = {
-  pending:   { label: 'PENDIENTE', color: '#ef4444' },
-  ready:     { label: 'LISTO',     color: '#22c55e' },
-  delivered: { label: 'ENTREGADO', color: '#3b82f6' },
+  pending:   { label: 'PENDIENTE', color: 'var(--danger-color)' },
+  ready:     { label: 'LISTO',     color: 'var(--ready-color)' },
+  delivered: { label: 'ENTREGADO', color: 'var(--info-color)' },
 };
 
 // ── Helpers de fecha ──────────────────────────────────────────────────────────
@@ -239,8 +239,8 @@ export default function OrderHistory() {
           { icon: <ShoppingBag size={14} />, label: 'Total Pedidos',  value: summary?.total_orders ?? orders.length,                        color: 'var(--text-primary)' },
           { icon: <TrendingUp  size={14} />, label: 'Ingresos',       value: `$${(summary?.total_revenue ?? 0).toFixed(2)}`,                color: 'var(--success-color)' },
           { icon: <BarChart2   size={14} />, label: 'Ticket Promedio',value: `$${(summary?.avg_ticket ?? 0).toFixed(2)}`,                   color: 'var(--success-color)' },
-          { icon: <Clock       size={14} />, label: 'Pendientes',     value: summary?.pending ?? orders.filter(o=>o.status==='pending').length, color: '#ef4444' },
-          { icon: null,                      label: 'Entregados',     value: summary?.delivered ?? orders.filter(o=>o.status==='delivered').length, color: '#3b82f6' },
+          { icon: <Clock       size={14} />, label: 'Pendientes',     value: summary?.pending ?? orders.filter(o=>o.status==='pending').length, color: 'var(--danger-color)' },
+          { icon: null,                      label: 'Entregados',     value: summary?.delivered ?? orders.filter(o=>o.status==='delivered').length, color: 'var(--info-color)' },
         ].map((m, i) => (
           <div key={i} style={{ background: 'var(--surface-color)', padding: '1rem 1.25rem' }}>
             <p style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -303,7 +303,7 @@ export default function OrderHistory() {
                       {o.delivery_address ? <span title={o.delivery_address}>📍 {o.delivery_address}</span> : <span style={{ opacity: 0.3 }}>—</span>}
                     </td>
                     <td style={{ padding: '0.65rem 0.5rem', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {o.notes ? <span style={{ color: '#f0c040' }} title={o.notes}>✎ {o.notes}</span> : <span style={{ opacity: 0.3 }}>—</span>}
+                      {o.notes ? <span style={{ color: 'var(--warning-color)' }} title={o.notes}>✎ {o.notes}</span> : <span style={{ opacity: 0.3 }}>—</span>}
                     </td>
                     <td style={{ padding: '0.65rem 0.5rem', color: 'var(--success-color)', fontWeight: 700, whiteSpace: 'nowrap' }}>${(o.total || 0).toFixed(2)}</td>
                     <td style={{ padding: '0.65rem 0.5rem' }}>

@@ -13,8 +13,8 @@ function getMinutesInQueue(createdAt) {
 }
 
 function getUrgency(minutes) {
-  if (minutes >= 15) return { level: 'critical', color: '#FF3333', bg: 'rgba(255,51,51,0.08)', border: 'rgba(255,51,51,0.35)', label: 'URGENTE' };
-  if (minutes >= 7)  return { level: 'warning',  color: '#FFD600', bg: 'rgba(255,214,0,0.08)', border: 'rgba(255,214,0,0.35)', label: 'DEMORADO' };
+  if (minutes >= 15) return { level: 'critical', color: 'var(--danger-color)', bg: 'rgba(255,51,51,0.08)', border: 'rgba(255,51,51,0.35)', label: 'URGENTE' };
+  if (minutes >= 7)  return { level: 'warning',  color: 'var(--warning-color)', bg: 'rgba(255,214,0,0.08)', border: 'rgba(255,214,0,0.35)', label: 'DEMORADO' };
   return               { level: 'ok',       color: 'var(--success-color)', bg: 'rgba(200,255,0,0.05)', border: 'rgba(200,255,0,0.2)', label: null };
 }
 
@@ -115,7 +115,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
                       <button onClick={() => onItemStatus(it.id, 'in_progress')} style={{
                         fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: '2px', fontWeight: 700,
                         background: 'rgba(255,214,0,0.12)', border: '1px solid rgba(255,214,0,0.4)',
-                        color: '#FFD600', cursor: 'pointer'
+                        color: 'var(--warning-color)', cursor: 'pointer'
                       }}>EN PREP</button>
                     )}
                     {!done && (
@@ -132,7 +132,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
                 )}
               </div>
               {it.note && (
-                <span style={{ fontSize: '0.72rem', color: '#FFD600', fontStyle: 'italic' }}>✎ {it.note}</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--warning-color)', fontStyle: 'italic' }}>✎ {it.note}</span>
               )}
             </div>
           );
@@ -142,7 +142,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
           </span>
         )}
         {row.notes && (
-          <div style={{ fontSize: '0.75rem', color: '#FFD600', padding: '0.35rem 0.5rem', background: 'rgba(255,214,0,0.06)', borderRadius: '3px', border: '1px solid rgba(255,214,0,0.2)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--warning-color)', padding: '0.35rem 0.5rem', background: 'rgba(255,214,0,0.06)', borderRadius: '3px', border: '1px solid rgba(255,214,0,0.2)' }}>
             ✎ Nota del pedido: {row.notes}
           </div>
         )}
@@ -382,7 +382,7 @@ export default function KitchenDashboard() {
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button onClick={() => setConfirmModal(null)} style={{ flex: 1, padding: '0.6rem', borderRadius: '4px', border: '1px solid var(--surface-border)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={handleConfirmReady} style={{ flex: 1, padding: '0.6rem', borderRadius: '4px', border: 'none', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+              <button onClick={handleConfirmReady} style={{ flex: 1, padding: '0.6rem', borderRadius: '4px', border: 'none', background: 'var(--ready-color)', color: '#fff', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
                 <CheckCircle2 size={15} /> Sí, está listo
               </button>
             </div>
@@ -428,7 +428,7 @@ export default function KitchenDashboard() {
 
         {/* Counters */}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-          <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'rgba(255,51,51,0.1)', color: '#FF3333', border: '1px solid rgba(255,51,51,0.3)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
+          <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'rgba(255,51,51,0.1)', color: 'var(--danger-color)', border: '1px solid rgba(255,51,51,0.3)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
             {pendingOrders.length} PENDING
           </span>
           <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'rgba(200,255,0,0.08)', color: 'var(--success-color)', border: '1px solid rgba(200,255,0,0.25)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
@@ -442,7 +442,7 @@ export default function KitchenDashboard() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <AlertCircle size={14} color="#FF3333" />
-            <span className="mono" style={{ fontSize: '0.7rem', fontWeight: 800, color: '#FF3333', textTransform: 'uppercase', letterSpacing: '0.1em' }}>En preparación — {pendingOrders.length}</span>
+            <span className="mono" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--danger-color)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>En preparación — {pendingOrders.length}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {pendingOrders.map(row => (
