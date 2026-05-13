@@ -4,15 +4,25 @@ import { apiClient } from '../api/client';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
+  const [isLoading, setIsLoading]   = useState(false);
+  const [errorMsg, setErrorMsg]     = useState(null);
+  // on-blur validation
+  const [emailTouched, setEmailTouched]       = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const navigate = useNavigate();
+
+  const emailError    = emailTouched && !email ? 'El correo es obligatorio.' : emailTouched && !/\S+@\S+\.\S+/.test(email) ? 'Ingresa un correo válido.' : null;
+  const passwordError = passwordTouched && !password ? 'La contraseña es obligatoria.' : null;
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    if (emailError || passwordError || !email || !password) return;
+
     setIsLoading(true);
     setErrorMsg(null);
 
@@ -69,7 +79,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <img
             src="/omnikook-logo.png"
-            alt="Omnikook"
+            alt="Logo de Omnikook"
             style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '1rem' }}
           />
           <h1 style={{
@@ -84,66 +94,94 @@ export default function Login() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleLogin} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
           {/* Email */}
           <div className="form-group">
-            <label className="form-label">Correo electrónico</label>
+            <label htmlFor="login-email" className="form-label">Correo electrónico</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{
+              <Mail size={16} aria-hidden="true" style={{
                 position: 'absolute', left: '12px', top: '50%',
                 transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none'
               }} />
               <input
+                id="login-email"
                 type="email"
+                autoComplete="email"
                 placeholder="tu@restaurante.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
                 required
-                style={{ paddingLeft: '40px' }}
+                aria-invalid={!!emailError}
+                aria-describedby={emailError ? 'login-email-error' : undefined}
+                style={{
+                  paddingLeft: '40px',
+                  borderColor: emailError ? 'var(--danger-color)' : undefined,
+                }}
               />
             </div>
+            {emailError && (
+              <span id="login-email-error" className="form-error" role="alert">{emailError}</span>
+            )}
           </div>
 
           {/* Password */}
           <div className="form-group">
-            <label className="form-label">Contraseña</label>
+            <label htmlFor="login-password" className="form-label">Contraseña</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={16} style={{
+              <Lock size={16} aria-hidden="true" style={{
                 position: 'absolute', left: '12px', top: '50%',
                 transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none'
               }} />
               <input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setPasswordTouched(true)}
                 required
-                style={{ paddingLeft: '40px', paddingRight: '44px' }}
+                aria-invalid={!!passwordError}
+                aria-describedby={passwordError ? 'login-password-error' : undefined}
+                style={{
+                  paddingLeft: '40px', paddingRight: '44px',
+                  borderColor: passwordError ? 'var(--danger-color)' : undefined,
+                }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 style={{
                   position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: '4px'
+                  color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: '4px',
+                  minWidth: '32px', minHeight: '32px', justifyContent: 'center',
                 }}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
               </button>
             </div>
+            {passwordError && (
+              <span id="login-password-error" className="form-error" role="alert">{passwordError}</span>
+            )}
           </div>
 
-          {/* Error */}
+          {/* Server error */}
           {errorMsg && (
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: '0.625rem',
-              padding: '0.75rem 1rem', borderRadius: '8px',
-              background: 'var(--danger-bg)', border: '1px solid var(--danger-border)',
-              color: 'var(--danger-color)', fontSize: '0.8125rem', lineHeight: '1.5'
-            }}>
-              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+            <div
+              role="alert"
+              aria-live="assertive"
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: '0.625rem',
+                padding: '0.75rem 1rem', borderRadius: '8px',
+                background: 'var(--danger-bg)', border: '1px solid var(--danger-border)',
+                color: 'var(--danger-color)', fontSize: '0.8125rem', lineHeight: '1.5'
+              }}
+            >
+              <AlertCircle size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: '1px' }} />
               {errorMsg}
             </div>
           )}
@@ -153,16 +191,17 @@ export default function Login() {
             type="submit"
             className="btn-primary"
             disabled={isLoading}
+            aria-busy={isLoading}
             style={{ marginTop: '0.5rem', height: '48px', fontSize: '0.9375rem' }}
           >
             {isLoading ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="spinner" style={{ width: '18px', height: '18px' }} />
+                <span className="spinner" aria-hidden="true" style={{ width: '18px', height: '18px' }} />
                 Iniciando sesión...
               </span>
             ) : (
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                Iniciar sesión <ArrowRight size={18} />
+                Iniciar sesión <ArrowRight size={18} aria-hidden="true" />
               </span>
             )}
           </button>

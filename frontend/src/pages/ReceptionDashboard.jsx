@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ReceptionDashboardSkeleton } from '../components/DashboardSkeleton';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../components/NotificationProvider';
 import { apiClient } from '../api/client';
@@ -48,6 +49,8 @@ export default function ReceptionDashboard() {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) return <ReceptionDashboardSkeleton />;
 
   if (!currentKitchenId) {
     return (

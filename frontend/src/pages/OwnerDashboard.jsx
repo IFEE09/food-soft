@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { OwnerDashboardSkeleton } from '../components/DashboardSkeleton';
+import OnboardingChecklist from '../components/OnboardingChecklist';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, buildWsUrl } from '../api/client';
 import { Clock, CheckCircle2, AlertCircle, ArrowUpRight, Building2, Package, TrendingUp } from 'lucide-react';
@@ -20,6 +22,9 @@ export default function OwnerDashboard() {
   const [notification, setNotification] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const [orgName, setOrgName] = useState('');
+  const [hasKitchen, setHasKitchen] = useState(false);
+  const [hasMenu, setHasMenu] = useState(false);
+  const [hasTeam, setHasTeam] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -44,8 +49,21 @@ export default function OwnerDashboard() {
     } catch (err) { console.error(err); }
   }, []);
 
+  const fetchOnboardingState = useCallback(async () => {
+    try {
+      const [kitchensRes, menuRes, teamRes] = await Promise.allSettled([
+        apiClient.get('/kitchens/'),
+        apiClient.get('/menu/'),
+        apiClient.get('/users/'),
+      ]);
+      setHasKitchen(kitchensRes.status === 'fulfilled' && kitchensRes.value.data?.length > 0);
+      setHasMenu(menuRes.status === 'fulfilled' && menuRes.value.data?.length > 0);
+      setHasTeam(teamRes.status === 'fulfilled' && teamRes.value.data?.length > 1);
+    } catch (_) {}
+  }, []);
+
   useEffect(() => {
-    Promise.all([fetchOrders(), fetchSupplies(), fetchOrgName()]).finally(() => setIsLoading(false));
+    Promise.all([fetchOrders(), fetchSupplies(), fetchOrgName(), fetchOnboardingState()]).finally(() => setIsLoading(false));
     const poll = setInterval(fetchOrders, 8000);
     let ws;
     const orgId = parseInt(localStorage.getItem('organizationId') || '0', 10);
@@ -100,8 +118,10 @@ export default function OwnerDashboard() {
   const readyCount   = orders.filter(o => o.status === 'ready').length;
   const totalToday   = orders.length;
 
+  if (isLoading) return <OwnerDashboardSkeleton />;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <main style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* Toast */}
       {notification && (
@@ -150,6 +170,15 @@ export default function OwnerDashboard() {
           </div>
         </div>
       )}
+
+      {/* Onboarding checklist — solo visible si hay pasos sin completar */}
+      <OnboardingChecklist
+        completedSteps={[
+          ...(hasKitchen ? ['kitchen'] : []),
+          ...(hasMenu    ? ['menu']    : []),
+          ...(hasTeam    ? ['team']    : []),
+        ]}
+      />
 
       {/* Page header */}
       <div className="page-header">
@@ -409,6 +438,6 @@ export default function OwnerDashboard() {
           .dashboard-main-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
-    </div>
+    </main>
   );
 }

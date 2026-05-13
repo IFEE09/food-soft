@@ -236,26 +236,34 @@ export default function ChatSimulator() {
             ONLINE
           </span>
         </div>
-        <button onClick={clearChat} style={{
-          display: 'flex', alignItems: 'center', gap: '0.35rem',
-          padding: '0.35rem 0.75rem', borderRadius: '4px',
-          border: '1px solid var(--surface-border)', background: 'transparent',
-          color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-        }}
+        <button
+          onClick={clearChat}
+          aria-label="Reiniciar conversación"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.35rem',
+            padding: '0.35rem 0.75rem', borderRadius: '4px',
+            border: '1px solid var(--surface-border)', background: 'transparent',
+            color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
+          }}
           onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger-color)'; e.currentTarget.style.borderColor = 'var(--danger-color)'; }}
           onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--surface-border)'; }}
         >
-          <RefreshCw size={13} /> Reset
+          <RefreshCw size={13} aria-hidden="true" /> Reiniciar
         </button>
       </div>
 
       {/* Messages area */}
-      <div style={{
-        flex: 1, overflowY: 'auto', padding: '1.25rem',
-        background: 'var(--bg-color)',
-        border: '1px solid var(--surface-border)', borderTop: 'none', borderBottom: 'none',
-        display: 'flex', flexDirection: 'column', gap: '1rem'
-      }}>
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label="Conversación con el bot"
+        style={{
+          flex: 1, overflowY: 'auto', padding: '1.25rem',
+          background: 'var(--bg-color)',
+          border: '1px solid var(--surface-border)', borderTop: 'none', borderBottom: 'none',
+          display: 'flex', flexDirection: 'column', gap: '1rem'
+        }}
+      >
         {messages.map((msg, idx) => <MessageBubble key={idx} msg={msg} />)}
         {isLoading && <TypingIndicator />}
         <div ref={messagesEndRef} />
@@ -284,15 +292,20 @@ export default function ChatSimulator() {
               borderRadius: '4px', color: 'var(--text-primary)', outline: 'none'
             }}
           />
-          <button type="submit" disabled={isLoading || !input.trim()} style={{
-            width: '44px', height: '44px', borderRadius: '4px',
-            background: input.trim() && !isLoading ? 'var(--success-color)' : 'var(--surface-color)',
-            color: input.trim() && !isLoading ? '#000' : 'var(--text-secondary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
-            transition: 'all 0.2s', border: '1px solid var(--surface-border)', flexShrink: 0
-          }}>
-            <Send size={16} />
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            aria-label="Enviar mensaje"
+            style={{
+              width: '44px', height: '44px', borderRadius: '4px',
+              background: input.trim() && !isLoading ? 'var(--success-color)' : 'var(--surface-color)',
+              color: input.trim() && !isLoading ? '#000' : 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+              transition: 'all 0.2s', border: '1px solid var(--surface-border)', flexShrink: 0
+            }}
+          >
+            <Send size={16} aria-hidden="true" />
           </button>
         </form>
       </div>
