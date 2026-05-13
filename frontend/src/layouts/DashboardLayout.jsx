@@ -158,9 +158,9 @@ export default function DashboardLayout() {
       <button
         onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
         style={{
-          display: 'flex', alignItems: 'center', gap: mobile ? '0.6rem' : '0.35rem',
-          padding: mobile ? '0.65rem 0.75rem' : '0.4rem 0.65rem',
-          borderRadius: '3px', border: active ? '1px solid rgba(200,255,0,0.25)' : '1px solid transparent',
+          display: 'flex', alignItems: 'center', gap: mobile ? '0.6rem' : '0.4rem',
+          padding: mobile ? '0.7rem 0.85rem' : '0.45rem 0.75rem',
+          borderRadius: 'var(--radius-md)', border: active ? '1px solid rgba(200,255,0,0.25)' : '1px solid transparent',
           background: active ? 'rgba(200,255,0,0.08)' : 'transparent',
           color: active ? 'var(--success-color)' : 'var(--text-secondary)',
           fontWeight: active ? 700 : 500, fontSize: mobile ? '0.9rem' : '0.8rem',
@@ -184,34 +184,35 @@ export default function DashboardLayout() {
         position: 'sticky', top: 0, zIndex: 200,
         background: 'var(--surface-color)',
         borderBottom: '1px solid var(--surface-border)',
-        display: 'flex', alignItems: 'center', gap: '0', height: '52px',
-        padding: '0 1.25rem',
+        boxShadow: 'var(--shadow-sm)',
+        display: 'flex', alignItems: 'center', gap: '0', height: '60px',
+        padding: '0 1.5rem',
       }}>
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginRight: '1.5rem', flexShrink: 0 }}>
-          <img src="/omnikook-logo.png" alt="omnikook" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-          <span style={{ fontSize: '0.95rem', fontWeight: 600, letterSpacing: '0.03em', fontFamily: 'Inter, sans-serif' }}>
+          <img src="/omnikook-logo.png" alt="omnikook" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em', fontFamily: 'Inter, sans-serif' }}>
             <span style={{ color: '#C8FF00' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
           </span>
         </div>
 
         {/* Nav links — desktop */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', flex: 1, overflowX: 'auto', scrollbarWidth: 'none' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flex: 1, overflowX: 'auto', scrollbarWidth: 'none' }}
           className="hide-scrollbar desktop-nav">
           {navItems.map((item, i) => <NavLink key={i} item={item} />)}
         </div>
 
         {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: 'auto', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginLeft: 'auto', flexShrink: 0 }}>
 
           {/* Kitchen context badge */}
           {currentKitchenId && (
             <button onClick={clearKitchenContext} style={{
               display: 'flex', alignItems: 'center', gap: '0.35rem',
-              padding: '0.25rem 0.6rem', borderRadius: '3px',
+              padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-md)',
               border: '1px solid rgba(200,255,0,0.3)', background: 'rgba(200,255,0,0.06)',
-              color: 'var(--success-color)', fontSize: '0.7rem', fontWeight: 700,
+              color: 'var(--success-color)', fontSize: '0.72rem', fontWeight: 700,
               cursor: 'pointer', whiteSpace: 'nowrap'
             }} title="Cambiar sucursal">
               <Building2 size={11} /> {currentKitchenName}
@@ -223,9 +224,9 @@ export default function DashboardLayout() {
             <div ref={orgRef} style={{ position: 'relative' }}>
               <button onClick={() => setShowOrgSelector(v => !v)} style={{
                 display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.3rem 0.65rem', borderRadius: '3px',
+                padding: '0.3rem 0.65rem', borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--surface-border)', background: 'var(--bg-color)',
-                color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'
+                color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer'
               }}>
                 <Building2 size={13} color="var(--success-color)" />
                 {activeOrg?.name || '...'}
@@ -235,12 +236,12 @@ export default function DashboardLayout() {
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 6px)', right: 0, width: '220px',
                   background: 'var(--surface-color)', border: '1px solid var(--surface-border)',
-                  borderRadius: '4px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 300, padding: '0.4rem'
+                  borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 300, padding: '0.5rem'
                 }}>
                   <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.3rem 0.5rem 0.5rem' }}>Mis Restaurantes</p>
                   {organizations.map(org => (
                     <div key={org.id} onClick={() => switchOrganization(org)} style={{
-                      padding: '0.55rem 0.75rem', fontSize: '0.82rem', cursor: 'pointer', borderRadius: '3px',
+                      padding: '0.55rem 0.75rem', fontSize: '0.82rem', cursor: 'pointer', borderRadius: 'var(--radius-md)',
                       display: 'flex', alignItems: 'center', gap: '0.5rem',
                       color: org.id === activeOrg?.id ? 'var(--success-color)' : 'var(--text-primary)',
                       background: org.id === activeOrg?.id ? 'var(--success-bg)' : 'transparent'
@@ -264,20 +265,20 @@ export default function DashboardLayout() {
           {/* User badge */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.25rem 0.6rem 0.25rem 0.5rem', borderRadius: '3px',
+            padding: '0.3rem 0.75rem 0.3rem 0.6rem', borderRadius: 'var(--radius-md)',
             border: '1px solid var(--surface-border)', background: 'var(--bg-color)'
           }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
               fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-              background: roleBg, color: roleColor, padding: '0.15rem 0.4rem', borderRadius: '2px',
+              background: roleBg, color: roleColor, padding: '0.15rem 0.45rem', borderRadius: 'var(--radius-sm)',
               fontFamily: 'JetBrains Mono, monospace', border: `1px solid ${roleBorder}`
             }}>
               <RoleIcon size={10} /> {roleLabel}
             </span>
             <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{userName}</span>
             <div style={{
-              width: '26px', height: '26px', borderRadius: '2px',
+              width: '28px', height: '28px', borderRadius: 'var(--radius-sm)',
               background: roleBg, color: roleColor, border: `1px solid ${roleBorder}`,
               display: 'flex', justifyContent: 'center', alignItems: 'center',
               fontWeight: 700, fontSize: '0.7rem', fontFamily: 'JetBrains Mono, monospace', flexShrink: 0
@@ -287,7 +288,7 @@ export default function DashboardLayout() {
           {/* Theme toggle */}
           <button onClick={toggleTheme} title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '0.35rem', borderRadius: '3px',
+            padding: '0.4rem', borderRadius: 'var(--radius-md)',
             border: '1px solid var(--surface-border)', background: 'transparent',
             color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0
           }}
@@ -300,9 +301,9 @@ export default function DashboardLayout() {
           {/* Logout */}
           <button onClick={handleLogout} title="Cerrar sesión" style={{
             display: 'flex', alignItems: 'center', gap: '0.35rem',
-            padding: '0.35rem 0.6rem', borderRadius: '3px',
+            padding: '0.4rem 0.75rem', borderRadius: 'var(--radius-md)',
             border: '1px solid var(--surface-border)', background: 'transparent',
-            color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
+            color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer'
           }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger-color)'; e.currentTarget.style.borderColor = 'var(--danger-border)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--surface-border)'; }}
@@ -314,7 +315,7 @@ export default function DashboardLayout() {
           {/* Hamburger — mobile */}
           <button onClick={() => setMobileMenuOpen(v => !v)} className="mobile-menu-btn" style={{
             display: 'none', alignItems: 'center', justifyContent: 'center',
-            padding: '0.35rem', borderRadius: '3px',
+            padding: '0.4rem', borderRadius: 'var(--radius-md)',
             border: '1px solid var(--surface-border)', background: 'transparent',
             color: 'var(--text-primary)', cursor: 'pointer'
           }}>
