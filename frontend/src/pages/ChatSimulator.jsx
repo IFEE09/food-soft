@@ -118,11 +118,24 @@ function TypingIndicator() {
 
 // ── Main component ────────────────────────────────────────────────────────
 export default function ChatSimulator() {
-  const organizationId = parseInt(localStorage.getItem('organizationId') || '1', 10);
+  // org_id: prioridad URL ?org=N → localStorage → fallback a 1 (Horno 74 por seed).
+  // Permite usar el bot público (/bot?org=N) sin estar logueado.
+  const organizationId = (() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const fromQuery = url.searchParams.get('org');
+      if (fromQuery && /^\d+$/.test(fromQuery)) return parseInt(fromQuery, 10);
+    }
+    const fromStorage = localStorage.getItem('organizationId');
+    if (fromStorage && /^\d+$/.test(fromStorage)) return parseInt(fromStorage, 10);
+    return 1;
+  })();
   const now = () => new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
+  // Mensaje inicial: solo una pista pasiva ("Escribe para empezar").
+  // El bot NO inicia la conversación — espera al usuario.
   const [messages, setMessages] = useState([
-    { role: 'system', text: `SIMULATOR_READY · org_id=${organizationId} · channel=whatsapp` }
+    { role: 'system', text: 'Escribe un mensaje para empezar' }
   ]);
   const [input, setInput]         = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -186,10 +199,8 @@ export default function ChatSimulator() {
   };
 
   const clearChat = () => {
-    setMessages([{ role: 'system', text: `Chat reiniciado · org_id=${organizationId} · nueva sesión` }]);
+    setMessages([{ role: 'system', text: 'Escribe un mensaje para empezar' }]);
   };
-
-  const quickReplies = ['Hola', 'Ver menú', 'Quiero pedir', 'Mi carrito', 'Cancelar'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 52px - 3.5rem)', maxHeight: '820px', minHeight: '500px' }}>
@@ -248,26 +259,6 @@ export default function ChatSimulator() {
         {messages.map((msg, idx) => <MessageBubble key={idx} msg={msg} />)}
         {isLoading && <TypingIndicator />}
         <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick replies */}
-      <div style={{
-        display: 'flex', gap: '0.4rem', flexWrap: 'wrap', padding: '0.6rem 1rem',
-        background: 'var(--surface-color)',
-        borderLeft: '1px solid var(--surface-border)', borderRight: '1px solid var(--surface-border)'
-      }}>
-        {quickReplies.map(q => (
-          <button key={q} onClick={() => { setInput(q); setTimeout(() => inputRef.current?.focus(), 0); }} style={{
-            padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 600,
-            border: '1px solid var(--surface-border)', background: 'transparent',
-            color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.15s'
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--success-color)'; e.currentTarget.style.color = 'var(--success-color)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--surface-border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            {q}
-          </button>
-        ))}
       </div>
 
       {/* Input */}

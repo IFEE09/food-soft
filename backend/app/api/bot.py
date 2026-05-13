@@ -83,14 +83,20 @@ async def receive_webhook(request: Request, bg_tasks: BackgroundTasks):
 
 
 @router.post("/mock")
-@limiter.limit("60/minute")
+@limiter.limit("30/minute")
 def mock_bot_message(
     request: Request,
     payload: MockBotPayload,
     db: Session = Depends(get_db),
 ):
-    if settings.ENV == "production" or not settings.ENABLE_BOT_MOCK_ENDPOINT:
-        raise HTTPException(status_code=403, detail="Endpoint mock deshabilitado en producción.")
+    """Endpoint público para el ChatSimulator (web/SDK).
+
+    Procesa el mensaje contra el BotEngine sin requerir autenticación.
+    Se controla por ENABLE_BOT_MOCK_ENDPOINT (por defecto True).
+    Rate limit: 30 mensajes/minuto por IP — protege contra abuso de DeepSeek.
+    """
+    if not settings.ENABLE_BOT_MOCK_ENDPOINT:
+        raise HTTPException(status_code=403, detail="Endpoint del chat público deshabilitado.")
 
     outbound = BotEngine.process_message(
         db=db,

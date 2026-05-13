@@ -120,6 +120,22 @@ function App() {
               {/* Public static pages — accesibles sin auth */}
               <Route path="/privacy" element={<PrivacyPolicy />} />
 
+              {/* Bot público: el cliente entra a /bot (o /bot?org=N) y chatea sin login.
+                  El ChatSimulator detecta automáticamente el org_id por query string,
+                  localStorage, o fallback a 1 (Horno 74). */}
+              <Route path="/bot" element={
+                <div style={{
+                  minHeight: '100vh',
+                  background: 'var(--bg-color)',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                }}>
+                  <ChatSimulator />
+                </div>
+              } />
+
               <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>

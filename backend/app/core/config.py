@@ -93,8 +93,11 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production(self):
         if self.ENV == "production":
-            # Forzar apagado de endpoints de prueba/mock en producción
-            self.ENABLE_BOT_MOCK_ENDPOINT = False
+            # ENABLE_BOT_MOCK_ENDPOINT controla el chat público sin autenticación.
+            # Antes se forzaba a False en producción, pero ahora el ChatSimulator
+            # es la cara pública del bot (/bot) — debe quedar disponible.
+            # Para deshabilitarlo en una org específica, setear ENABLE_BOT_MOCK_ENDPOINT=False
+            # explícitamente en las variables de entorno.
 
             if self.SECRET_KEY == _DEFAULT_SECRET:
                 raise ValueError(
