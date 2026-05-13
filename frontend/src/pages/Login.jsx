@@ -1,17 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  LogIn, 
-  AlertCircle, 
-  ChefHat,
-  ArrowRight,
-  UserPlus
-} from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -35,18 +25,10 @@ export default function Login() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      const {
-        access_token,
-        refresh_token,
-        role,
-        full_name,
-        organization_id,
-      } = response.data;
+      const { access_token, refresh_token, role, full_name, organization_id } = response.data;
 
       localStorage.setItem('token', access_token);
-      if (refresh_token) {
-        localStorage.setItem('refresh_token', refresh_token);
-      }
+      if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('role', role);
       localStorage.setItem('userName', full_name);
       if (organization_id != null) {
@@ -55,115 +37,97 @@ export default function Login() {
         localStorage.removeItem('organizationId');
       }
 
-      if (role === 'owner') {
-        navigate('/dashboard/owner');
-      } else if (role === 'receptionist') {
-        navigate('/dashboard/reception');
-      } else {
-        navigate('/dashboard/kitchen');
-      }
+      if (role === 'owner') navigate('/dashboard/owner');
+      else if (role === 'receptionist') navigate('/dashboard/reception');
+      else navigate('/dashboard/kitchen');
+
     } catch (error) {
-      console.error('Login error:', error);
       const detail = error.response?.data?.detail;
       if (error.response?.status === 404) {
-        setErrorMsg("Error de conexión: Revisa que tu servidor esté respondiendo y en línea.");
+        setErrorMsg('Error de conexión. Verifica que el servidor esté en línea.');
       } else {
-        setErrorMsg(detail || 'Credenciales incorrectas o error de servidor.');
+        setErrorMsg(detail || 'Credenciales incorrectas. Intenta de nuevo.');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-
   return (
-    <div className="login-container">
-      <div className="glass-card" style={{ 
-        padding: '3rem 2.5rem', 
-        width: '100%', 
-        maxWidth: '420px', 
-        margin: 'auto',
-        position: 'relative'
+    <div className="login-container" style={{ background: 'var(--bg-color)' }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        background: 'var(--surface-color)',
+        border: '1px solid var(--surface-border)',
+        borderRadius: '20px',
+        padding: '2.5rem 2rem',
+        boxShadow: 'var(--shadow-md)',
       }}>
-        <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}>
-        </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <img 
-            src="/omnikook-logo.png" 
-            alt="omnikook isotipo" 
-            style={{ 
-              width: '72px',
-              height: '72px',
-              objectFit: 'contain',
-              marginBottom: '1.25rem',
-              display: 'block',
-              margin: '0 auto 1.25rem auto'
-            }} 
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <img
+            src="/omnikook-logo.png"
+            alt="Omnikook"
+            style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '1rem' }}
           />
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.2rem', letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif' }}>
-            <span style={{ color: 'var(--accent-blue)' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
+          <h1 style={{
+            fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.025em',
+            color: 'var(--text-primary)', marginBottom: '0.375rem'
+          }}>
+            <span style={{ color: 'var(--accent-blue)' }}>o</span>mnikook
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
-            Unify the kitchen. Rule the chat.
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 400 }}>
+            Gestión inteligente para tu restaurante
           </p>
         </div>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Terminal ID / Email
-            </label>
+        {/* Form */}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+          {/* Email */}
+          <div className="form-group">
+            <label className="form-label">Correo electrónico</label>
             <div style={{ position: 'relative' }}>
-              <Mail 
-                size={16} 
-                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} 
-              />
-              <input 
-                type="email" 
-                placeholder="admin@omnikook.cx" 
+              <Mail size={16} style={{
+                position: 'absolute', left: '12px', top: '50%',
+                transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none'
+              }} />
+              <input
+                type="email"
+                placeholder="tu@restaurante.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mono"
-                style={{ width: '100%', paddingLeft: '44px', height: '48px', fontSize: '0.9rem' }}
+                style={{ paddingLeft: '40px' }}
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Access Key
-            </label>
+          {/* Password */}
+          <div className="form-group">
+            <label className="form-label">Contraseña</label>
             <div style={{ position: 'relative' }}>
-              <Lock 
-                size={16} 
-                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} 
-              />
-              <input 
+              <Lock size={16} style={{
+                position: 'absolute', left: '12px', top: '50%',
+                transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none'
+              }} />
+              <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••" 
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mono"
-                style={{ width: '100%', paddingLeft: '44px', paddingRight: '48px', height: '48px', fontSize: '0.9rem' }}
+                style={{ paddingLeft: '40px', paddingRight: '44px' }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px'
+                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: '4px'
                 }}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -171,81 +135,56 @@ export default function Login() {
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn-primary" 
-            style={{ 
-              marginTop: '1rem', 
-              gap: '0.75rem', 
-              height: '52px'
-            }}
+          {/* Error */}
+          {errorMsg && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: '0.625rem',
+              padding: '0.75rem 1rem', borderRadius: '8px',
+              background: 'var(--danger-bg)', border: '1px solid var(--danger-border)',
+              color: 'var(--danger-color)', fontSize: '0.8125rem', lineHeight: '1.5'
+            }}>
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+              {errorMsg}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            className="btn-primary"
             disabled={isLoading}
+            style={{ marginTop: '0.5rem', height: '48px', fontSize: '0.9375rem' }}
           >
-            {isLoading ? 'AUTH_IN_PROGRESS...' : (
-              <>
-                ESTABLISH_SESSION <ArrowRight size={18} />
-              </>
+            {isLoading ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="spinner" style={{ width: '18px', height: '18px' }} />
+                Iniciando sesión...
+              </span>
+            ) : (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                Iniciar sesión <ArrowRight size={18} />
+              </span>
             )}
           </button>
 
-          <button 
-            type="button" 
+          {/* Register link */}
+          <button
+            type="button"
             onClick={() => navigate('/register')}
-            style={{ 
-              background: 'transparent', 
-              border: '1px solid var(--surface-border)', 
-              color: 'var(--text-secondary)',
-              height: '48px',
-              borderRadius: '2px',
-              fontWeight: 500,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.15s ease',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--text-secondary)'; }}
-            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--surface-border)'; }}
+            className="btn-secondary"
+            style={{ height: '44px', fontSize: '0.875rem' }}
           >
-            New Registration
+            Crear cuenta nueva
           </button>
         </form>
 
-        <div style={{ marginTop: '2.5rem', textAlign: 'center', paddingTop: '1.5rem', borderTop: '1px solid var(--surface-border)' }}>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                OMNIKOOK v1.0.0 // SECTOR DARK KITCHEN
-            </p>
+        {/* Footer */}
+        <div style={{ marginTop: '1.75rem', textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid var(--surface-border)' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+            Omnikook · Plataforma para restaurantes
+          </p>
         </div>
       </div>
-
-      {errorMsg && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ padding: '2.5rem' }}>
-            <div className="modal-header" style={{ color: 'var(--danger-color)', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'var(--danger-bg)', padding: '8px', borderRadius: '2px', border: '1px solid var(--danger-border)' }}>
-                    <AlertCircle size={22} />
-                </div>
-                <h2 style={{ fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Error de Acceso</h2>
-              </div>
-            </div>
-            <div style={{ marginBottom: '2rem', color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-              {errorMsg}
-            </div>
-            <button 
-              className="btn-primary" 
-              onClick={() => setErrorMsg(null)}
-              style={{ width: '100%', height: '48px' }}
-            >
-              Entendido
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
