@@ -2,9 +2,92 @@
 
 /* ==========================================
    OMNIKOOK — Design System Tokens
-   Dark Mode (default data-theme="dark")
+   Light Mode (default)
    ========================================== */
 :root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-color:       #F7F7F5;
+  --surface-color:  #FFFFFF;
+  --surface-border: #E5E5E0;
+
+  /* Text */
+  --text-primary:   #111111;
+  --text-secondary: #6B6B66;
+  --text-tertiary:  #9A9A95;
+
+  /* Blue — primary accent */
+  --accent-blue:    #1A56DB;
+  --success-color:  #1A56DB;
+  --success-bg:     rgba(26, 86, 219, 0.07);
+  --success-border: rgba(26, 86, 219, 0.2);
+
+  /* Semantic state colors */
+  --danger-color:   #DC2626;
+  --danger-bg:      rgba(220, 38, 38, 0.07);
+  --danger-border:  rgba(220, 38, 38, 0.2);
+
+  --warning-color:  #92400E;
+  --warning-bg:     rgba(146, 64, 14, 0.07);
+  --warning-border: rgba(146, 64, 14, 0.2);
+
+  --info-color:     #1D4ED8;
+  --info-bg:        rgba(29, 78, 216, 0.07);
+  --info-border:    rgba(29, 78, 216, 0.2);
+
+  --ready-color:    #15803D;
+  --ready-bg:       rgba(21, 128, 61, 0.07);
+  --ready-border:   rgba(21, 128, 61, 0.2);
+
+  --orange-color:   #C2410C;
+  --orange-bg:      rgba(194, 65, 12, 0.07);
+  --orange-border:  rgba(194, 65, 12, 0.2);
+
+  --cyan-color:     #0369A1;
+  --cyan-bg:        rgba(3, 105, 161, 0.07);
+  --cyan-border:    rgba(3, 105, 161, 0.2);
+
+  --purple-color:   #6D28D9;
+  --purple-bg:      rgba(109, 40, 217, 0.07);
+  --purple-border:  rgba(109, 40, 217, 0.2);
+
+  --indigo-color:   #3730A3;
+  --indigo-bg:      rgba(55, 48, 163, 0.07);
+  --indigo-border:  rgba(55, 48, 163, 0.2);
+
+  /* Navbar — always dark */
+  --navbar-bg:      #0D0D0D;
+  --navbar-border:  #222222;
+  --navbar-text:    #FFFFFF;
+
+  /* Shape & shadow */
+  --radius-sm:      6px;
+  --radius-md:      10px;
+  --radius-lg:      14px;
+  --radius-xl:      18px;
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:      0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:      0 8px 24px rgba(0,0,0,0.1);
+
+  /* Utility aliases */
+  --neutral-bg:     rgba(0, 0, 0, 0.03);
+  --primary-color:  var(--accent-blue);
+  --primary-bg:     var(--success-bg);
+  --primary-border: var(--success-border);
+  --bg-primary:     var(--bg-color);
+  --bg-surface:     var(--surface-color);
+  --border:         var(--surface-border);
+  --accent:         var(--accent-blue);
+  --accent-success: var(--ready-color);
+  --accent-error:   var(--danger-color);
+  --accent-action:  var(--accent-blue);
+
+  --theme-transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+/* ==========================================
+   DARK MODE TOKENS
+   ========================================== */
 [data-theme="dark"] {
   /* Backgrounds */
   --bg-color:       #0D0D0D;
@@ -16,10 +99,11 @@
   --text-secondary: #909090;
   --text-tertiary:  #555555;
 
-  /* Cyber Lime — primary accent */
-  --success-color:  #C8FF00;
-  --success-bg:     rgba(200, 255, 0, 0.08);
-  --success-border: rgba(200, 255, 0, 0.25);
+  /* Blue — primary accent (lighter for dark bg) */
+  --accent-blue:    #4D9EFF;
+  --success-color:  #4D9EFF;
+  --success-bg:     rgba(77, 158, 255, 0.08);
+  --success-border: rgba(77, 158, 255, 0.25);
 
   /* Semantic state colors */
   --danger-color:   #FF4444;
@@ -54,12 +138,12 @@
   --indigo-bg:      rgba(99, 102, 241, 0.08);
   --indigo-border:  rgba(99, 102, 241, 0.25);
 
-  /* Navbar — always dark in both themes */
+  /* Navbar — always dark */
   --navbar-bg:      #0D0D0D;
   --navbar-border:  #222222;
   --navbar-text:    #FFFFFF;
 
-  /* Square-style spacing & shape */
+  /* Shape & shadow */
   --radius-sm:      6px;
   --radius-md:      10px;
   --radius-lg:      14px;
@@ -70,98 +154,16 @@
 
   /* Utility aliases */
   --neutral-bg:     rgba(255, 255, 255, 0.04);
-  --primary-color:  var(--success-color);
+  --primary-color:  var(--accent-blue);
   --primary-bg:     var(--success-bg);
   --primary-border: var(--success-border);
   --bg-primary:     var(--bg-color);
   --bg-surface:     var(--surface-color);
   --border:         var(--surface-border);
-  --accent:         var(--success-color);
-  --accent-success: var(--success-color);
+  --accent:         var(--accent-blue);
+  --accent-success: var(--ready-color);
   --accent-error:   var(--danger-color);
-  --accent-action:  var(--success-color);
-
-  --theme-transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
-}
-
-/* ==========================================
-   LIGHT MODE TOKENS
-   ========================================== */
-[data-theme="light"] {
-  /* Backgrounds */
-  --bg-color:       #F7F7F5;
-  --surface-color:  #FFFFFF;
-  --surface-border: #E5E5E0;
-
-  /* Text */
-  --text-primary:   #111111;
-  --text-secondary: #6B6B66;
-  --text-tertiary:  #9A9A95;
-
-  /* Cyber Lime — only as button bg in light mode */
-  --success-color:  #C8FF00;
-  --success-bg:     rgba(100, 140, 0, 0.07);
-  --success-border: rgba(100, 140, 0, 0.2);
-
-  /* Semantic state colors — darkened for WCAG AA */
-  --danger-color:   #DC2626;
-  --danger-bg:      rgba(220, 38, 38, 0.07);
-  --danger-border:  rgba(220, 38, 38, 0.2);
-
-  --warning-color:  #92400E;
-  --warning-bg:     rgba(146, 64, 14, 0.07);
-  --warning-border: rgba(146, 64, 14, 0.2);
-
-  --info-color:     #1D4ED8;
-  --info-bg:        rgba(29, 78, 216, 0.07);
-  --info-border:    rgba(29, 78, 216, 0.2);
-
-  --ready-color:    #15803D;
-  --ready-bg:       rgba(21, 128, 61, 0.07);
-  --ready-border:   rgba(21, 128, 61, 0.2);
-
-  --orange-color:   #C2410C;
-  --orange-bg:      rgba(194, 65, 12, 0.07);
-  --orange-border:  rgba(194, 65, 12, 0.2);
-
-  --cyan-color:     #0369A1;
-  --cyan-bg:        rgba(3, 105, 161, 0.07);
-  --cyan-border:    rgba(3, 105, 161, 0.2);
-
-  --purple-color:   #6D28D9;
-  --purple-bg:      rgba(109, 40, 217, 0.07);
-  --purple-border:  rgba(109, 40, 217, 0.2);
-
-  --indigo-color:   #3730A3;
-  --indigo-bg:      rgba(55, 48, 163, 0.07);
-  --indigo-border:  rgba(55, 48, 163, 0.2);
-
-  /* Navbar — always dark regardless of theme */
-  --navbar-bg:      #0D0D0D;
-  --navbar-border:  #222222;
-  --navbar-text:    #FFFFFF;
-
-  /* Square-style spacing & shape */
-  --radius-sm:      6px;
-  --radius-md:      10px;
-  --radius-lg:      14px;
-  --radius-xl:      18px;
-  --shadow-sm:      0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md:      0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg:      0 8px 24px rgba(0,0,0,0.1);
-
-  /* Utility aliases */
-  --neutral-bg:     rgba(0, 0, 0, 0.03);
-  --primary-color:  var(--success-color);
-  --primary-bg:     var(--success-bg);
-  --primary-border: var(--success-border);
-  --bg-primary:     var(--bg-color);
-  --bg-surface:     var(--surface-color);
-  --border:         var(--surface-border);
-  --accent:         var(--success-color);
-  --accent-success: var(--success-color);
-  --accent-error:   var(--danger-color);
-  --accent-action:  var(--success-color);
+  --accent-action:  var(--accent-blue);
 }
 
 /* ==========================================
@@ -189,16 +191,12 @@ body {
   transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
 }
 
-/* Monospace for data/IDs/times */
-.mono,
-.order-id,
-.timestamp,
-code {
+.mono, .order-id, .timestamp, code {
   font-family: 'JetBrains Mono', monospace;
 }
 
 /* ==========================================
-   FORM ELEMENTS — Square style
+   FORM ELEMENTS
    ========================================== */
 input, select, textarea {
   background: var(--surface-color);
@@ -214,21 +212,19 @@ input, select, textarea {
   appearance: none;
 }
 
-input::placeholder {
-  color: var(--text-tertiary);
-}
+input::placeholder { color: var(--text-tertiary); }
 
 input:focus, select:focus, textarea:focus {
-  border-color: var(--success-color);
-  box-shadow: 0 0 0 3px rgba(200, 255, 0, 0.12);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
   background: var(--surface-color);
 }
 
-[data-theme="light"] input:focus,
-[data-theme="light"] select:focus,
-[data-theme="light"] textarea:focus {
-  border-color: #3A5200;
-  box-shadow: 0 0 0 3px rgba(58, 82, 0, 0.1);
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: #4D9EFF;
+  box-shadow: 0 0 0 3px rgba(77, 158, 255, 0.15);
 }
 
 select option {
@@ -236,25 +232,17 @@ select option {
   color: var(--text-primary);
 }
 
-[data-theme="light"] select option {
-  background: #FFFFFF;
-  color: #111111;
+[data-theme="dark"] select option {
+  background: #1A1A1A;
+  color: #FFFFFF;
 }
 
-/* Hide number input arrows */
 input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
+input::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ==========================================
-   SURFACES — Square style
+   SURFACES
    ========================================== */
 .glass-panel, .glass-card {
   background: var(--surface-color);
@@ -264,11 +252,11 @@ input[type=number] {
 }
 
 /* ==========================================
-   BUTTONS — Square style
+   BUTTONS
    ========================================== */
 .btn-primary {
-  background: var(--success-color);
-  color: #0D0D0D;
+  background: var(--accent-blue);
+  color: #FFFFFF;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-md);
@@ -281,25 +269,19 @@ input[type=number] {
   align-items: center;
   gap: 0.5rem;
   min-height: 44px;
-  letter-spacing: 0;
-  text-transform: none;
 }
 
 .btn-primary:hover {
-  background: #D4FF26;
-  box-shadow: 0 2px 8px rgba(200, 255, 0, 0.3);
+  background: #1446C0;
+  box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
   transform: translateY(-1px);
 }
 
-.btn-primary:active {
-  transform: translateY(0);
-}
+[data-theme="dark"] .btn-primary { background: #4D9EFF; color: #0D0D0D; }
+[data-theme="dark"] .btn-primary:hover { background: #6AADFF; box-shadow: 0 2px 8px rgba(77,158,255,0.3); }
 
-.btn-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none;
-}
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 /* ==========================================
    AUTH / LOGIN
@@ -315,7 +297,7 @@ input[type=number] {
 }
 
 /* ==========================================
-   MODALS — Square style
+   MODALS
    ========================================== */
 .modal-overlay {
   position: fixed;
@@ -355,7 +337,6 @@ input[type=number] {
   margin: 0;
   color: var(--text-primary);
   letter-spacing: -0.01em;
-  text-transform: none;
 }
 
 .modal-close {
@@ -376,7 +357,7 @@ input[type=number] {
 }
 
 /* ==========================================
-   NAVIGATION LINKS — Square style
+   NAVIGATION LINKS
    ========================================== */
 .sidebar-link {
   padding: 0.6rem 0.85rem;
@@ -386,7 +367,6 @@ input[type=number] {
   color: var(--text-secondary);
   transition: background-color 0.15s, color 0.15s;
   font-size: 0.9rem;
-  letter-spacing: 0;
   border: none;
   display: flex;
   align-items: center;
@@ -400,62 +380,41 @@ input[type=number] {
 
 .sidebar-link.active {
   background-color: var(--success-bg);
-  color: var(--success-color);
+  color: var(--accent-blue);
   font-weight: 600;
 }
 
-[data-theme="light"] .sidebar-link.active {
-  color: #3A5200;
-  background-color: rgba(100, 140, 0, 0.1);
+[data-theme="dark"] .sidebar-link.active {
+  color: #4D9EFF;
+  background-color: rgba(77, 158, 255, 0.1);
 }
 
 /* ==========================================
    TEXT GRADIENT OVERRIDE
    ========================================== */
 .text-gradient {
-  color: var(--success-color) !important;
+  color: var(--accent-blue) !important;
   background: none !important;
-  -webkit-text-fill-color: var(--success-color) !important;
+  -webkit-text-fill-color: var(--accent-blue) !important;
 }
 
 /* ==========================================
    SCROLLBAR
    ========================================== */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--surface-border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
 /* ==========================================
    ANIMATIONS
    ========================================== */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse-accent {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-accent { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* ==========================================
-   RESPONSIVE LAYOUT
+   LAYOUT
    ========================================== */
 .dashboard-container {
   display: flex;
@@ -465,9 +424,7 @@ input[type=number] {
 }
 
 @media (min-width: 768px) {
-  .dashboard-container {
-    flex-direction: row;
-  }
+  .dashboard-container { flex-direction: row; }
 }
 
 .sidebar {
@@ -501,13 +458,11 @@ input[type=number] {
 }
 
 @media (min-width: 768px) {
-  .main-content {
-    padding: 2.5rem 3rem;
-  }
+  .main-content { padding: 2.5rem 3rem; }
 }
 
 /* ==========================================
-   DASHBOARD LAYOUTS — Square style
+   DASHBOARD
    ========================================== */
 .dashboard-grid {
   display: flex;
@@ -545,13 +500,9 @@ input[type=number] {
 }
 
 /* ==========================================
-   TABLES — Square style
+   TABLES
    ========================================== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 thead th {
   padding: 0.85rem 1rem;
@@ -566,22 +517,17 @@ thead th {
 }
 
 tbody td {
-  padding: 1rem 1rem;
+  padding: 1rem;
   border-bottom: 1px solid var(--surface-border);
   color: var(--text-primary);
   vertical-align: middle;
 }
 
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
-tbody tr:hover td {
-  background-color: var(--neutral-bg);
-}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background-color: var(--neutral-bg); }
 
 /* ==========================================
-   STAT CARDS — Square style
+   STAT CARDS
    ========================================== */
 .stat-card {
   background: var(--surface-color);
@@ -609,7 +555,7 @@ tbody tr:hover td {
 }
 
 /* ==========================================
-   SECTION HEADERS — Square style
+   SECTION HEADERS
    ========================================== */
 .section-title {
   font-size: 1rem;

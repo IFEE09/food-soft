@@ -160,8 +160,8 @@ export default function DashboardLayout() {
         style={{
           display: 'flex', alignItems: 'center', gap: mobile ? '0.6rem' : '0.4rem',
           padding: mobile ? '0.7rem 0.85rem' : '0.45rem 0.75rem',
-          borderRadius: 'var(--radius-md)', border: active ? '1px solid rgba(200,255,0,0.25)' : '1px solid transparent',
-          background: active ? 'rgba(200,255,0,0.08)' : 'transparent',
+          borderRadius: 'var(--radius-md)', border: active ? '1px solid rgba(26, 86, 219, 0.25)' : '1px solid transparent',
+          background: active ? 'var(--success-bg)' : 'transparent',
           color: active ? 'var(--success-color)' : 'var(--text-secondary)',
           fontWeight: active ? 700 : 500, fontSize: mobile ? '0.9rem' : '0.8rem',
           cursor: 'pointer', whiteSpace: 'nowrap', width: mobile ? '100%' : 'auto',
@@ -193,7 +193,7 @@ export default function DashboardLayout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginRight: '1.5rem', flexShrink: 0 }}>
           <img src="/omnikook-logo.png" alt="omnikook" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
           <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.01em', fontFamily: 'Inter, sans-serif' }}>
-            <span style={{ color: '#C8FF00' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
+            <span style={{ color: 'var(--accent-blue)' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
           </span>
         </div>
 
@@ -211,7 +211,7 @@ export default function DashboardLayout() {
             <button onClick={clearKitchenContext} style={{
               display: 'flex', alignItems: 'center', gap: '0.35rem',
               padding: '0.3rem 0.75rem', borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(200,255,0,0.3)', background: 'rgba(200,255,0,0.06)',
+              border: '1px solid var(--success-border)', background: 'rgba(26, 86, 219, 0.06)',
               color: 'var(--success-color)', fontSize: '0.72rem', fontWeight: 700,
               cursor: 'pointer', whiteSpace: 'nowrap'
             }} title="Cambiar sucursal">

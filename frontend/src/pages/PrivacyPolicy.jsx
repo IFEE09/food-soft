@@ -5,8 +5,8 @@ const B = {
   border:    '#333333',
   text:      '#FFFFFF',   // Pure White
   muted:     '#808080',   // Smoke Gray
-  lime:      '#C8FF00',   // Cyber Lime
-  link:      '#C8FF00',
+  lime:      'var(--accent-blue)',   // Cyber Lime
+  link:      'var(--accent-blue)',
 };
 
 const S = {

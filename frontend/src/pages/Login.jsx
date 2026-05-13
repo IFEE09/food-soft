@@ -102,7 +102,7 @@ export default function Login() {
             }} 
           />
           <h1 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.2rem', letterSpacing: '0.02em', fontFamily: 'Inter, sans-serif' }}>
-            <span style={{ color: '#C8FF00' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
+            <span style={{ color: 'var(--accent-blue)' }}>o</span><span style={{ color: 'var(--text-primary)' }}>mnikook</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 500, fontFamily: 'Inter, sans-serif' }}>
             Unify the kitchen. Rule the chat.

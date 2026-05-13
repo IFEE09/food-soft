@@ -15,7 +15,7 @@ function getMinutesInQueue(createdAt) {
 function getUrgency(minutes) {
   if (minutes >= 15) return { level: 'critical', color: 'var(--danger-color)', bg: 'rgba(255,51,51,0.08)', border: 'rgba(255,51,51,0.35)', label: 'URGENTE' };
   if (minutes >= 7)  return { level: 'warning',  color: 'var(--warning-color)', bg: 'rgba(255,214,0,0.08)', border: 'rgba(255,214,0,0.35)', label: 'DEMORADO' };
-  return               { level: 'ok',       color: 'var(--success-color)', bg: 'rgba(200,255,0,0.05)', border: 'rgba(200,255,0,0.2)', label: null };
+  return               { level: 'ok',       color: 'var(--success-color)', bg: 'rgba(26, 86, 219, 0.05)', border: 'rgba(26, 86, 219, 0.2)', label: null };
 }
 
 // ── Timer badge (live) ─────────────────────────────────────────────────────
@@ -79,8 +79,8 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
           <span style={{
             fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
             color: row.status === 'ready' ? 'var(--success-color)' : urg.color,
-            border: `1px solid ${row.status === 'ready' ? 'rgba(200,255,0,0.3)' : urg.border}`,
-            background: row.status === 'ready' ? 'rgba(200,255,0,0.08)' : urg.bg,
+            border: `1px solid ${row.status === 'ready' ? 'var(--success-border)' : urg.border}`,
+            background: row.status === 'ready' ? 'var(--success-bg)' : urg.bg,
             padding: '0.1rem 0.4rem', borderRadius: '2px'
           }}>
             {row.status}
@@ -97,8 +97,8 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
             <div key={it.id} style={{
               display: 'flex', flexDirection: 'column', gap: '0.25rem',
               padding: '0.55rem 0.65rem', borderRadius: '4px',
-              background: done ? 'rgba(200,255,0,0.04)' : inProg ? 'rgba(255,214,0,0.06)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${done ? 'rgba(200,255,0,0.15)' : inProg ? 'rgba(255,214,0,0.2)' : 'var(--surface-border)'}`,
+              background: done ? 'rgba(26, 86, 219, 0.04)' : inProg ? 'rgba(255,214,0,0.06)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${done ? 'rgba(26, 86, 219, 0.15)' : inProg ? 'rgba(255,214,0,0.2)' : 'var(--surface-border)'}`,
               opacity: done ? 0.6 : 1
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
@@ -121,7 +121,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
                     {!done && (
                       <button onClick={() => onItemStatus(it.id, 'done')} style={{
                         fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: '2px', fontWeight: 700,
-                        background: 'rgba(200,255,0,0.12)', border: '1px solid rgba(200,255,0,0.4)',
+                        background: 'rgba(26, 86, 219, 0.12)', border: '1px solid rgba(26, 86, 219, 0.4)',
                         color: 'var(--success-color)', cursor: 'pointer'
                       }}>LISTO ✓</button>
                     )}
@@ -169,7 +169,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
         </button>
       )}
       {row.status === 'ready' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.45rem', borderRadius: '4px', background: 'rgba(200,255,0,0.06)', border: '1px solid rgba(200,255,0,0.2)', color: 'var(--success-color)', fontSize: '0.78rem', fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.45rem', borderRadius: '4px', background: 'rgba(26, 86, 219, 0.06)', border: '1px solid rgba(26, 86, 219, 0.2)', color: 'var(--success-color)', fontSize: '0.78rem', fontWeight: 700 }}>
           <CheckCircle2 size={13} /> LISTO — En espera de entrega
         </div>
       )}
@@ -311,7 +311,7 @@ export default function KitchenDashboard() {
           {kitchens.map(k => (
             <div key={k.id} onClick={() => handleSelectKitchen(k)} className="glass-panel"
               style={{ padding: '1.75rem', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', borderLeft: '4px solid var(--primary-color)' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(200,255,0,0.12)'; }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(26, 86, 219, 0.12)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <ChefHat size={28} style={{ marginBottom: '0.75rem', color: 'var(--primary-color)' }} />
@@ -402,7 +402,7 @@ export default function KitchenDashboard() {
           <button onClick={() => setSelectedStation(null)} style={{
             padding: '0.25rem 0.65rem', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 700,
             border: selectedStation === null ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
-            background: selectedStation === null ? 'rgba(200,255,0,0.1)' : 'transparent',
+            background: selectedStation === null ? 'rgba(26, 86, 219, 0.1)' : 'transparent',
             color: selectedStation === null ? 'var(--success-color)' : 'var(--text-secondary)',
             cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem'
           }}>
@@ -412,7 +412,7 @@ export default function KitchenDashboard() {
             <button key={s.id} onClick={() => setSelectedStation(s.id)} style={{
               padding: '0.25rem 0.65rem', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 700,
               border: selectedStation === s.id ? '1px solid var(--success-color)' : '1px solid var(--surface-border)',
-              background: selectedStation === s.id ? 'rgba(200,255,0,0.1)' : 'transparent',
+              background: selectedStation === s.id ? 'rgba(26, 86, 219, 0.1)' : 'transparent',
               color: selectedStation === s.id ? 'var(--success-color)' : 'var(--text-secondary)',
               cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem'
             }}>
@@ -431,7 +431,7 @@ export default function KitchenDashboard() {
           <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'rgba(255,51,51,0.1)', color: 'var(--danger-color)', border: '1px solid rgba(255,51,51,0.3)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
             {pendingOrders.length} PENDING
           </span>
-          <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'rgba(200,255,0,0.08)', color: 'var(--success-color)', border: '1px solid rgba(200,255,0,0.25)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
+          <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'var(--success-bg)', color: 'var(--success-color)', border: '1px solid rgba(26, 86, 219, 0.25)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
             {readyOrders.length} READY
           </span>
         </div>
