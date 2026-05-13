@@ -144,7 +144,7 @@ export default function Settings() {
             borderBottom: activeTab === 'profile' ? '2px solid var(--success-color)' : '2px solid transparent'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><User size={16}/> PROFILE_DATA</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><User size={16}/> Mi perfil</div>
         </button>
         <button 
           onClick={() => setActiveTab('security')}
@@ -155,7 +155,7 @@ export default function Settings() {
             borderBottom: activeTab === 'security' ? '2px solid var(--success-color)' : '2px solid transparent'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={16}/> ACCESS_SECURITY</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Lock size={16}/> Seguridad</div>
         </button>
         <button 
           onClick={() => setActiveTab('stations')}
@@ -166,7 +166,7 @@ export default function Settings() {
             borderBottom: activeTab === 'stations' ? '2px solid var(--success-color)' : '2px solid transparent'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={16}/> NETWORK_NODES</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Activity size={16}/> Sucursales y áreas</div>
         </button>
         {localStorage.getItem('role') === 'owner' && (
           <button 
@@ -178,19 +178,19 @@ export default function Settings() {
               borderBottom: activeTab === 'restaurants' ? '2px solid var(--success-color)' : '2px solid transparent'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building2 size={16}/> RESTAURANTS</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Building2 size={16}/> Mis marcas</div>
           </button>
         )}
       </div>
 
       <div className="glass-panel" style={{ padding: '2.5rem' }}>
         {msg.text && (
-          <div className="mono" style={{ 
-            padding: '0.75rem 1rem', marginBottom: '1.5rem', borderRadius: '2px', 
-            border: `1px solid ${msg.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}`,
-            backgroundColor: 'rgba(255,255,255,0.02)',
+          <div style={{ 
+            padding: '0.875rem 1rem', marginBottom: '1.5rem', borderRadius: '10px', 
+            border: `1px solid ${msg.type === 'success' ? 'var(--success-border)' : 'var(--danger-border)'}`,
+            background: msg.type === 'success' ? 'var(--success-bg)' : 'var(--danger-bg)',
             color: msg.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
-            fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+            fontSize: '0.875rem', fontWeight: 600,
             display: 'flex', alignItems: 'center', gap: '0.5rem'
           }}>
             <ShieldCheck size={16} /> {msg.text}
@@ -286,7 +286,7 @@ export default function Settings() {
         {activeTab === 'stations' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>Infraestructura de Producción</h3>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>Sucursales y áreas de trabajo</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sucursales y sus monitores operativos.</p>
             </div>
             
@@ -294,12 +294,12 @@ export default function Settings() {
               <div key={k.id} className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--surface-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px dashed var(--surface-border)' }}>
                   <div>
-                    <h4 className="mono" style={{ margin: 0, fontSize: '0.9rem', color: 'var(--success-color)' }}>SITE::{k.name}</h4>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{k.name}</h4>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{k.address || 'Sin dirección registrada'}</p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => toggleKitchen(k.id, k.is_active)} style={{ padding: '0.4rem', background: 'none', border: '1px solid var(--surface-border)', color: k.is_active ? 'var(--success-color)' : 'var(--text-secondary)', cursor: 'pointer' }}>
-                      {k.is_active ? 'ACTIVE' : 'INACTIVE'}
+                    <button onClick={() => toggleKitchen(k.id, k.is_active)} style={{ padding: '0.3rem 0.75rem', background: k.is_active ? 'var(--success-bg)' : 'var(--neutral-bg)', border: `1px solid ${k.is_active ? 'var(--success-border)' : 'var(--surface-border)'}`, color: k.is_active ? 'var(--success-color)' : 'var(--text-secondary)', cursor: 'pointer', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600 }}>
+                      {k.is_active ? '• Activa' : '○ Inactiva'}
                     </button>
                     <button onClick={() => deleteKitchen(k.id)} style={{ padding: '0.4rem', background: 'none', border: '1px solid var(--danger-border)', color: 'var(--danger-color)', cursor: 'pointer' }}>
                       <Trash2 size={14} />
@@ -310,7 +310,7 @@ export default function Settings() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
                   {stations.filter(s => s.kitchen_id === k.id).map(s => (
                     <div key={s.id} style={{ padding: '0.75rem', border: '1px solid var(--surface-border)', borderRadius: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="mono" style={{ fontSize: '0.75rem' }}>{s.name}</span>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{s.name}</span>
                       <button onClick={() => toggleStation(s.id, s.is_active)} style={{ background: 'none', border: 'none', color: s.is_active ? 'var(--success-color)' : 'var(--text-secondary)', cursor: 'pointer', opacity: 0.8 }}>
                         <Activity size={14} />
                       </button>
@@ -324,9 +324,9 @@ export default function Settings() {
                         fetchData();
                       }
                     }}
-                    style={{ padding: '0.75rem', border: '1px dashed var(--success-color)', background: 'transparent', color: 'var(--success-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                    style={{ padding: '0.75rem', border: '1px dashed var(--accent-border)', background: 'transparent', color: 'var(--accent-blue)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600, borderRadius: '8px' }}
                   >
-                    + AGREGAR MONITOR
+                    + Agregar área
                   </button>
                 </div>
               </div>
@@ -348,7 +348,7 @@ export default function Settings() {
               }}
               className="btn-primary" style={{ width: 'fit-content' }}
             >
-              + REGISTRAR SUCURSAL
+              + Nueva sucursal
             </button>
           </div>
         )}
@@ -364,7 +364,7 @@ export default function Settings() {
                 background: 'rgba(var(--success-color-rgb), 0.03)', display: 'flex', gap: '1rem', alignItems: 'flex-end' 
             }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Nuevo Nombre de Marca</label>
+                <label style={{ fontSize: '0.875rem', fontWeight: 700 }}>Nombre de la marca</label>
                 <input 
                   type="text" value={newOrgName} 
                   placeholder="Ej: Burger Night 74"
@@ -380,18 +380,16 @@ export default function Settings() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
               {organizations.map(org => (
                 <div key={org.id} style={{ 
-                    padding: '1.5rem', border: '1px solid var(--surface-border)', borderRadius: '2px', background: 'var(--surface-color)',
+                    padding: '1.25rem 1.5rem', border: '1px solid var(--surface-border)', borderRadius: '12px', background: 'var(--surface-color)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    borderLeft: org.id === parseInt(localStorage.getItem('organizationId')) ? '4px solid var(--success-color)' : '1px solid var(--surface-border)'
+                    borderLeft: org.id === parseInt(localStorage.getItem('organizationId')) ? '4px solid var(--accent-blue)' : '1px solid var(--surface-border)'
                 }}>
                   <div>
-                    <div className="mono" style={{ fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase' }}>{org.name}</div>
-                    <span className="mono" style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                      ORG_ID::00{org.id}
-                    </span>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{org.name}</div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID #{org.id}</span>
                   </div>
                   {org.id === parseInt(localStorage.getItem('organizationId')) && (
-                    <span style={{ fontSize: '0.6rem', background: 'var(--success-bg)', color: 'var(--success-color)', padding: '0.2rem 0.4rem', borderRadius: '2px', fontWeight: 700 }}>ACTIVO</span>
+                    <span style={{ fontSize: '0.75rem', background: 'var(--accent-subtle)', color: 'var(--accent-blue)', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontWeight: 600, border: '1px solid var(--accent-border)' }}>• Activa</span>
                   )}
                 </div>
               ))}

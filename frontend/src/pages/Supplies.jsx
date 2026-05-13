@@ -183,23 +183,23 @@ export default function Supplies() {
 
       {/* ── Métricas ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-        <MetricCard icon={<DollarSign size={20} />} label="TOTAL_ASSET_VALUE" color="var(--success-color)" colorBg="rgba(204,255,0,0.05)" colorBorder="var(--success-border)">
-          {isLoading ? '...' : `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+        <MetricCard icon={<DollarSign size={20} />} label="Valor del inventario" color="var(--success-color)" colorBg="var(--success-bg)" colorBorder="var(--success-border)">
+          {isLoading ? '...' : `$${totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
         </MetricCard>
-        <MetricCard icon={<TrendingDown size={20} />} label="LOW_STOCK_ALERTS" color="#F59E0B" colorBg="rgba(245,158,11,0.05)" colorBorder="rgba(245,158,11,0.2)">
-          {isLoading ? '...' : `${lowCount} INSUMOS`}
+        <MetricCard icon={<TrendingDown size={20} />} label="Stock bajo" color="var(--warning-color)" colorBg="var(--warning-bg)" colorBorder="var(--warning-border)">
+          {isLoading ? '...' : `${lowCount} insumos`}
         </MetricCard>
-        <MetricCard icon={<AlertTriangle size={20} />} label="CRITICAL_DEPLETED" color="var(--danger-color)" colorBg="rgba(255,51,51,0.05)" colorBorder="var(--danger-border)">
-          {isLoading ? '...' : `${criticalCount} CRÍTICOS`}
+        <MetricCard icon={<AlertTriangle size={20} />} label="Críticos o agotados" color="var(--danger-color)" colorBg="var(--danger-bg)" colorBorder="var(--danger-border)">
+          {isLoading ? '...' : `${criticalCount} insumos`}
         </MetricCard>
-        <MetricCard icon={<Package size={20} />} label="TOTAL_INGREDIENTS" color="var(--primary-color)" colorBg="rgba(204,255,0,0.03)" colorBorder="var(--primary-border)">
-          {isLoading ? '...' : `${supplies.length} ITEMS`}
+        <MetricCard icon={<Package size={20} />} label="Total de insumos" color="var(--accent-blue)" colorBg="var(--accent-subtle)" colorBorder="var(--accent-border)">
+          {isLoading ? '...' : `${supplies.length} registrados`}
         </MetricCard>
       </div>
 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid var(--surface-border)' }}>
-        {[['stock', 'INVENTARIO EN TIEMPO REAL'], ['history', 'HISTORIAL DE MOVIMIENTOS']].map(([key, label]) => (
+        {[['stock', 'Inventario'], ['history', 'Movimientos']].map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)} style={{
             padding: '0.75rem 1.5rem', background: 'none', border: 'none',
             borderBottom: activeTab === key ? '2px solid var(--primary-color)' : '2px solid transparent',
@@ -232,7 +232,7 @@ export default function Supplies() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
               <thead>
                 <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>
-                  {['INSUMO', 'CATEGORÍA', 'STOCK ACTUAL', 'NIVEL', 'COSTO UNIT.', 'VALOR TOTAL', 'ESTADO', ''].map(h => (
+                  {['Insumo', 'Categoría', 'Stock actual', 'Nivel', 'Costo unit.', 'Valor total', 'Estado', ''].map(h => (
                     <th key={h} style={{ padding: '0.9rem 1.25rem', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{h}</th>
                   ))}
                 </tr>
@@ -245,7 +245,7 @@ export default function Supplies() {
                 ) : filteredSupplies.map(item => {
                   const level = stockLevel(item.quantity, item.min_quantity);
                   const statusColor = level === 'ok' ? 'var(--success-color)' : level === 'low' ? '#F59E0B' : 'var(--danger-color)';
-                  const statusLabel = level === 'ok' ? 'STABLE' : level === 'low' ? 'LOW_STOCK' : level === 'critical' ? 'CRITICAL' : 'DEPLETED';
+                  const statusLabel = level === 'ok' ? '✓ OK' : level === 'low' ? '⚠️ Bajo' : level === 'critical' ? '🔴 Crítico' : '❌ Agotado';
                   const pct = item.min_quantity > 0 ? Math.min(Math.round((item.quantity / item.min_quantity) * 100), 999) : 100;
 
                   return (
@@ -256,21 +256,21 @@ export default function Supplies() {
                           {item.category || 'Sin Cat.'}
                         </span>
                       </td>
-                      <td className="mono" style={{ padding: '1rem 1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {item.quantity} <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>{item.unit}</span>
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {item.quantity} <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 400 }}>{item.unit}</span>
                         <StockBar qty={item.quantity} min={item.min_quantity} />
                       </td>
-                      <td className="mono" style={{ padding: '1rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                        {pct}% <span style={{ opacity: 0.5 }}>/ mín {item.min_quantity} {item.unit}</span>
+                      <td style={{ padding: '1rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                        {pct}% <span style={{ opacity: 0.5, fontSize: '0.75rem' }}>/ mín {item.min_quantity} {item.unit}</span>
                       </td>
-                      <td className="mono" style={{ padding: '1rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                      <td style={{ padding: '1rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                         ${(item.cost || 0).toFixed(3)}
                       </td>
-                      <td className="mono" style={{ padding: '1rem 1.25rem', fontWeight: 700, color: 'var(--success-color)' }}>
-                        ${(item.quantity * (item.cost || 0)).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 700, color: 'var(--success-color)' }}>
+                        ${(item.quantity * (item.cost || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </td>
                       <td style={{ padding: '1rem 1.25rem' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: statusColor, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: statusColor, fontSize: '0.8rem', fontWeight: 600 }}>
                           {level !== 'ok' && <AlertTriangle size={11} />}
                           {statusLabel}
                         </span>
@@ -301,7 +301,7 @@ export default function Supplies() {
       {activeTab === 'history' && (
         <div className="glass-panel" style={{ padding: 0 }}>
           <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--surface-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 600 }}>
               <History size={16} /> Últimos 80 movimientos
             </div>
             <button onClick={fetchMovements} style={{ background: 'none', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '2px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
@@ -312,7 +312,7 @@ export default function Supplies() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
               <thead>
                 <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>
-                  {['FECHA', 'TIPO', 'INSUMO', 'CANTIDAD', 'NOTAS', 'USUARIO'].map(h => (
+                  {['Fecha', 'Tipo', 'Insumo', 'Cantidad', 'Notas', 'Usuario'].map(h => (
                     <th key={h} style={{ padding: '0.9rem 1.25rem', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{h}</th>
                   ))}
                 </tr>
@@ -325,20 +325,20 @@ export default function Supplies() {
                   const isOut = m.movement_type === 'out';
                   const typeColor = isIn ? 'var(--success-color)' : isOut ? 'var(--danger-color)' : '#F59E0B';
                   const TypeIcon = isIn ? ArrowUpCircle : isOut ? ArrowDownCircle : RefreshCw;
-                  const typeLabel = isIn ? 'ENTRADA' : isOut ? 'SALIDA' : 'AJUSTE';
+                  const typeLabel = isIn ? '⬆️ Entrada' : isOut ? '⬇️ Salida' : '⇅ Ajuste';
                   const date = new Date(m.created_at);
                   return (
                     <tr key={m.id} style={{ borderBottom: '1px solid var(--surface-border)' }} className="table-row-hover">
-                      <td className="mono" style={{ padding: '0.9rem 1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      <td style={{ padding: '0.9rem 1.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                         {date.toLocaleDateString('es-MX')} {date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td style={{ padding: '0.9rem 1.25rem' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: typeColor, fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: typeColor, fontSize: '0.8rem', fontWeight: 600 }}>
                           <TypeIcon size={12} /> {typeLabel}
                         </span>
                       </td>
                       <td style={{ padding: '0.9rem 1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>{m.supply_name || `#${m.supply_id}`}</td>
-                      <td className="mono" style={{ padding: '0.9rem 1.25rem', fontWeight: 700, color: typeColor }}>
+                      <td style={{ padding: '0.9rem 1.25rem', fontWeight: 700, color: typeColor, fontSize: '0.875rem' }}>
                         {isIn ? '+' : isOut ? '-' : '±'}{m.quantity} {m.supply_unit || ''}
                       </td>
                       <td style={{ padding: '0.9rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{m.notes || '—'}</td>
@@ -404,7 +404,7 @@ export default function Supplies() {
             </div>
             <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'var(--neutral-bg)', borderRadius: '2px', border: '1px solid var(--surface-border)' }}>
               <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stock actual</p>
-              <p className="mono" style={{ margin: '0.25rem 0 0', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+              <p style={{ margin: '0.25rem 0 0', fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 {restockTarget.quantity} {restockTarget.unit}
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>/ mín {restockTarget.min_quantity} {restockTarget.unit}</span>
               </p>
@@ -444,8 +444,8 @@ function MetricCard({ icon, label, color, colorBg, colorBorder, children }) {
     <div style={{ padding: '1.25rem', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: `2px solid ${color}`, borderBottom: '1px solid var(--surface-border)' }}>
       <div style={{ padding: '0.75rem', borderRadius: '2px', background: colorBg, color, border: `1px solid ${colorBorder}` }}>{icon}</div>
       <div>
-        <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</p>
-        <h3 className="mono" style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)' }}>{children}</h3>
+        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{label}</p>
+        <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{children}</h3>
       </div>
     </div>
   );
@@ -454,7 +454,7 @@ function MetricCard({ icon, label, color, colorBg, colorBorder, children }) {
 function Field({ label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+      <label style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{label}</label>
       {children}
     </div>
   );

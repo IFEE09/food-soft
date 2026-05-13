@@ -93,7 +93,7 @@ export default function Register() {
                 required
                 aria-invalid={!!nameError}
                 aria-describedby={nameError ? 'reg-name-error' : undefined}
-                className="mono"
+                
                 style={{ width: '100%', paddingLeft: '44px', height: '48px', borderColor: nameError ? 'var(--danger-color)' : undefined }}
               />
             </div>
@@ -116,7 +116,7 @@ export default function Register() {
                 required
                 aria-invalid={!!emailError}
                 aria-describedby={emailError ? 'reg-email-error' : undefined}
-                className="mono"
+                
                 style={{ width: '100%', paddingLeft: '44px', height: '48px', borderColor: emailError ? 'var(--danger-color)' : undefined }}
               />
             </div>
@@ -139,7 +139,7 @@ export default function Register() {
                 required
                 aria-invalid={!!passwordError}
                 aria-describedby="reg-password-hint reg-password-error"
-                className="mono"
+                
                 style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px', borderColor: passwordError ? 'var(--danger-color)' : undefined }}
               />
               <button
@@ -171,7 +171,7 @@ export default function Register() {
                 required
                 aria-invalid={!!confirmError}
                 aria-describedby={confirmError ? 'reg-confirm-error' : undefined}
-                className="mono"
+                
                 style={{ width: '100%', paddingLeft: '44px', paddingRight: '45px', height: '48px', borderColor: confirmBorderColor() }}
               />
               <button

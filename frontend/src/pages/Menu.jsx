@@ -22,6 +22,7 @@ export default function Menu() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const currentKitchenId = localStorage.getItem('kitchenId');
   const currentKitchenName = localStorage.getItem('kitchenName');
@@ -125,6 +126,7 @@ export default function Menu() {
       station_id: null,
       recipe_items: []
     });
+    setShowAdvanced(false);
   };
 
   const deleteItem = async (id) => {
@@ -178,9 +180,9 @@ export default function Menu() {
                         <span style={{ fontSize: '0.6rem', fontWeight: 800, background: 'rgba(0,68,255,0.1)', color: 'var(--primary-color)', padding: '0.2rem 0.6rem', borderRadius: '2px', textTransform: 'uppercase', border: '1px solid var(--primary-color)', letterSpacing: '0.05em' }}>
                             {item.category}
                         </span>
-                        <h3 style={{ margin: '0.75rem 0 0.25rem 0', fontSize: '1.1rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{item.name}</h3>
+                        <h3 style={{ margin: '0.75rem 0 0.25rem 0', fontSize: '1.1rem', fontWeight: 700, letterSpacing: '-0.01em' }}>{item.name}</h3>
                     </div>
-                    <div className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--success-color)' }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--success-color)', letterSpacing: '-0.02em' }}>
                         ${item.price.toFixed(2)}
                     </div>
                 </div>
@@ -189,12 +191,12 @@ export default function Menu() {
                 </p>
                 
                 <div style={{ marginTop: '0.5rem', borderTop: '1px solid var(--surface-border)', paddingTop: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                        <BookOpen size={12} /> RECIPE_MATRIX ({item.recipe_items.length}_INPUTS)
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                        <BookOpen size={12} /> Receta — {item.recipe_items.length} ingrediente{item.recipe_items.length !== 1 ? 's' : ''}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                         {item.recipe_items.map(ri => (
-                           <div key={ri.id} className="mono" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem 0.5rem', borderRadius: '2px', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                           <div key={ri.id} style={{ fontSize: '0.75rem', background: 'var(--neutral-bg)', padding: '0.25rem 0.6rem', borderRadius: '9999px', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}>
                              {ri.quantity}{ri.supply?.unit} {ri.supply?.name}
                            </div>
                         ))}
@@ -218,7 +220,7 @@ export default function Menu() {
                 <div style={{ background: 'var(--primary-color)', color: 'white', padding: '8px', borderRadius: '10px' }}>
                     <Utensils size={20} />
                 </div>
-                <h2>Configurar Nuevo Platillo</h2>
+                <h2 style={{ letterSpacing: '-0.02em' }}>Nuevo platillo</h2>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="modal-close"><X size={20} /></button>
             </div>
@@ -226,14 +228,15 @@ export default function Menu() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Nombre del Plato</label>
-                        <input type="text" placeholder="Ej. Burger Premium" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                        <label htmlFor="dish-name" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Nombre del platillo</label>
+                        <input id="dish-name" type="text" placeholder="Ej. Burger Premium" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required autoFocus />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Precio de Venta</label>
+                        <label htmlFor="dish-price" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Precio de venta</label>
                         <div style={{ position: 'relative' }}>
                             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 600, opacity: 0.5 }}>$</span>
                             <input 
+                                id="dish-price"
                                 type="number" step="0.01" placeholder="0.00"
                                 style={{ paddingLeft: '28px' }}
                                 value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} required 
@@ -242,10 +245,11 @@ export default function Menu() {
                     </div>
                </div>
 
+               {/* Paso 2: Categoría y descripción */}
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Categoría</label>
-                        <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                        <label htmlFor="dish-category" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Categoría</label>
+                        <select id="dish-category" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
                             <option value="Entradas">Entradas</option>
                             <option value="Principales">Principales</option>
                             <option value="Postres">Postres</option>
@@ -253,70 +257,88 @@ export default function Menu() {
                         </select>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                        <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Breve Descripción</label>
-                        <input type="text" placeholder="Ej. Sabrosa hamburguesa..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+                        <label htmlFor="dish-desc" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Descripción breve <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(opcional)</span></label>
+                        <input id="dish-desc" type="text" placeholder="Ej. Sabrosa hamburguesa..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
                     </div>
                </div>
 
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Área de trabajo (KDS)</label>
-                    <select
-                      value={formData.station_id ?? ''}
-                      onChange={(e) => setFormData({...formData, station_id: e.target.value ? parseInt(e.target.value) : null})}
-                    >
-                      <option value="">Sin área asignada</option>
-                      {stations.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      El pedido aparecerá automáticamente en la pantalla de esta área.
-                    </span>
-               </div>
+               {/* Progressive disclosure: detalles avanzados colapsables */}
+               <button
+                 type="button"
+                 onClick={() => setShowAdvanced(v => !v)}
+                 style={{
+                   display: 'flex', alignItems: 'center', gap: '0.5rem',
+                   background: 'none', border: 'none', cursor: 'pointer',
+                   color: 'var(--accent-blue)', fontSize: '0.875rem', fontWeight: 600,
+                   padding: '0.25rem 0', width: 'fit-content'
+                 }}
+               >
+                 <ChevronRight size={16} style={{ transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                 {showAdvanced ? 'Ocultar detalles avanzados' : 'Agregar área de trabajo y receta (opcional)'}
+               </button>
 
-               <div style={{ background: '#F8FAFC', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--surface-border)' }}>
-                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Database size={16} color="var(--primary-color)" /> Receta e Insumos
-                    </h3>
-                    <button type="button" onClick={addRecipeRow} style={{ fontSize: '0.75rem', color: 'var(--primary-color)', background: 'white', border: '1px solid var(--primary-color)', padding: '0.3rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
-                        + Añadir Ingrediente
-                    </button>
-                 </div>
+               {showAdvanced && (
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', animation: 'slideUp 0.2s ease' }}>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <label htmlFor="dish-station" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Área de trabajo</label>
+                        <select
+                          id="dish-station"
+                          value={formData.station_id ?? ''}
+                          onChange={(e) => setFormData({...formData, station_id: e.target.value ? parseInt(e.target.value) : null})}
+                        >
+                          <option value="">Sin área asignada</option>
+                          {stations.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          El pedido aparecerá automáticamente en la pantalla de esta área.
+                        </span>
+                   </div>
 
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {formData.recipe_items.map((row, idx) => (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.75rem', alignItems: 'center' }}>
-                            <select 
-                                value={row.supply_id} 
-                                onChange={(e) => updateRecipeRow(idx, 'supply_id', parseInt(e.target.value))}
-                                style={{ background: 'white' }}
-                                required
-                            >
-                                <option value="">Selecciona insumo...</option>
-                                {supplies.map(s => <option key={s.id} value={s.id}>{s.name} ({s.unit})</option>)}
-                            </select>
-                            <input 
-                                type="number" 
-                                step="0.001" 
-                                placeholder="0.000" 
-                                value={row.quantity} 
-                                onChange={(e) => updateRecipeRow(idx, 'quantity', e.target.value)}
-                                style={{ background: 'white' }}
-                                required
-                            />
-                            <button type="button" onClick={() => removeRecipeRow(idx)} style={{ color: 'var(--danger-color)', border: 'none', background: 'none', cursor: 'pointer' }}>
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                    ))}
-                    {formData.recipe_items.length === 0 && (
-                        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '1rem' }}>
-                            No hay ingredientes asignados.
-                        </p>
-                    )}
+                   <div style={{ background: 'var(--neutral-bg)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--surface-border)' }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h3 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '-0.01em' }}>
+                            <Database size={15} color="var(--accent-blue)" /> Receta e ingredientes
+                        </h3>
+                        <button type="button" onClick={addRecipeRow} style={{ fontSize: '0.8rem', color: 'var(--accent-blue)', background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)', padding: '0.3rem 0.75rem', borderRadius: '9999px', cursor: 'pointer', fontWeight: 600 }}>
+                            + Ingrediente
+                        </button>
+                     </div>
+
+                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {formData.recipe_items.map((row, idx) => (
+                            <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.75rem', alignItems: 'center' }}>
+                                <select 
+                                    value={row.supply_id} 
+                                    onChange={(e) => updateRecipeRow(idx, 'supply_id', parseInt(e.target.value))}
+                                    required
+                                >
+                                    <option value="">Selecciona insumo...</option>
+                                    {supplies.map(s => <option key={s.id} value={s.id}>{s.name} ({s.unit})</option>)}
+                                </select>
+                                <input 
+                                    type="number" 
+                                    step="0.001" 
+                                    placeholder="Cantidad" 
+                                    value={row.quantity} 
+                                    onChange={(e) => updateRecipeRow(idx, 'quantity', e.target.value)}
+                                    required
+                                />
+                                <button type="button" onClick={() => removeRecipeRow(idx)} style={{ color: 'var(--danger-color)', border: 'none', background: 'none', cursor: 'pointer', padding: '0.25rem' }} aria-label="Eliminar ingrediente">
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        ))}
+                        {formData.recipe_items.length === 0 && (
+                            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', padding: '0.75rem', margin: 0 }}>
+                                Sin ingredientes aún. Haz clic en “+ Ingrediente” para agregar.
+                            </p>
+                        )}
+                     </div>
+                   </div>
                  </div>
-               </div>
+               )}
 
                <div style={{ display: 'flex', gap: '1rem' }}>
                  <button type="submit" className="btn-primary" style={{ flex: 1, height: '52px' }}>

@@ -15,9 +15,9 @@ import {
 } from 'lucide-react';
 
 const ROLE_CONFIG = {
-  owner: { label: 'SYSTEM_OWNER', color: '#0044FF', bg: 'rgba(0,68,255,0.1)', icon: ShieldCheck },
-  receptionist: { label: 'RECEPTION_OFFICER', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', icon: HeadphonesIcon },
-  cook: { label: 'Personal', color: 'var(--success-color)', bg: 'rgba(204,255,0,0.1)', icon: ChefHat },
+  owner:        { label: 'Propietario',   color: 'var(--accent-blue)',    bg: 'var(--accent-subtle)',   icon: ShieldCheck },
+  receptionist: { label: 'Recepcionista', color: 'var(--warning-color)',  bg: 'var(--warning-bg)',      icon: HeadphonesIcon },
+  cook:         { label: 'Cocinero',      color: 'var(--success-color)',  bg: 'var(--success-bg)',      icon: ChefHat },
 };
 
 export default function TeamManagement() {
@@ -118,11 +118,11 @@ export default function TeamManagement() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ 
-                      width: '42px', height: '42px', borderRadius: '2px', 
-                      background: 'var(--surface-border)', color: 'var(--text-primary)',
+                      width: '42px', height: '42px', borderRadius: '50%', 
+                      background: roleConf.bg, color: roleConf.color,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 800, fontSize: '0.85rem', border: '1px solid var(--surface-border)',
-                      fontFamily: 'JetBrains Mono, monospace'
+                      fontWeight: 800, fontSize: '0.875rem', border: `1px solid ${roleConf.color}33`,
+                      flexShrink: 0
                     }}>
                       {member.full_name?.substring(0, 2).toUpperCase() || '??'}
                     </div>
@@ -141,12 +141,11 @@ export default function TeamManagement() {
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="mono" style={{ 
+                  <span style={{ 
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                    fontSize: '0.65rem', fontWeight: 800, 
-                    padding: '0.2rem 0.5rem', borderRadius: '2px',
-                    border: `1px solid ${roleConf.color}44`, color: roleConf.color,
-                    textTransform: 'uppercase'
+                    fontSize: '0.75rem', fontWeight: 600, 
+                    padding: '0.25rem 0.65rem', borderRadius: '9999px',
+                    background: roleConf.bg, border: `1px solid ${roleConf.color}33`, color: roleConf.color,
                   }}>
                     <RoleIcon size={12} /> {roleConf.label}
                   </span>
@@ -173,33 +172,33 @@ export default function TeamManagement() {
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Nombre Completo</label>
+                <label htmlFor="member-name" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Nombre completo</label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                   <input 
-                    type="text" placeholder="Ej. María López" 
+                    id="member-name" type="text" placeholder="Ej. María López" 
                     style={{ paddingLeft: '38px' }}
                     value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} required 
                   />
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Correo Electrónico</label>
+                <label htmlFor="member-email" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Correo electrónico</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                   <input 
-                    type="email" placeholder="correo@ejemplo.com" 
+                    id="member-email" type="email" placeholder="correo@ejemplo.com" 
                     style={{ paddingLeft: '38px' }}
                     value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required 
                   />
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 700 }}>Contraseña Temporal</label>
+                <label htmlFor="member-password" style={{ fontSize: '0.85rem', fontWeight: 700 }}>Contraseña temporal</label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                   <input 
-                    type="text" placeholder="Contraseña inicial"
+                    id="member-password" type="text" placeholder="Contraseña inicial"
                     style={{ paddingLeft: '38px' }}
                     value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required 
                   />

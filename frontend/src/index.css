@@ -778,6 +778,37 @@ input[type=number] {
   50%       { opacity: 0.5; }
 }
 
+/* — Videojuego: bounce de recompensa al completar una acción — */
+@keyframes bounceIn {
+  0%   { transform: scale(0.92); opacity: 0; }
+  60%  { transform: scale(1.04); opacity: 1; }
+  80%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* — Salida suave de tarjetas al completarse (videojuego: el objeto desaparece) — */
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(40px) scale(0.95); }
+}
+
+@keyframes slideOutUp {
+  from { opacity: 1; transform: translateY(0) scale(1); max-height: 400px; }
+  to   { opacity: 0; transform: translateY(-16px) scale(0.97); max-height: 0; padding: 0; margin: 0; }
+}
+
+/* — Pulso del punto verde “En línea” — */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(11, 110, 49, 0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(11, 110, 49, 0); }
+}
+
+/* — Entrada de tarjetas de pedido nuevas — */
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ==========================================
    LAYOUT UTILITIES
    ========================================== */
@@ -1219,4 +1250,125 @@ hr {
 /* Quitar outline en click con mouse (solo teclado) */
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+/* ==========================================
+   FEEDBACK TÁCTIL GLOBAL — Filosofía Apple/Videojuego
+   Todo elemento interactivo debe "responder" al toque
+   ========================================== */
+
+/* Todos los botones se "hunden" al presionar */
+button:active:not(:disabled) {
+  transform: scale(0.97) !important;
+  transition: transform 0.08s ease !important;
+}
+
+/* Las tarjetas clickeables también responden */
+[role="button"]:active,
+.card-clickable:active {
+  transform: scale(0.98) !important;
+}
+
+/* ── Animación de entrada para tarjetas de pedido ── */
+.order-card-enter {
+  animation: cardEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Animación de salida al completar un pedido ── */
+.order-card-exit {
+  animation: slideOutRight 0.35s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+/* ── Bounce de recompensa (ej: al marcar listo) ── */
+.bounce-reward {
+  animation: bounceIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Punto verde pulsante "En línea" ── */
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ==========================================
+   EMPTY STATES — Filosofía Apple: claros, amigables, con emoji
+   ========================================== */
+.empty-state-emoji {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.empty-state-desc {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.5rem;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+/* ── Gráfica de barras: barras redondeadas y animadas ── */
+.bar-chart-bar {
+  border-radius: 4px 4px 0 0;
+  transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.bar-chart-bar:hover {
+  opacity: 1 !important;
+  filter: brightness(1.1);
+}
+
+/* ── Categoría badge en tarjeta de platillo: pill redondeado ── */
+.category-badge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-subtle);
+  color: var(--accent-blue);
+  border: 1px solid var(--accent-border);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Status badges universales con pill ── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.status-pill-pending  { background: var(--warning-bg);  color: var(--warning-color);  border: 1px solid var(--warning-border); }
+.status-pill-ready    { background: var(--ready-bg);    color: var(--ready-color);    border: 1px solid var(--ready-border); }
+.status-pill-done     { background: var(--success-bg);  color: var(--success-color);  border: 1px solid var(--success-border); }
+.status-pill-danger   { background: var(--danger-bg);   color: var(--danger-color);   border: 1px solid var(--danger-border); }
+.status-pill-info     { background: var(--info-bg);     color: var(--info-color);     border: 1px solid var(--info-border); }
+
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled),
+  [role="button"]:active,
+  .card-clickable:active {
+    transform: none !important;
+  }
+  .order-card-enter,
+  .order-card-exit,
+  .bounce-reward,
+  .pulse-dot {
+    animation: none !important;
+  }
 }

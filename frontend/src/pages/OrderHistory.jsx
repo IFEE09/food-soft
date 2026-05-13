@@ -42,7 +42,7 @@ function getPeriod(key) {
 function BarChart({ data }) {
   if (!data || data.length === 0) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '120px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-      SIN_DATOS
+      Sin datos para este período
     </div>
   );
 
@@ -160,7 +160,7 @@ export default function OrderHistory() {
     padding: '0.45rem 0.75rem',
     borderRadius: '2px',
     fontSize: '0.82rem',
-    fontFamily: 'JetBrains Mono, monospace',
+    fontFamily: 'inherit',
   };
 
   const labelStyle = {
@@ -246,7 +246,7 @@ export default function OrderHistory() {
             <p style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
               {m.icon}{m.label}
             </p>
-            <p className="mono" style={{ fontSize: '1.6rem', fontWeight: 700, color: m.color, margin: 0 }}>{isLoading ? '…' : m.value}</p>
+            <p style={{ fontSize: '1.6rem', fontWeight: 700, color: m.color, margin: 0, letterSpacing: '-0.03em' }}>{isLoading ? '…' : m.value}</p>
           </div>
         ))}
       </div>
@@ -262,10 +262,10 @@ export default function OrderHistory() {
       {/* ── Tabla ── */}
       <div className="glass-panel" style={{ padding: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Historial de Pedidos
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+            Historial de pedidos
           </h3>
-          <span className="mono" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {orders.length} registros · pág {page}/{totalPages || 1}
           </span>
         </div>
@@ -279,11 +279,11 @@ export default function OrderHistory() {
                 ))}
               </tr>
             </thead>
-            <tbody className="mono">
+            <tbody>
               {isLoading ? (
-                <tr><td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>CARGANDO...</td></tr>
+                <tr><td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Cargando pedidos...</td></tr>
               ) : paged.length === 0 ? (
-                <tr><td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>SIN_REGISTROS</td></tr>
+                <tr><td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay pedidos para este período 📋</td></tr>
               ) : paged.map((o, i) => {
                 const st = STATUS_LABELS[o.status] || { label: o.status, color: 'var(--text-secondary)' };
                 const fecha    = o.created_at ? new Date(o.created_at).toLocaleDateString('es-MX') : '—';
@@ -307,7 +307,7 @@ export default function OrderHistory() {
                     </td>
                     <td style={{ padding: '0.65rem 0.5rem', color: 'var(--success-color)', fontWeight: 700, whiteSpace: 'nowrap' }}>${(o.total || 0).toFixed(2)}</td>
                     <td style={{ padding: '0.65rem 0.5rem' }}>
-                      <span style={{ fontSize: '0.62rem', padding: '0.2rem 0.5rem', borderRadius: '2px', fontWeight: 700, border: `1px solid ${st.color}44`, color: st.color, whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.65rem', borderRadius: '9999px', fontWeight: 700, border: `1px solid ${st.color}44`, background: `${st.color}12`, color: st.color, whiteSpace: 'nowrap' }}>
                         {st.label}
                       </span>
                     </td>

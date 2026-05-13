@@ -29,7 +29,7 @@ function TimerBadge({ createdAt }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-      fontSize: '0.65rem', fontWeight: 800, fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '0.65rem', fontWeight: 800, fontFamily: 'inherit',
       color: urg.color, background: urg.bg, border: `1px solid ${urg.border}`,
       padding: '0.15rem 0.45rem', borderRadius: '3px',
       animation: urg.level === 'critical' ? 'pulse-accent 1.2s ease-in-out infinite' : 'none'
@@ -56,18 +56,18 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
       background: 'var(--surface-color)',
       border: `1px solid ${urg.border}`,
       borderTop: `3px solid ${urg.color}`,
-      borderRadius: '6px',
+      borderRadius: '12px',
       padding: '1.1rem',
       display: 'flex', flexDirection: 'column', gap: '0.85rem',
-      transition: 'transform 0.15s',
+      transition: 'transform 0.15s, box-shadow 0.15s',
       position: 'relative',
-      animation: row.status === 'pending' && mins < 1 ? 'slideUp 0.3s ease' : 'none'
+      animation: 'cardEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both'
     }}>
 
       {/* Card header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-          <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: urg.color }}>
+          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: urg.color, fontFamily: 'inherit', letterSpacing: '-0.02em' }}>
             #{row.id.toString().padStart(4, '0')}
           </span>
           <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -83,7 +83,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
             background: row.status === 'ready' ? 'var(--success-bg)' : urg.bg,
             padding: '0.1rem 0.4rem', borderRadius: '2px'
           }}>
-            {row.status}
+            {row.status === 'pending' ? '⏳ En preparación' : row.status === 'ready' ? '✅ Listo' : row.status === 'delivered' ? '🏃 Entregado' : row.status}
           </span>
         </div>
       </div>
@@ -107,23 +107,23 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
                   color: done ? 'var(--success-color)' : inProg ? '#FFD600' : 'var(--text-primary)',
                   textDecoration: done ? 'line-through' : 'none'
                 }}>
-                  {it.product_name} <span className="mono" style={{ fontSize: '0.75rem' }}>×{it.quantity}</span>
+                  {it.product_name} <span style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.7 }}>×{it.quantity}</span>
                 </span>
                 {row.status === 'pending' && (
                   <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
                     {!inProg && !done && (
                       <button onClick={() => onItemStatus(it.id, 'in_progress')} style={{
-                        fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: '2px', fontWeight: 700,
+                        fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: '9999px', fontWeight: 700,
                         background: 'rgba(255,214,0,0.12)', border: '1px solid rgba(255,214,0,0.4)',
                         color: 'var(--warning-color)', cursor: 'pointer'
-                      }}>EN PREP</button>
+                      }}>⏳ Preparando</button>
                     )}
                     {!done && (
                       <button onClick={() => onItemStatus(it.id, 'done')} style={{
-                        fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: '2px', fontWeight: 700,
+                        fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: '9999px', fontWeight: 700,
                         background: 'rgba(26, 86, 219, 0.12)', border: '1px solid rgba(26, 86, 219, 0.4)',
                         color: 'var(--success-color)', cursor: 'pointer'
-                      }}>LISTO ✓</button>
+                      }}>✓ Listo</button>
                     )}
                     {done && (
                       <span style={{ fontSize: '0.6rem', color: 'var(--success-color)', fontWeight: 700 }}>✓</span>
@@ -170,7 +170,7 @@ function OrderCard({ row, selectedStation, onItemStatus, onMarkReady, isMarking 
       )}
       {row.status === 'ready' && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.45rem', borderRadius: '4px', background: 'rgba(26, 86, 219, 0.06)', border: '1px solid rgba(26, 86, 219, 0.2)', color: 'var(--success-color)', fontSize: '0.78rem', fontWeight: 700 }}>
-          <CheckCircle2 size={13} /> LISTO — En espera de entrega
+          <CheckCircle2 size={13} /> ✅ Listo — esperando al repartidor
         </div>
       )}
     </div>
@@ -350,7 +350,7 @@ export default function KitchenDashboard() {
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{k.address || 'Sin dirección registrada'}</p>
               {/* Estado online */}
               <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success-color)', boxShadow: '0 0 0 2px var(--success-bg)' }} />
+                <span className="pulse-dot" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-color)', flexShrink: 0 }} />
                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success-color)' }}>En línea</span>
               </div>
             </div>
@@ -459,7 +459,7 @@ export default function KitchenDashboard() {
         <button onClick={handleBackToSites} style={{ padding: '0.35rem 0.75rem', borderRadius: '3px', border: '1px solid var(--surface-border)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
   ← Sucursales
         </button>
-        <h2 className="mono" style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>{selectedKitchen.name}</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>{selectedKitchen.name}</h2>
 
         {/* Station tabs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap', marginLeft: '0.5rem' }}>
@@ -470,7 +470,7 @@ export default function KitchenDashboard() {
             color: selectedStation === null ? 'var(--success-color)' : 'var(--text-secondary)',
             cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem'
           }}>
-            <Monitor size={11} /> ALL
+            <Monitor size={11} /> Todas
           </button>
           {stations.map(s => (
             <button key={s.id} onClick={() => setSelectedStation(s.id)} style={{
@@ -492,11 +492,11 @@ export default function KitchenDashboard() {
 
         {/* Counters */}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-          <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'rgba(255,51,51,0.1)', color: 'var(--danger-color)', border: '1px solid rgba(255,51,51,0.3)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
-            {pendingOrders.length} PENDING
+          <span style={{ padding: '0.3rem 0.75rem', background: 'rgba(255,51,51,0.1)', color: 'var(--danger-color)', border: '1px solid rgba(255,51,51,0.3)', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700 }}>
+            ⏳ {pendingOrders.length} pendientes
           </span>
-          <span className="mono" style={{ padding: '0.3rem 0.65rem', background: 'var(--success-bg)', color: 'var(--success-color)', border: '1px solid rgba(26, 86, 219, 0.25)', borderRadius: '3px', fontSize: '0.72rem', fontWeight: 800 }}>
-            {readyOrders.length} READY
+          <span style={{ padding: '0.3rem 0.75rem', background: 'var(--success-bg)', color: 'var(--success-color)', border: '1px solid var(--success-border)', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700 }}>
+            ✅ {readyOrders.length} listos
           </span>
         </div>
       </div>
@@ -505,8 +505,8 @@ export default function KitchenDashboard() {
       {pendingOrders.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <AlertCircle size={14} color="#FF3333" />
-            <span className="mono" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--danger-color)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>En preparación — {pendingOrders.length}</span>
+            <AlertCircle size={14} color="var(--danger-color)" />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--danger-color)' }}>⏳ En preparación ({pendingOrders.length})</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {pendingOrders.map(row => (
@@ -526,7 +526,7 @@ export default function KitchenDashboard() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <CheckCircle2 size={14} color="var(--success-color)" />
-            <span className="mono" style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--success-color)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Listos — esperando entrega — {readyOrders.length}</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--success-color)' }}>✅ Listos — esperando entrega ({readyOrders.length})</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', opacity: 0.75 }}>
             {readyOrders.map(row => (
@@ -543,14 +543,16 @@ export default function KitchenDashboard() {
 
       {/* Empty state */}
       {!ordersLoading && filteredOrders.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.4 }}>
-          <ChefHat size={40} style={{ margin: '0 auto 1rem' }} />
-          <p className="mono" style={{ fontSize: '0.85rem' }}>NO_ORDERS_IN_QUEUE</p>
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', opacity: 0.6 }}>
+          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🍽️</div>
+          <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.25rem' }}>Todo tranquilo por aquí</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>Los nuevos pedidos aparecerán aquí automáticamente.</p>
         </div>
       )}
       {ordersLoading && (
-        <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.4 }}>
-          <p className="mono" style={{ fontSize: '0.85rem' }}>FETCHING_DATA...</p>
+        <div style={{ textAlign: 'center', padding: '4rem 2rem', opacity: 0.6 }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⏳</div>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>Cargando pedidos...</p>
         </div>
       )}
 

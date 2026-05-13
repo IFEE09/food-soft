@@ -44,7 +44,7 @@ function MessageBubble({ msg }) {
   if (msg.role === 'system') {
     return (
       <div style={{ textAlign: 'center', padding: '0.25rem 0' }}>
-        <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
           {msg.text}
         </span>
       </div>
@@ -82,7 +82,7 @@ function MessageBubble({ msg }) {
             {msg.caption && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{msg.caption}</span>}
           </div>
         ) : msg.text}
-        <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.35rem', textAlign: isUser ? 'left' : 'right', fontFamily: 'JetBrains Mono, monospace' }}>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.35rem', textAlign: isUser ? 'left' : 'right' }}>
           {msg.time}
         </div>
       </div>
@@ -222,9 +222,7 @@ export default function ChatSimulator() {
           </div>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Bot Simulator</div>
-            <div className="mono" style={{ fontSize: '0.62rem', color: 'var(--text-secondary)' }}>
-              channel=whatsapp · org_id={organizationId}
-            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>WhatsApp · Simulador de conversación</div>
           </div>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
@@ -233,7 +231,7 @@ export default function ChatSimulator() {
             color: 'var(--success-color)', fontSize: '0.62rem', fontWeight: 700
           }}>
             <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success-color)', animation: 'pulse-accent 2s infinite' }} />
-            ONLINE
+            En línea
           </span>
         </div>
         <button

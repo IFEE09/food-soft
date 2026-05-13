@@ -100,11 +100,11 @@ export default function ActivityLogs() {
 
       {/* Metrics - OMNIKOOK Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1px', background: 'var(--surface-border)', border: '1px solid var(--surface-border)' }}>
-        <MetricCard title="SYSTEM_TRAFFIC" value={logs.length} Icon={Activity} color="var(--text-primary)" bg="transparent" isLoading={isLoading} />
-        <MetricCard title="PROVISIONING"    value={createsCount} Icon={Plus}     color="var(--success-color)" bg="transparent" isLoading={isLoading} />
-        <MetricCard title="MODIFICATIONS"   value={updatesCount} Icon={Pencil}   color="#0044FF" bg="transparent" isLoading={isLoading} />
-        <MetricCard title="PURGES"          value={deletesCount} Icon={Trash2}   color="var(--danger-color)" bg="transparent" isLoading={isLoading} />
-        <MetricCard title="SESSION_ACCESS"  value={loginsCount}  Icon={LogIn}    color="#7C3AED" bg="transparent" isLoading={isLoading} />
+        <MetricCard title="Total de movimientos" value={logs.length} Icon={Activity} color="var(--text-primary)" bg="transparent" isLoading={isLoading} />
+        <MetricCard title="Creados"    value={createsCount} Icon={Plus}     color="var(--success-color)" bg="transparent" isLoading={isLoading} />
+        <MetricCard title="Modificados"   value={updatesCount} Icon={Pencil}   color="#0044FF" bg="transparent" isLoading={isLoading} />
+        <MetricCard title="Eliminados"          value={deletesCount} Icon={Trash2}   color="var(--danger-color)" bg="transparent" isLoading={isLoading} />
+        <MetricCard title="Inicios de sesión"  value={loginsCount}  Icon={LogIn}    color="#7C3AED" bg="transparent" isLoading={isLoading} />
       </div>
 
       {/* Table panel */}
@@ -155,12 +155,12 @@ export default function ActivityLogs() {
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
             <thead>
               <tr style={{ background: 'var(--neutral-bg)', borderBottom: '1px solid var(--surface-border)' }}>
-                <th style={thStyle}>TIMESTAMP</th>
-                <th style={thStyle}>OPERATOR</th>
-                <th style={thStyle}>AUTH_LEVEL</th>
-                <th style={thStyle}>ACTION_CODE</th>
-                <th style={thStyle}>NODE_TARGET</th>
-                <th style={thStyle}>RAW_PAYLOAD</th>
+                <th style={thStyle}>Fecha y hora</th>
+                <th style={thStyle}>Usuario</th>
+                <th style={thStyle}>Rol</th>
+                <th style={thStyle}>Acción</th>
+                <th style={thStyle}>Entidad</th>
+                <th style={thStyle}>Descripción</th>
               </tr>
             </thead>
             <tbody>
@@ -180,14 +180,14 @@ export default function ActivityLogs() {
                     </td>
                     <td style={tdStyle}>
                       {log.user_role ? (
-                        <span className="mono" style={{ fontSize: '0.65rem', textTransform: 'uppercase', border: '1px solid var(--surface-border)', padding: '0.2rem 0.5rem', borderRadius: '2px', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                          {log.user_role}
+                        <span style={{ fontSize: '0.75rem', background: 'var(--neutral-bg)', border: '1px solid var(--surface-border)', padding: '0.2rem 0.6rem', borderRadius: '9999px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          {log.user_role === 'owner' ? 'Propietario' : log.user_role === 'receptionist' ? 'Recepcionista' : log.user_role === 'cook' ? 'Cocinero' : log.user_role}
                         </span>
                       ) : '—'}
                     </td>
                     <td style={tdStyle}>
-                      <span className="mono" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color, fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.5rem', border: `1px solid ${color}44`, borderRadius: '2px', textTransform: 'uppercase' }}>
-                        <Icon size={12} /> {log.action}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color, fontSize: '0.8rem', fontWeight: 600, padding: '0.2rem 0.6rem', border: `1px solid ${color}33`, borderRadius: '9999px', background: `${color}0D` }}>
+                        <Icon size={12} /> {ACTION_LABELS[log.action] || log.action}
                       </span>
                     </td>
                     <td style={tdStyle}>
