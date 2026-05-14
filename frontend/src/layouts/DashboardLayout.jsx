@@ -13,6 +13,7 @@ import {
   HeadphonesIcon,
   Building2,
   ChevronDown,
+  ChevronRight,
   Monitor,
   CalendarDays,
   MessageSquare,
