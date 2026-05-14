@@ -57,17 +57,17 @@ function MessageBubble({ msg }) {
       <div style={{
         width: '30px', height: '30px', borderRadius: '3px', flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: isUser ? 'var(--surface-color)' : 'rgba(26, 86, 219, 0.1)',
-        border: `1px solid ${isUser ? 'var(--surface-border)' : 'var(--success-border)'}`,
-        color: isUser ? 'var(--text-secondary)' : 'var(--success-color)'
+        background: isUser ? 'var(--neutral-bg)' : 'var(--accent-subtle)',
+        border: `1px solid ${isUser ? 'var(--surface-border)' : 'var(--accent-border)'}`,
+        color: isUser ? 'var(--text-secondary)' : 'var(--accent-blue)'
       }}>
         {isUser ? <User size={14} /> : <Bot size={14} />}
       </div>
 
       <div style={{
         maxWidth: '72%',
-        background: isUser ? 'var(--surface-color)' : '#111',
-        border: `1px solid ${isUser ? 'var(--surface-border)' : 'rgba(26, 86, 219, 0.15)'}`,
+        background: isUser ? 'var(--surface-color)' : 'var(--accent-subtle)',
+        border: `1px solid ${isUser ? 'var(--surface-border)' : 'var(--accent-border)'}`,
         borderRadius: isUser ? '8px 2px 8px 8px' : '2px 8px 8px 8px',
         padding: '0.7rem 0.9rem',
         color: 'var(--text-primary)',
@@ -97,12 +97,12 @@ function TypingIndicator() {
       <div style={{
         width: '30px', height: '30px', borderRadius: '3px', flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(26, 86, 219, 0.1)', border: '1px solid var(--success-border)', color: 'var(--success-color)'
+        background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)', color: 'var(--accent-blue)'
       }}>
         <Bot size={14} />
       </div>
       <div style={{
-        padding: '0.7rem 1rem', background: '#111', border: '1px solid rgba(26, 86, 219, 0.15)',
+        padding: '0.7rem 1rem', background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)',
         borderRadius: '2px 8px 8px 8px', display: 'flex', gap: '0.3rem', alignItems: 'center'
       }}>
         {[0, 0.2, 0.4].map((delay, i) => (
@@ -215,8 +215,8 @@ export default function ChatSimulator() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{
             width: '36px', height: '36px', borderRadius: '4px',
-            background: 'rgba(26, 86, 219, 0.1)', border: '1px solid var(--success-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)'
+            background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)'
           }}>
             <Zap size={18} />
           </div>
@@ -227,10 +227,10 @@ export default function ChatSimulator() {
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
             padding: '0.15rem 0.5rem', borderRadius: '20px',
-            background: 'rgba(26, 86, 219, 0.1)', border: '1px solid var(--success-border)',
-            color: 'var(--success-color)', fontSize: '0.62rem', fontWeight: 700
+            background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)',
+            color: 'var(--accent-blue)', fontSize: '0.62rem', fontWeight: 700
           }}>
-            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success-color)', animation: 'pulse-accent 2s infinite' }} />
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--accent-blue)', animation: 'pulse-accent 2s infinite' }} />
             En línea
           </span>
         </div>
@@ -296,8 +296,8 @@ export default function ChatSimulator() {
             aria-label="Enviar mensaje"
             style={{
               width: '44px', height: '44px', borderRadius: '4px',
-              background: input.trim() && !isLoading ? 'var(--success-color)' : 'var(--surface-color)',
-              color: input.trim() && !isLoading ? '#000' : 'var(--text-secondary)',
+              background: input.trim() && !isLoading ? 'var(--accent-blue)' : 'var(--surface-color)',
+              color: input.trim() && !isLoading ? '#fff' : 'var(--text-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s', border: '1px solid var(--surface-border)', flexShrink: 0
